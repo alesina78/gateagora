@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gate 4 - Login</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <style>
+        /* Estilização customizada para bater com o Dashboard Dark */
+        body {
+            background-color: #0a0a0a; /* Fundo idêntico ao dashboard */
+        }
+        .glass-card {
+            background: #171717;
+            border: 1px solid #262626;
+        }
+        .input-dark {
+            background-color: #0f0f0f !important;
+            border: 1px solid #262626 !important;
+            color: #ffffff !important;
+        }
+        .input-dark:focus {
+            border-color: #10b981 !important; /* Verde Esmeralda 500 */
+            ring-color: #10b981 !important;
+        }
+    </style>
+</head>
+
+<body class="h-screen flex items-center justify-center p-4">
+
+    <div class="max-w-md w-full">
+
+        <div class="text-center mb-10">
+            <div class="inline-block mb-4">
+                {% if LOGO_URL %}
+                    <img src="{{ LOGO_URL }}" alt="Gate 4 Logo" class="h-32 w-auto mx-auto opacity-90 hover:opacity-100 transition">
+                {% else %}
+                    <div class="bg-emerald-600/20 p-5 rounded-3xl border border-emerald-500/30">
+                        <i class="fa-solid fa-chess-knight text-emerald-500 text-4xl"></i>
+                    </div>
+                {% endif %}
+            </div>
+
+            <h1 class="text-3xl font-black text-white tracking-tight">
+                Gate 4 <span class="text-emerald-500 font-medium italic">Management</span>
+            </h1>
+
+            <p class="text-neutral-500 text-[10px] font-bold uppercase tracking-[0.3em] mt-2">
+                Business Intelligence v3.0
+            </p>
+        </div>
+
+        <div class="glass-card p-10 rounded-[2.5rem] shadow-2xl">
+
+            <form method="post">
+                {% csrf_token %}
+
+                <div class="space-y-5">
+
+                    <div>
+                        <label class="text-[10px] font-bold text-neutral-500 uppercase ml-2 tracking-widest">Usuário</label>
+                        <div class="relative mt-1">
+                            <i class="fa-solid fa-user absolute left-4 top-4 text-neutral-600"></i>
+                            <input
+                                type="text"
+                                name="username"
+                                required
+                                class="input-dark w-full pl-11 pr-4 py-3.5 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition placeholder:text-neutral-700"
+                                placeholder="Digite seu usuário"
+                            >
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="text-[10px] font-bold text-neutral-500 uppercase ml-2 tracking-widest">Senha</label>
+                        <div class="relative mt-1">
+                            <i class="fa-solid fa-lock absolute left-4 top-4 text-neutral-600"></i>
+                            <input
+                                type="password"
+                                name="password"
+                                required
+                                class="input-dark w-full pl-11 pr-4 py-3.5 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition placeholder:text-neutral-700"
+                                placeholder="••••••••"
+                            >
+                        </div>
+                    </div>
+
+                </div>
+
+                {% if form.errors %}
+                <div class="mt-6 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-400 text-xs font-medium flex items-center gap-3">
+                    <i class="fa-solid fa-triangle-exclamation text-base"></i> 
+                    <span>Acesso negado. Credenciais incorretas.</span>
+                </div>
+                {% endif %}
+
+                <button
+                    type="submit"
+                    class="w-full mt-10 bg-emerald-600 hover:bg-emerald-500 text-white font-black py-4 rounded-2xl shadow-lg shadow-emerald-900/20 transition-all transform hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2"
+                >
+                    <i class="fa-solid fa-right-to-bracket"></i>
+                    ENTRAR NO SISTEMA
+                </button>
+
+            </form>
+        </div>
+
+        <div class="text-center mt-10 space-y-2">
+            <p class="text-neutral-600 text-[10px] font-medium uppercase tracking-widest">
+                Hípica Paraíso RS • Acesso Restrito
+            </p>
+            <p class="text-neutral-800 text-[9px] font-bold">
+                © 2026 GATE 4 MANAGEMENT - THE BEST BREAK
+            </p>
+        </div>
+    </div>
+
+</body>
+</html>
