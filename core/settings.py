@@ -1,48 +1,83 @@
+# -*- coding: utf-8 -*-
 """
-Django settings for core project.
-GATE 4 - The best break
+Django settings — GATE 4
+Stack de produção: Fly.io + Supabase (PostgreSQL) + Cloudinary (mídia)
 """
 
 from pathlib import Path
 import os
+import dj_database_url
 
-# Caminho base do projeto
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Segurança
-SECRET_KEY = 'django-insecure-*+w+fr$4k3r!^l8#7dq$3ikcxq7yrq$1huf@b$7wqhz(9osoay'
-DEBUG = True
-ALLOWED_HOSTS = []
 
-# Definição das Apps
+# ------------------------------------------------------------------------------
+# SEGURANÇA
+# ------------------------------------------------------------------------------
+
+SECRET_KEY = os.getenv(
+    'DJANGO_SECRET_KEY',
+    'django-insecure-*+w+fr$4k3r!^l8#7dq$3ikcxq7yrq$1huf@b$7wqhz(9osoay'
+)
+
+DEBUG = os.getenv('DJANGO_DEBUG', 'True') == 'True'
+
+ALLOWED_HOSTS = os.getenv('DJANGO_ALLOWED_HOSTS', '*').split(',')
+
+CSRF_TRUSTED_ORIGINS = (
+    os.getenv('DJANGO_CSRF_TRUSTED_ORIGINS', '').split(',')
+    if os.getenv('DJANGO_CSRF_TRUSTED_ORIGINS')
+    else []
+)
+
+
+# ------------------------------------------------------------------------------
+# APLICAÇÕES
+# ------------------------------------------------------------------------------
+
 INSTALLED_APPS = [
-    'unfold',  # Deve vir antes do admin para o design funcionar
+    'unfold',
     'gateagora',
+
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
+    'cloudinary',
+    'cloudinary_storage',
 ]
+
+
+# ------------------------------------------------------------------------------
+# MIDDLEWARE
+# ------------------------------------------------------------------------------
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'gateagora.middleware.EmpresaMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
 ROOT_URLCONF = 'core.urls'
 
+
+# ------------------------------------------------------------------------------
+# TEMPLATES
+# ------------------------------------------------------------------------------
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        # DIRS configurado para buscar a pasta templates na raiz também
-        'DIRS': [BASE_DIR / 'templates'], 
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -50,7 +85,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                'django.template.context_processors.media', # Essencial para fotos
+                'django.template.context_processors.media',
             ],
         },
     },
@@ -58,53 +93,97 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'core.wsgi.application'
 
-# Banco de Dados
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+
+# ------------------------------------------------------------------------------
+# BANCO DE DADOS
+# DEV local  → SQLite automático
+# Produção   → Supabase PostgreSQL via DATABASE_URL
+# ------------------------------------------------------------------------------
+
+DATABASE_URL = os.getenv('DATABASE_URL')
+
+if DATABASE_URL:
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=DATABASE_URL,
+            conn_max_age=600,
+            ssl_require=True,
+        )
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
-# Validação de Senha
+
+# ------------------------------------------------------------------------------
+# SENHAS
+# ------------------------------------------------------------------------------
+
 AUTH_PASSWORD_VALIDATORS = [
-    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',},
-    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',},
-    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',},
-    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',},
+    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-# Regionalização (Brasil)
+
+# ------------------------------------------------------------------------------
+# BRASIL
+# ------------------------------------------------------------------------------
+
 LANGUAGE_CODE = 'pt-br'
-TIME_ZONE = 'America/Sao_Paulo'
-USE_I18N = True
-USE_TZ = True
+TIME_ZONE     = 'America/Sao_Paulo'
+USE_I18N      = True
+USE_TZ        = True
 
-# --- ARQUIVOS ESTÁTICOS E DE MÍDIA ---
-STATIC_URL = 'static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-# Pasta onde você coloca seus arquivos estáticos (CSS, JS, Imagens)
-STATICFILES_DIRS = [
-    BASE_DIR / 'static',
-]
+# ------------------------------------------------------------------------------
+# ARQUIVOS ESTÁTICOS — CSS, JS, fontes do admin
+# ------------------------------------------------------------------------------
 
-MEDIA_URL = '/media/'
+STATIC_URL        = '/static/'
+STATIC_ROOT       = BASE_DIR / 'staticfiles'
+STATICFILES_DIRS  = [BASE_DIR / 'static']
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+
+# ------------------------------------------------------------------------------
+# ARQUIVOS DE MÍDIA — fotos de cavalos, alunos, logos, documentos
+# DEV local  → pasta /media/ no seu PC
+# Produção   → Cloudinary (25 GB grátis, CDN global)
+# ------------------------------------------------------------------------------
+
+CLOUDINARY_URL = os.getenv('CLOUDINARY_URL')
+
+if CLOUDINARY_URL:
+    import cloudinary
+    cloudinary.config(cloudinary_url=CLOUDINARY_URL, secure=True)
+    DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+
+MEDIA_URL  = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-# --- CONFIGURAÇÃO DO PAINEL UNFOLD (GATE 4) ---
+
+# ------------------------------------------------------------------------------
+# UNFOLD — tema do painel admin
+# ------------------------------------------------------------------------------
+
 UNFOLD = {
-    "SITE_TITLE": "Gate 4",
+    "SITE_TITLE":  "Gate 4",
     "SITE_HEADER": "Gate 4",
     "SITE_SYMBOL": "🐎",
     "COLORS": {
         "primary": {
-            "50": "236, 253, 245",
+            "50":  "236, 253, 245",
             "100": "209, 250, 229",
             "200": "167, 243, 208",
             "300": "110, 231, 183",
             "400": "52, 211, 153",
-            "500": "16, 185, 129",  # Verde Esmeralda oficial
+            "500": "16, 185, 129",
             "600": "5, 150, 105",
             "700": "4, 120, 87",
             "800": "6, 95, 70",
@@ -118,20 +197,17 @@ UNFOLD = {
             {
                 "title": "OPERACIONAL",
                 "items": [
-                    {
-                        "title": "Monitoramento (Dash)",
-                        "icon": "dashboard",
-                        "link": "/",  # Abre o dashboard principal
-                    },
+                    {"title": "Monitoramento (Dash)", "icon": "dashboard", "link": "/"},
                 ],
             },
             {
                 "title": "MANEJO E CADASTROS",
                 "items": [
-                    {"title": "Cavalos", "icon": "cruelty_free", "link": "/admin/gateagora/cavalo/"},
-                    {"title": "Alunos/Sócios", "icon": "person", "link": "/admin/gateagora/aluno/"},
-                    {"title": "Estoque", "icon": "inventory_2", "link": "/admin/gateagora/itemestoque/"},
-                    {"title": "Aulas", "icon": "calendar_month", "link": "/admin/gateagora/aula/"},
+                    {"title": "Cavalos",       "icon": "cruelty_free",   "link": "/admin/gateagora/cavalo/"},
+                    {"title": "Alunos/Sócios", "icon": "person",          "link": "/admin/gateagora/aluno/"},
+                    {"title": "Estoque",        "icon": "inventory_2",    "link": "/admin/gateagora/itemestoque/"},
+                    {"title": "Aulas",          "icon": "calendar_month", "link": "/admin/gateagora/aula/"},
+                    {"title": "Financeiro",     "icon": "payments",       "link": "/admin/gateagora/movimentacaofinanceira/"},
                 ],
             },
         ],
@@ -140,8 +216,26 @@ UNFOLD = {
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# --- CONFIGURAÇÕES DE REDIRECIONAMENTO DE LOGIN ---
-# Resolve o erro 404 em /accounts/profile/
-LOGIN_REDIRECT_URL = '/'
+
+# ------------------------------------------------------------------------------
+# LOGIN
+# ------------------------------------------------------------------------------
+
+LOGIN_REDIRECT_URL  = '/'
 LOGOUT_REDIRECT_URL = '/login/'
-LOGIN_URL = '/login/'
+LOGIN_URL           = '/login/'
+
+
+# ------------------------------------------------------------------------------
+# SEGURANÇA EXTRA — ativa apenas em produção (DEBUG=False)
+# ------------------------------------------------------------------------------
+
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER        = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SESSION_COOKIE_SECURE          = True
+    CSRF_COOKIE_SECURE             = True
+    SECURE_SSL_REDIRECT            = True
+    SECURE_HSTS_SECONDS            = 60 * 60 * 24 * 30
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD            = True
+    X_FRAME_OPTIONS                = 'DENY'

@@ -8,10 +8,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LoginView
 from django.contrib.auth.forms import AuthenticationForm
-from django.db.models import (
-    Sum, F, Q, Count, DecimalField, Value,
-    ExpressionWrapper, Subquery, OuterRef
-)
+from django.db.models import Sum, F, Q, Count, DecimalField, Value, ExpressionWrapper, Subquery, OuterRef
 from django.db.models.functions import Coalesce, TruncMonth
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -28,15 +25,11 @@ from .models import (
 BRAND_NAME = "Gate 4"
 
 
-# ── Login ─────────────────────────────────────────────────────────────────────
-
 class CustomLoginView(LoginView):
     template_name = "gateagora/login.html"
-    form_class    = AuthenticationForm
+    form_class = AuthenticationForm
     redirect_authenticated_user = True
 
-
-# ── Utilitários ───────────────────────────────────────────────────────────────
 
 def _iter_ultimos_meses(base: date, n: int = 6):
     out = []
@@ -50,10 +43,9 @@ def _iter_ultimos_meses(base: date, n: int = 6):
     return sorted(out)
 
 
-# ── Dashboard ─────────────────────────────────────────────────────────────────
-
 @login_required
 def dashboard(request):
+    # 0) Empresa
     empresa = getattr(request, "empresa", None)
     if not empresa:
         if hasattr(request.user, "perfil"):
@@ -72,9 +64,7 @@ def dashboard(request):
     )
 
     # 2) Alertas
-    estoque_critico     = ItemEstoque.objects.filter(
-        empresa=empresa, quantidade_atual__lte=F('alerta_minimo')
-    )
+    estoque_critico     = ItemEstoque.objects.filter(empresa=empresa, quantidade_atual__lte=F('alerta_minimo'))
     estoque_baixo_count = estoque_critico.count()
 
     janela_venc = hoje + timedelta(days=30)
@@ -111,7 +101,7 @@ def dashboard(request):
         ).count(),
     }
 
-    # 4) Faturamento — Subquery corrigida (evita inflate de JOIN)
+    # 4) Faturamento (Subquery corrigida)
     hotelaria_sq = (
         Cavalo.objects
         .filter(proprietario=OuterRef('pk'), empresa=empresa)
@@ -224,6 +214,9 @@ def dashboard(request):
         dados_despesa.append(desp)
         dados_lucro.append(rec - desp)
 
+    top_alunos_labels  = [r["aluno"].nome for r in relatorio[:10]]
+    top_alunos_valores = [r["valor"] for r in relatorio[:10]]
+
     context = {
         "brand_name":             BRAND_NAME,
         "empresa":                empresa,
@@ -240,13 +233,11 @@ def dashboard(request):
         "dados_receita":          json.dumps(dados_receita),
         "dados_despesa":          json.dumps(dados_despesa),
         "dados_lucro":            json.dumps(dados_lucro),
-        "top_alunos_labels":      json.dumps([r["aluno"].nome for r in relatorio[:10]], ensure_ascii=False),
-        "top_alunos_valores":     json.dumps([r["valor"] for r in relatorio[:10]]),
+        "top_alunos_labels":      json.dumps(top_alunos_labels, ensure_ascii=False),
+        "top_alunos_valores":     json.dumps(top_alunos_valores),
     }
     return render(request, "gateagora/dashboard.html", context)
 
-
-# ── Concluir Aula ─────────────────────────────────────────────────────────────
 
 @login_required
 def concluir_aula(request, aula_id):
@@ -258,8 +249,6 @@ def concluir_aula(request, aula_id):
     return redirect("dashboard")
 
 
-# ── PDF Fatura ────────────────────────────────────────────────────────────────
-
 @login_required
 def gerar_relatorio_pdf(request, aluno_id):
     empresa = getattr(request, "empresa", request.user.perfil.empresa)
@@ -267,9 +256,9 @@ def gerar_relatorio_pdf(request, aluno_id):
 
     hoje     = timezone.localdate()
     meses_pt = {
-        1: 'Janeiro', 2: 'Fevereiro', 3: 'Março',    4: 'Abril',
-        5: 'Maio',    6: 'Junho',     7: 'Julho',     8: 'Agosto',
-        9: 'Setembro',10: 'Outubro',  11: 'Novembro', 12: 'Dezembro'
+        1: 'Janeiro', 2: 'Fevereiro', 3: 'Março', 4: 'Abril',
+        5: 'Maio', 6: 'Junho', 7: 'Julho', 8: 'Agosto',
+        9: 'Setembro', 10: 'Outubro', 11: 'Novembro', 12: 'Dezembro'
     }
     mes_str = f"{meses_pt[hoje.month]}/{hoje.year}"
 
@@ -283,9 +272,7 @@ def gerar_relatorio_pdf(request, aluno_id):
     total       = float(valor_hotelaria) + valor_aulas
 
     response = HttpResponse(content_type='application/pdf')
-    response['Content-Disposition'] = (
-        f'attachment; filename="Fatura_{aluno.nome}_{hoje.month}_{hoje.year}.pdf"'
-    )
+    response['Content-Disposition'] = f'attachment; filename="Fatura_{aluno.nome}_{hoje.month}_{hoje.year}.pdf"'
 
     p    = canvas.Canvas(response, pagesize=A4)
     W, H = A4
@@ -321,6 +308,7 @@ def gerar_relatorio_pdf(request, aluno_id):
     p.setFont("Helvetica-Bold", 9)
     p.drawString(42, y + 6, "DESCRIÇÃO")
     p.drawRightString(W - 40, y + 6, "VALOR")
+
     y -= 28
 
     # Hotelaria
@@ -367,8 +355,6 @@ def gerar_relatorio_pdf(request, aluno_id):
     return response
 
 
-# ── PDF Guia de Trato ─────────────────────────────────────────────────────────
-
 @login_required
 def gerar_ficha_trato_pdf(request):
     empresa  = getattr(request, "empresa", request.user.perfil.empresa)
@@ -378,12 +364,12 @@ def gerar_ficha_trato_pdf(request):
     p    = canvas.Canvas(response, pagesize=A4)
     W, H = A4
 
-    COR_RACAO    = (0.24, 0.48, 1.0)
-    COR_VOLUMOSO = (0.13, 0.70, 0.37)
-    COR_SUPL     = (0.80, 0.55, 0.10)
-    COR_FUNDO    = (0.10, 0.13, 0.18)
-    COR_BRANCO   = (1.0,  1.0,  1.0)
-    COR_CINZA    = (0.55, 0.60, 0.70)
+    COR_RACAO     = (0.24, 0.48, 1.0)   # Azul
+    COR_VOLUMOSO  = (0.13, 0.70, 0.37)  # Verde
+    COR_SUPL      = (0.80, 0.55, 0.10)  # Âmbar
+    COR_FUNDO     = (0.10, 0.13, 0.18)
+    COR_BRANCO    = (1.0,  1.0,  1.0)
+    COR_CINZA     = (0.55, 0.60, 0.70)
 
     pagina = 1
 
@@ -408,26 +394,31 @@ def gerar_ficha_trato_pdf(request):
     )
 
     for cavalo in cavalos:
-        altura_card = 82 + (14 if cavalo.complemento_nutricional else 0)
+        linhas_extras = bool(cavalo.complemento_nutricional)
+        altura_card   = 82 + (14 if linhas_extras else 0)
 
         if y - altura_card < 40:
             p.showPage()
             pagina += 1
             y = cabecalho(p, pagina)
 
+        # Fundo do card
         p.setFillColorRGB(*COR_FUNDO)
         p.roundRect(25, y - altura_card, W - 50, altura_card, 8, fill=True, stroke=False)
 
+        # Borda lateral: verde = escola, azul = hotelaria
         if cavalo.categoria == 'HOTELARIA':
             p.setFillColorRGB(0.38, 0.40, 0.95)
         else:
             p.setFillColorRGB(*COR_VOLUMOSO)
         p.rect(25, y - altura_card, 5, altura_card, fill=True, stroke=False)
 
+        # Nome
         p.setFillColorRGB(*COR_BRANCO)
         p.setFont("Helvetica-Bold", 12)
         p.drawString(38, y - 18, cavalo.nome.upper())
 
+        # Localização e proprietário
         local = (
             f"Baia {cavalo.baia.numero}" if cavalo.baia
             else (cavalo.piquete.nome if cavalo.piquete else "Solto")
@@ -438,6 +429,7 @@ def gerar_ficha_trato_pdf(request):
 
         linha_y = y - 44
 
+        # RAÇÃO — azul
         if cavalo.racao_tipo or cavalo.racao_qtd_manha or cavalo.racao_qtd_noite:
             p.setFillColorRGB(*COR_RACAO)
             p.setFont("Helvetica-Bold", 8)
@@ -450,6 +442,7 @@ def gerar_ficha_trato_pdf(request):
             p.drawString(80, linha_y, "  •  ".join(partes))
             linha_y -= 14
 
+        # VOLUMOSO — verde
         if cavalo.feno_tipo or cavalo.feno_qtd:
             p.setFillColorRGB(*COR_VOLUMOSO)
             p.setFont("Helvetica-Bold", 8)
@@ -461,6 +454,7 @@ def gerar_ficha_trato_pdf(request):
             p.drawString(95, linha_y, "  •  ".join(vol))
             linha_y -= 14
 
+        # SUPLEMENTO — âmbar
         if cavalo.complemento_nutricional:
             p.setFillColorRGB(*COR_SUPL)
             p.setFont("Helvetica-Bold", 8)
@@ -468,252 +462,11 @@ def gerar_ficha_trato_pdf(request):
             p.setFont("Helvetica", 8)
             p.drawString(105, linha_y, cavalo.complemento_nutricional[:80])
 
-        y -= altura_card + 8
+        y -= altura_card + 8   # sem linha separadora, só espaço
 
     p.save()
     return response
 
-
-# ── Encilhamento ──────────────────────────────────────────────────────────────
-
-def _get_aulas_encilhamento(empresa, data_str):
-    from datetime import datetime
-    try:
-        data = datetime.strptime(data_str, '%Y-%m-%d').date() if data_str else timezone.localdate()
-    except (ValueError, TypeError):
-        data = timezone.localdate()
-
-    aulas = (
-        Aula.objects
-        .filter(empresa=empresa, data_hora__date=data)
-        .select_related(
-            'aluno', 'cavalo', 'cavalo__baia',
-            'cavalo__piquete', 'instrutor', 'instrutor__user'
-        )
-        .order_by('data_hora')
-    )
-    return aulas, data
-
-
-@login_required
-def encilhamento(request):
-    empresa  = getattr(request, "empresa", request.user.perfil.empresa)
-    data_str = request.GET.get('data', '')
-    aulas, data_selecionada = _get_aulas_encilhamento(empresa, data_str)
-
-    return render(request, "gateagora/encilhamento.html", {
-        "empresa":          empresa,
-        "aulas":            aulas,
-        "data_selecionada": data_selecionada,
-        "total_aulas":      aulas.count(),
-    })
-
-
-@login_required
-def encilhamento_whatsapp(request):
-    empresa  = getattr(request, "empresa", request.user.perfil.empresa)
-    data_str = request.GET.get('data', '')
-    telefone = request.GET.get('telefone', '').strip()
-    aulas, data_selecionada = _get_aulas_encilhamento(empresa, data_str)
-
-    meses_pt = {
-        1: 'Jan', 2: 'Fev', 3: 'Mar', 4: 'Abr', 5: 'Mai', 6: 'Jun',
-        7: 'Jul', 8: 'Ago', 9: 'Set', 10: 'Out', 11: 'Nov', 12: 'Dez'
-    }
-    data_fmt = f"{data_selecionada.day:02d}/{meses_pt[data_selecionada.month]}/{data_selecionada.year}"
-
-    linhas = [
-        f"🐎 *GUIA DE ENCILHAMENTO — {empresa.nome.upper()}*",
-        f"📅 *{data_fmt}*",
-        "─" * 30,
-    ]
-
-    if not aulas:
-        linhas.append("\n_Nenhuma aula programada para este dia._")
-    else:
-        for aula in aulas:
-            c     = aula.cavalo
-            local = (
-                f"Baia {c.baia.numero}" if c.baia
-                else (c.piquete.nome if c.piquete else "Local não definido")
-            )
-            material = "⚠️ Material PRÓPRIO do proprietário" if c.material_proprio else "✅ Material da Escola"
-            linhas += [
-                "",
-                f"🕐 *{aula.data_hora.strftime('%H:%M')}* — {aula.get_local_display()}",
-                f"👤 Aluno: *{aula.aluno.nome}*",
-                f"🐴 Cavalo: *{c.nome}* ({local})",
-                f"🪑 Sela: {c.tipo_sela or 'Padrão escola'}",
-                f"🔗 Cabeçada: {c.tipo_cabecada or 'Padrão escola'}",
-                f"🎒 {material}",
-            ]
-            if aula.relatorio_treino:
-                linhas.append(f"📝 Obs: {aula.relatorio_treino}")
-
-    linhas += ["", "─" * 30, "_Enviado via Gate 4 Management_"]
-
-    texto = "\n".join(linhas)
-    tel   = ''.join(filter(str.isdigit, telefone))
-
-    if not tel:
-        messages.warning(request, "Informe o WhatsApp do cavalariço antes de enviar.")
-        return redirect(f"/encilhamento/?data={data_str}")
-
-    if not tel.startswith('55'):
-        tel = f"55{tel}"
-
-    return redirect(f"https://wa.me/{tel}?text={quote(texto)}")
-
-
-@login_required
-def encilhamento_pdf(request):
-    empresa  = getattr(request, "empresa", request.user.perfil.empresa)
-    data_str = request.GET.get('data', '')
-    aulas, data_selecionada = _get_aulas_encilhamento(empresa, data_str)
-
-    response = HttpResponse(content_type='application/pdf')
-    data_fmt = data_selecionada.strftime('%d-%m-%Y')
-    response['Content-Disposition'] = f'attachment; filename="Encilhamento_{data_fmt}.pdf"'
-
-    p    = canvas.Canvas(response, pagesize=A4)
-    W, H = A4
-
-    COR_HDR    = (0.06, 0.09, 0.14)
-    COR_BRANCO = (1.0,  1.0,  1.0)
-    COR_CINZA  = (0.55, 0.60, 0.70)
-    COR_INDIGO = (0.38, 0.40, 0.95)
-    COR_AMBER  = (0.80, 0.55, 0.10)
-    COR_VERDE  = (0.13, 0.70, 0.37)
-    COR_CARD   = (0.10, 0.13, 0.18)
-    COR_DARK   = (0.07, 0.09, 0.13)
-
-    pagina = 1
-
-    def cabecalho(p, pagina):
-        p.setFillColorRGB(*COR_HDR)
-        p.rect(0, H - 70, W, 70, fill=True, stroke=False)
-        p.setFillColorRGB(*COR_BRANCO)
-        p.setFont("Helvetica-Bold", 15)
-        p.drawString(30, H - 32, f"GUIA DE ENCILHAMENTO — {empresa.nome.upper()}")
-        p.setFont("Helvetica", 9)
-        p.setFillColorRGB(*COR_CINZA)
-        dias = ['Segunda','Terça','Quarta','Quinta','Sexta','Sábado','Domingo']
-        ds   = dias[data_selecionada.weekday()]
-        p.drawString(30, H - 50, f"{ds}, {data_selecionada.strftime('%d/%m/%Y')}   |   Página {pagina}")
-        p.drawRightString(W - 30, H - 50, f"Total: {aulas.count()} aula(s)")
-        return H - 85
-
-    y = cabecalho(p, pagina)
-
-    if not aulas:
-        p.setFillColorRGB(*COR_CINZA)
-        p.setFont("Helvetica", 11)
-        p.drawCentredString(W / 2, H / 2, "Nenhuma aula programada para este dia.")
-        p.save()
-        return response
-
-    for aula in aulas:
-        c      = aula.cavalo
-        altura = 115 + (20 if aula.relatorio_treino else 0)
-
-        if y - altura < 40:
-            p.showPage()
-            pagina += 1
-            y = cabecalho(p, pagina)
-
-        # Fundo card
-        p.setFillColorRGB(*COR_CARD)
-        p.roundRect(25, y - altura, W - 50, altura, 8, fill=True, stroke=False)
-
-        # Borda lateral
-        p.setFillColorRGB(*(COR_VERDE if c.categoria == 'HOTELARIA' else COR_INDIGO))
-        p.rect(25, y - altura, 6, altura, fill=True, stroke=False)
-
-        # Horário
-        p.setFillColorRGB(*COR_INDIGO)
-        p.roundRect(36, y - 24, 52, 20, 4, fill=True, stroke=False)
-        p.setFillColorRGB(*COR_BRANCO)
-        p.setFont("Helvetica-Bold", 11)
-        p.drawCentredString(62, y - 16, aula.data_hora.strftime('%H:%M'))
-
-        # Local
-        p.setFont("Helvetica", 8)
-        p.setFillColorRGB(*COR_CINZA)
-        p.drawString(96, y - 16, f"| {aula.get_local_display()}")
-
-        # Concluída
-        if aula.concluida:
-            p.setFillColorRGB(*COR_VERDE)
-            p.setFont("Helvetica-Bold", 7)
-            p.drawRightString(W - 35, y - 16, "CONCLUÍDA")
-
-        # Aluno
-        p.setFillColorRGB(*COR_BRANCO)
-        p.setFont("Helvetica-Bold", 12)
-        p.drawString(36, y - 40, aula.aluno.nome.upper())
-
-        if aula.instrutor:
-            p.setFont("Helvetica", 8)
-            p.setFillColorRGB(*COR_CINZA)
-            nome_inst = aula.instrutor.user.get_full_name() or aula.instrutor.user.username
-            p.drawString(36, y - 52, f"Prof.: {nome_inst}")
-
-        # Bloco cavalo
-        p.setFillColorRGB(*COR_DARK)
-        p.roundRect(34, y - 80, W - 68, 24, 4, fill=True, stroke=False)
-        p.setFillColorRGB(*COR_INDIGO)
-        p.setFont("Helvetica-Bold", 10)
-        p.drawString(42, y - 72, f"{c.nome.upper()}")
-        local = (
-            f"Baia {c.baia.numero}" if c.baia
-            else (c.piquete.nome if c.piquete else "—")
-        )
-        p.setFont("Helvetica", 9)
-        p.setFillColorRGB(*COR_CINZA)
-        p.drawString(160, y - 72, f"|  {local}")
-        p.setFillColorRGB(*(COR_VERDE if c.categoria == 'HOTELARIA' else COR_INDIGO))
-        p.setFont("Helvetica-Bold", 8)
-        p.drawRightString(W - 38, y - 72, c.get_categoria_display().upper())
-
-        # Sela
-        p.setFillColorRGB(*COR_AMBER)
-        p.setFont("Helvetica-Bold", 8)
-        p.drawString(36, y - 92, "SELA:")
-        p.setFont("Helvetica", 9)
-        p.setFillColorRGB(*COR_BRANCO)
-        p.drawString(70, y - 92, c.tipo_sela or "Padrão escola")
-
-        # Cabeçada
-        p.setFillColorRGB(0.24, 0.48, 1.0)
-        p.setFont("Helvetica-Bold", 8)
-        p.drawString(36, y - 104, "CABEÇADA:")
-        p.setFont("Helvetica", 9)
-        p.setFillColorRGB(*COR_BRANCO)
-        p.drawString(88, y - 104, c.tipo_cabecada or "Padrão escola")
-
-        # Material
-        if c.material_proprio:
-            p.setFillColorRGB(*COR_AMBER)
-            p.setFont("Helvetica-Bold", 8)
-            p.drawRightString(W - 35, y - 92, "MATERIAL PROPRIO")
-        else:
-            p.setFillColorRGB(*COR_VERDE)
-            p.setFont("Helvetica-Bold", 8)
-            p.drawRightString(W - 35, y - 92, "MATERIAL ESCOLA")
-
-        # Observações
-        if aula.relatorio_treino:
-            p.setFillColorRGB(*COR_CINZA)
-            p.setFont("Helvetica-Oblique", 8)
-            p.drawString(36, y - 116, f"Obs: {aula.relatorio_treino[:90]}")
-
-        y -= altura + 10
-
-    p.save()
-    return response
-
-
-# ── Manejo em Massa ───────────────────────────────────────────────────────────
 
 @login_required
 def manejo_em_massa(request):
