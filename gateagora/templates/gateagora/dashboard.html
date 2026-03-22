@@ -265,6 +265,62 @@
         <h3 class="text-lg font-black uppercase text-white mb-6 italic">Fluxo Financeiro (6 Meses)</h3>
         <div class="h-[320px] w-full"><canvas id="chartFinanceiro6Meses"></canvas></div>
       </div>
+
+      <!-- Ranking de Treinos dos Cavalos -->
+      <div class="card p-8">
+        <div class="flex flex-wrap justify-between items-start gap-4 mb-2">
+          <div>
+            <h3 class="text-lg font-black uppercase text-white italic">
+              <i class="fa-solid fa-horse text-indigo-400 mr-2"></i>Treinos por Cavalo
+            </h3>
+            <p class="text-[10px] text-slate-500 mt-1">Aulas concluídas — vermelho indica sobrecarga</p>
+          </div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <!-- Seletor de período -->
+            <div class="flex rounded-xl overflow-hidden border border-slate-700 text-[10px] font-black uppercase">
+              <a href="?periodo=mes"
+                 class="px-3 py-1.5 transition {% if periodo_atual == 'mes' %}bg-indigo-600 text-white{% else %}text-slate-400 hover:bg-slate-700{% endif %}">
+                Mês atual
+              </a>
+              <a href="?periodo=30"
+                 class="px-3 py-1.5 border-l border-slate-700 transition {% if periodo_atual == '30' %}bg-indigo-600 text-white{% else %}text-slate-400 hover:bg-slate-700{% endif %}">
+                30 dias
+              </a>
+              <a href="?periodo=90"
+                 class="px-3 py-1.5 border-l border-slate-700 transition {% if periodo_atual == '90' %}bg-indigo-600 text-white{% else %}text-slate-400 hover:bg-slate-700{% endif %}">
+                3 meses
+              </a>
+            </div>
+            <!-- Badge período e limite -->
+            <span class="text-[10px] text-slate-500 font-bold uppercase bg-slate-800 px-3 py-1.5 rounded-xl">
+              {{ periodo_label }}
+            </span>
+            <span class="flex items-center gap-1 text-[9px] font-black px-2 py-1.5 rounded-xl bg-red-500/10 text-red-400 border border-red-500/20">
+              <i class="fa-solid fa-triangle-exclamation text-[8px]"></i> Limite: {{ limite_treinos_mes }} treinos
+            </span>
+          </div>
+        </div>
+
+        <div class="h-[380px] w-full mt-4">
+          <canvas id="chartTreinosCavalos"></canvas>
+        </div>
+
+        {% if cavalos_sem_treino %}
+        <div class="mt-5 pt-4 border-t border-slate-800">
+          <p class="text-[9px] text-slate-600 font-bold uppercase mb-2">
+            <i class="fa-solid fa-circle-minus mr-1"></i> Sem treinos no período:
+          </p>
+          <div class="flex flex-wrap gap-2">
+            {% for nome in cavalos_sem_treino %}
+            <span class="text-[9px] bg-slate-800 text-slate-500 px-2 py-1 rounded-full font-bold border border-slate-700">
+              {{ nome }}
+            </span>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+      </div>
+
     </div>
 
     <!-- COLUNA LATERAL -->
@@ -402,6 +458,70 @@
       datasets: [{ data: [{{ stats.baias_ocupadas }}, {{ stats.baias_livres }}], backgroundColor: ['#6366f1', '#1e293b'], borderWidth: 0, hoverOffset: 10 }]
     },
     options: { responsive: true, maintainAspectRatio: false, cutout: '85%', plugins: { legend: { display: false } } }
+  });
+
+  // Gráfico de Treinos por Cavalo
+  const limite    = {{ limite_treinos_mes }};
+  const nomesCav  = {{ ranking_cavalos_labels|safe }};
+  const treinosCav = {{ ranking_cavalos_dados|safe }};
+
+  // Cores: vermelho se acima do limite, indigo se normal, cinza se zero
+  const coresBarra = treinosCav.map(v =>
+    v === 0   ? '#1e293b'  :
+    v >= limite ? '#ef4444' : '#6366f1'
+  );
+
+  new Chart(document.getElementById('chartTreinosCavalos').getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: nomesCav,
+      datasets: [
+        {
+          label: 'Treinos',
+          data: treinosCav,
+          backgroundColor: coresBarra,
+          borderRadius: 6,
+          barThickness: 18,
+        },
+        {
+          // Linha de limite
+          label: `Limite (${limite})`,
+          type: 'line',
+          data: Array(nomesCav.length).fill(limite),
+          borderColor: '#ef444480',
+          borderWidth: 2,
+          borderDash: [6, 4],
+          pointRadius: 0,
+          fill: false,
+        }
+      ]
+    },
+    options: {
+      indexAxis: 'y',   // barras horizontais
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: true, position: 'top', align: 'end', labels: { boxWidth: 10, font: { size: 10 } } },
+        tooltip: {
+          callbacks: {
+            label: ctx => ctx.dataset.type === 'line'
+              ? ` Limite: ${limite} treinos/mês`
+              : ` ${ctx.raw} treino(s) concluído(s)`
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: '#1e293b' },
+          border: { display: false },
+          ticks: { stepSize: 1 }
+        },
+        y: {
+          grid: { display: false },
+          ticks: { font: { size: 11, weight: '700' }, color: '#94a3b8' }
+        }
+      }
+    }
   });
 </script>
 </body>

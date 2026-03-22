@@ -224,24 +224,73 @@ def dashboard(request):
         dados_despesa.append(desp)
         dados_lucro.append(rec - desp)
 
+    # 6) Ranking de treinos por cavalo — período escolhido pelo usuário
+    LIMITE_TREINOS_MES = 20  # ajuste conforme sua hípica
+
+    periodo = request.GET.get('periodo', 'mes')  # mes | 30 | 90
+
+    if periodo == '30':
+        data_inicio  = hoje - timedelta(days=30)
+        periodo_label = 'Últimos 30 dias'
+    elif periodo == '90':
+        data_inicio  = hoje - timedelta(days=90)
+        periodo_label = 'Últimos 3 meses'
+    else:  # padrão: mês atual
+        periodo      = 'mes'
+        data_inicio  = hoje.replace(day=1)
+        periodo_label = f"{meses_pt[hoje.month]}/{hoje.year}"
+
+    ranking_cavalos = (
+        Cavalo.objects
+        .filter(empresa=empresa)
+        .annotate(
+            treinos_periodo=Count(
+                'aulas',
+                filter=Q(
+                    aulas__concluida=True,
+                    aulas__data_hora__date__gte=data_inicio,
+                    aulas__data_hora__date__lte=hoje,
+                )
+            )
+        )
+        .order_by('-treinos_periodo', 'nome')
+    )
+
+    com_treino     = [c for c in ranking_cavalos if c.treinos_periodo > 0]
+    sem_treino     = [c.nome for c in ranking_cavalos if c.treinos_periodo == 0]
+    ranking_labels = [c.nome for c in com_treino]
+    ranking_dados  = [c.treinos_periodo for c in com_treino]
+
+    # Limite proporcional ao período
+    limite = LIMITE_TREINOS_MES if periodo == 'mes' else (
+        LIMITE_TREINOS_MES if periodo == '30' else LIMITE_TREINOS_MES * 3
+    )
+
     context = {
-        "brand_name":             BRAND_NAME,
-        "empresa":                empresa,
-        "hoje":                   hoje,
-        "proximas_aulas":         proximas_aulas,
-        "estoque_baixo_count":    estoque_baixo_count,
-        "estoque_critico":        estoque_critico,
-        "docs_vencendo":          docs_vencendo,
-        "cavalos_alerta_lista":   cavalos_alerta_lista,
-        "stats":                  stats,
-        "relatorio":              relatorio,
-        "receita_total_prevista": float(receita_total_prevista),
-        "labels_meses":           json.dumps(labels_meses),
-        "dados_receita":          json.dumps(dados_receita),
-        "dados_despesa":          json.dumps(dados_despesa),
-        "dados_lucro":            json.dumps(dados_lucro),
-        "top_alunos_labels":      json.dumps([r["aluno"].nome for r in relatorio[:10]], ensure_ascii=False),
-        "top_alunos_valores":     json.dumps([r["valor"] for r in relatorio[:10]]),
+        "brand_name":               BRAND_NAME,
+        "empresa":                  empresa,
+        "hoje":                     hoje,
+        "proximas_aulas":           proximas_aulas,
+        "estoque_baixo_count":      estoque_baixo_count,
+        "estoque_critico":          estoque_critico,
+        "docs_vencendo":            docs_vencendo,
+        "cavalos_alerta_lista":     cavalos_alerta_lista,
+        "stats":                    stats,
+        "relatorio":                relatorio,
+        "receita_total_prevista":   float(receita_total_prevista),
+        "labels_meses":             json.dumps(labels_meses),
+        "dados_receita":            json.dumps(dados_receita),
+        "dados_despesa":            json.dumps(dados_despesa),
+        "dados_lucro":              json.dumps(dados_lucro),
+        "top_alunos_labels":        json.dumps([r["aluno"].nome for r in relatorio[:10]], ensure_ascii=False),
+        "top_alunos_valores":       json.dumps([r["valor"] for r in relatorio[:10]]),
+        # Ranking cavalos
+        "ranking_cavalos_labels":   json.dumps(ranking_labels, ensure_ascii=False),
+        "ranking_cavalos_dados":    json.dumps(ranking_dados),
+        "cavalos_sem_treino":       sem_treino,
+        "limite_treinos_mes":       limite,
+        "periodo_label":            periodo_label,
+        "periodo_atual":            periodo,
     }
     return render(request, "gateagora/dashboard.html", context)
 
