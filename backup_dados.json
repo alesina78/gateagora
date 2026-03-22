@@ -1,73 +1,80 @@
-﻿[
+[
 {
   "model": "gateagora.empresa",
   "pk": 1,
   "fields": {
-    "nome": "Haras do ParedÒo",
+    "nome": "Haras do Paredão",
     "logo": "",
     "cnpj": "00.000.000/0000-00",
-    "cidade": "PortÒo/RS",
+    "cidade": "Portão/RS",
     "slug": "haras-do-paredao"
   }
 },
 {
-  "model": "gateagora.aluno",
+  "model": "gateagora.perfil",
   "pk": 1,
   "fields": {
+    "user": [
+      "Admin"
+    ],
     "empresa": 1,
-    "nome": "Haras do ParedÒo (Escola)",
-    "telefone": "5551991387872",
-    "foto": "",
-    "ativo": true,
-    "valor_aula": "170.00"
+    "cargo": "Gestor"
   }
 },
 {
-  "model": "gateagora.aluno",
+  "model": "gateagora.perfil",
   "pk": 2,
   "fields": {
+    "user": [
+      "admin4"
+    ],
     "empresa": 1,
-    "nome": "Marina Farias",
-    "telefone": "5551991387872",
-    "foto": "",
-    "ativo": true,
-    "valor_aula": "160.00"
+    "cargo": "Gestor"
   }
 },
 {
-  "model": "gateagora.aluno",
+  "model": "gateagora.perfil",
   "pk": 3,
   "fields": {
+    "user": [
+      "alessandro_admin"
+    ],
     "empresa": 1,
-    "nome": "RogÚrio Pacheco",
-    "telefone": "5551991387872",
-    "foto": "",
-    "ativo": true,
-    "valor_aula": "160.00"
+    "cargo": "Gestor"
   }
 },
 {
-  "model": "gateagora.aluno",
+  "model": "gateagora.perfil",
   "pk": 4,
   "fields": {
+    "user": [
+      "gestor_hipica1"
+    ],
     "empresa": 1,
-    "nome": "Clßudia Teles",
-    "telefone": "5551991387872",
-    "foto": "",
-    "ativo": true,
-    "valor_aula": "160.00"
+    "cargo": "Gestor"
+  }
+},
+{
+  "model": "gateagora.perfil",
+  "pk": 5,
+  "fields": {
+    "user": [
+      "professor_hipica1"
+    ],
+    "empresa": 1,
+    "cargo": "Professor"
   }
 },
 {
   "model": "gateagora.aluno",
-  "pk": 5,
+  "pk": 13,
   "fields": {
     "empresa": 1,
-    "nome": "Ivan Rocha",
+    "nome": "André Cardoso",
     "telefone": "5551991387872",
     "foto": "",
     "ativo": true,
-    "valor_aula": "160.00"
+    "valor_aula": "150.00"
   }
 },
 {
@@ -84,30 +91,6 @@
 },
 {
   "model": "gateagora.aluno",
-  "pk": 7,
-  "fields": {
-    "empresa": 1,
-    "nome": "Lucas Antunes",
-    "telefone": "5551991387872",
-    "foto": "",
-    "ativo": true,
-    "valor_aula": "150.00"
-  }
-},
-{
-  "model": "gateagora.aluno",
-  "pk": 8,
-  "fields": {
-    "empresa": 1,
-    "nome": "J·lia Freire",
-    "telefone": "5551991387872",
-    "foto": "",
-    "ativo": true,
-    "valor_aula": "150.00"
-  }
-},
-{
-  "model": "gateagora.aluno",
   "pk": 9,
   "fields": {
     "empresa": 1,
@@ -120,10 +103,10 @@
 },
 {
   "model": "gateagora.aluno",
-  "pk": 10,
+  "pk": 14,
   "fields": {
     "empresa": 1,
-    "nome": "Sofia Martins",
+    "nome": "Carla Silva",
     "telefone": "5551991387872",
     "foto": "",
     "ativo": true,
@@ -132,14 +115,26 @@
 },
 {
   "model": "gateagora.aluno",
-  "pk": 11,
+  "pk": 4,
   "fields": {
     "empresa": 1,
-    "nome": "Pedro Reis",
+    "nome": "Cláudia Teles",
     "telefone": "5551991387872",
     "foto": "",
     "ativo": true,
-    "valor_aula": "150.00"
+    "valor_aula": "160.00"
+  }
+},
+{
+  "model": "gateagora.aluno",
+  "pk": 1,
+  "fields": {
+    "empresa": 1,
+    "nome": "Haras do Paredão (Escola)",
+    "telefone": "5551991387872",
+    "foto": "",
+    "ativo": true,
+    "valor_aula": "170.00"
   }
 },
 {
@@ -156,10 +151,22 @@
 },
 {
   "model": "gateagora.aluno",
-  "pk": 13,
+  "pk": 5,
   "fields": {
     "empresa": 1,
-    "nome": "AndrÚ Cardoso",
+    "nome": "Ivan Rocha",
+    "telefone": "5551991387872",
+    "foto": "",
+    "ativo": true,
+    "valor_aula": "160.00"
+  }
+},
+{
+  "model": "gateagora.aluno",
+  "pk": 8,
+  "fields": {
+    "empresa": 1,
+    "nome": "Júlia Freire",
     "telefone": "5551991387872",
     "foto": "",
     "ativo": true,
@@ -168,10 +175,58 @@
 },
 {
   "model": "gateagora.aluno",
-  "pk": 14,
+  "pk": 7,
   "fields": {
     "empresa": 1,
-    "nome": "Carla Silva",
+    "nome": "Lucas Antunes",
+    "telefone": "5551991387872",
+    "foto": "",
+    "ativo": true,
+    "valor_aula": "150.00"
+  }
+},
+{
+  "model": "gateagora.aluno",
+  "pk": 2,
+  "fields": {
+    "empresa": 1,
+    "nome": "Marina Farias",
+    "telefone": "5551991387872",
+    "foto": "",
+    "ativo": true,
+    "valor_aula": "160.00"
+  }
+},
+{
+  "model": "gateagora.aluno",
+  "pk": 11,
+  "fields": {
+    "empresa": 1,
+    "nome": "Pedro Reis",
+    "telefone": "5551991387872",
+    "foto": "",
+    "ativo": true,
+    "valor_aula": "150.00"
+  }
+},
+{
+  "model": "gateagora.aluno",
+  "pk": 3,
+  "fields": {
+    "empresa": 1,
+    "nome": "Rogério Pacheco",
+    "telefone": "5551991387872",
+    "foto": "",
+    "ativo": true,
+    "valor_aula": "160.00"
+  }
+},
+{
+  "model": "gateagora.aluno",
+  "pk": 10,
+  "fields": {
+    "empresa": 1,
+    "nome": "Sofia Martins",
     "telefone": "5551991387872",
     "foto": "",
     "ativo": true,
@@ -572,115 +627,19 @@
 },
 {
   "model": "gateagora.cavalo",
-  "pk": 1,
-  "fields": {
-    "empresa": 1,
-    "nome": "J·piter",
-    "categoria": "PROPRIO",
-    "status_saude": "Saudßvel",
-    "onde_dorme": "BAIA",
-    "foto": "",
-    "raca": "mang_marchador",
-    "peso": 454.0,
-    "fator_atividade": "0.018",
-    "tipo_sela": "Sela Escola",
-    "tipo_cabecada": "Cabeþada PadrÒo",
-    "material_proprio": false,
-    "baia": 1,
-    "piquete": null,
-    "proprietario": 1,
-    "ultima_vacina": null,
-    "ultimo_ferrageamento": null,
-    "ultimo_vermifugo": null,
-    "ultimo_casqueamento": "2026-01-07",
-    "racao_tipo": "Guabi Equi-S",
-    "racao_qtd_manha": "2kg",
-    "racao_qtd_noite": "2kg",
-    "feno_tipo": "Coast Cross",
-    "feno_qtd": "└ vontade",
-    "complemento_nutricional": "",
-    "mensalidade_baia": "0.00"
-  }
-},
-{
-  "model": "gateagora.cavalo",
-  "pk": 2,
-  "fields": {
-    "empresa": 1,
-    "nome": "Aura",
-    "categoria": "PROPRIO",
-    "status_saude": "Saudßvel",
-    "onde_dorme": "BAIA",
-    "foto": "",
-    "raca": "hipismo",
-    "peso": 515.7,
-    "fator_atividade": "0.025",
-    "tipo_sela": "Sela Escola",
-    "tipo_cabecada": "Cabeþada PadrÒo",
-    "material_proprio": false,
-    "baia": 2,
-    "piquete": null,
-    "proprietario": 1,
-    "ultima_vacina": null,
-    "ultimo_ferrageamento": null,
-    "ultimo_vermifugo": null,
-    "ultimo_casqueamento": null,
-    "racao_tipo": "Guabi Equi-S",
-    "racao_qtd_manha": "2kg",
-    "racao_qtd_noite": "2kg",
-    "feno_tipo": "Coast Cross",
-    "feno_qtd": "└ vontade",
-    "complemento_nutricional": "",
-    "mensalidade_baia": "0.00"
-  }
-},
-{
-  "model": "gateagora.cavalo",
-  "pk": 3,
-  "fields": {
-    "empresa": 1,
-    "nome": "Quiron",
-    "categoria": "PROPRIO",
-    "status_saude": "Saudßvel",
-    "onde_dorme": "BAIA",
-    "foto": "",
-    "raca": "crioulo",
-    "peso": 429.3,
-    "fator_atividade": "0.018",
-    "tipo_sela": "Sela Escola",
-    "tipo_cabecada": "Cabeþada PadrÒo",
-    "material_proprio": false,
-    "baia": 3,
-    "piquete": null,
-    "proprietario": 1,
-    "ultima_vacina": null,
-    "ultimo_ferrageamento": null,
-    "ultimo_vermifugo": null,
-    "ultimo_casqueamento": null,
-    "racao_tipo": "Guabi Equi-S",
-    "racao_qtd_manha": "2kg",
-    "racao_qtd_noite": "2kg",
-    "feno_tipo": "Coast Cross",
-    "feno_qtd": "└ vontade",
-    "complemento_nutricional": "",
-    "mensalidade_baia": "0.00"
-  }
-},
-{
-  "model": "gateagora.cavalo",
   "pk": 4,
   "fields": {
     "empresa": 1,
     "nome": "Apolo",
     "categoria": "PROPRIO",
-    "status_saude": "Saudßvel",
+    "status_saude": "Saudável",
     "onde_dorme": "BAIA",
     "foto": "",
     "raca": "quarto_milha",
     "peso": 504.7,
     "fator_atividade": "0.035",
     "tipo_sela": "Sela Escola",
-    "tipo_cabecada": "Cabeþada PadrÒo",
+    "tipo_cabecada": "Cabeçada Padrão",
     "material_proprio": false,
     "baia": 4,
     "piquete": null,
@@ -693,103 +652,7 @@
     "racao_qtd_manha": "2kg",
     "racao_qtd_noite": "2kg",
     "feno_tipo": "Coast Cross",
-    "feno_qtd": "└ vontade",
-    "complemento_nutricional": "",
-    "mensalidade_baia": "0.00"
-  }
-},
-{
-  "model": "gateagora.cavalo",
-  "pk": 5,
-  "fields": {
-    "empresa": 1,
-    "nome": "Mistral",
-    "categoria": "PROPRIO",
-    "status_saude": "Saudßvel",
-    "onde_dorme": "BAIA",
-    "foto": "",
-    "raca": "quarto_milha",
-    "peso": 500.7,
-    "fator_atividade": "0.035",
-    "tipo_sela": "Sela Escola",
-    "tipo_cabecada": "Cabeþada PadrÒo",
-    "material_proprio": false,
-    "baia": 5,
-    "piquete": null,
-    "proprietario": 1,
-    "ultima_vacina": null,
-    "ultimo_ferrageamento": null,
-    "ultimo_vermifugo": null,
-    "ultimo_casqueamento": null,
-    "racao_tipo": "Guabi Equi-S",
-    "racao_qtd_manha": "2kg",
-    "racao_qtd_noite": "2kg",
-    "feno_tipo": "Coast Cross",
-    "feno_qtd": "└ vontade",
-    "complemento_nutricional": "",
-    "mensalidade_baia": "0.00"
-  }
-},
-{
-  "model": "gateagora.cavalo",
-  "pk": 6,
-  "fields": {
-    "empresa": 1,
-    "nome": "Bravio",
-    "categoria": "PROPRIO",
-    "status_saude": "Saudßvel",
-    "onde_dorme": "BAIA",
-    "foto": "",
-    "raca": "mang_marchador",
-    "peso": 473.6,
-    "fator_atividade": "0.025",
-    "tipo_sela": "Sela Escola",
-    "tipo_cabecada": "Cabeþada PadrÒo",
-    "material_proprio": false,
-    "baia": 6,
-    "piquete": null,
-    "proprietario": 1,
-    "ultima_vacina": null,
-    "ultimo_ferrageamento": null,
-    "ultimo_vermifugo": null,
-    "ultimo_casqueamento": null,
-    "racao_tipo": "Guabi Equi-S",
-    "racao_qtd_manha": "2kg",
-    "racao_qtd_noite": "2kg",
-    "feno_tipo": "Coast Cross",
-    "feno_qtd": "└ vontade",
-    "complemento_nutricional": "",
-    "mensalidade_baia": "0.00"
-  }
-},
-{
-  "model": "gateagora.cavalo",
-  "pk": 7,
-  "fields": {
-    "empresa": 1,
-    "nome": "Safira",
-    "categoria": "PROPRIO",
-    "status_saude": "Saudßvel",
-    "onde_dorme": "BAIA",
-    "foto": "",
-    "raca": "crioulo",
-    "peso": 475.2,
-    "fator_atividade": "0.035",
-    "tipo_sela": "Sela Escola",
-    "tipo_cabecada": "Cabeþada PadrÒo",
-    "material_proprio": false,
-    "baia": 7,
-    "piquete": null,
-    "proprietario": 1,
-    "ultima_vacina": null,
-    "ultimo_ferrageamento": null,
-    "ultimo_vermifugo": null,
-    "ultimo_casqueamento": null,
-    "racao_tipo": "Guabi Equi-S",
-    "racao_qtd_manha": "2kg",
-    "racao_qtd_noite": "2kg",
-    "feno_tipo": "Coast Cross",
-    "feno_qtd": "└ vontade",
+    "feno_qtd": "À vontade",
     "complemento_nutricional": "",
     "mensalidade_baia": "0.00"
   }
@@ -801,14 +664,14 @@
     "empresa": 1,
     "nome": "Argos",
     "categoria": "PROPRIO",
-    "status_saude": "Saudßvel",
+    "status_saude": "Saudável",
     "onde_dorme": "BAIA",
     "foto": "",
     "raca": "quarto_milha",
     "peso": 477.7,
     "fator_atividade": "0.035",
     "tipo_sela": "Sela Escola",
-    "tipo_cabecada": "Cabeþada PadrÒo",
+    "tipo_cabecada": "Cabeçada Padrão",
     "material_proprio": false,
     "baia": 8,
     "piquete": null,
@@ -821,7 +684,39 @@
     "racao_qtd_manha": "2kg",
     "racao_qtd_noite": "2kg",
     "feno_tipo": "Coast Cross",
-    "feno_qtd": "└ vontade",
+    "feno_qtd": "À vontade",
+    "complemento_nutricional": "",
+    "mensalidade_baia": "0.00"
+  }
+},
+{
+  "model": "gateagora.cavalo",
+  "pk": 2,
+  "fields": {
+    "empresa": 1,
+    "nome": "Aura",
+    "categoria": "PROPRIO",
+    "status_saude": "Saudável",
+    "onde_dorme": "BAIA",
+    "foto": "",
+    "raca": "hipismo",
+    "peso": 515.7,
+    "fator_atividade": "0.025",
+    "tipo_sela": "Sela Escola",
+    "tipo_cabecada": "Cabeçada Padrão",
+    "material_proprio": false,
+    "baia": 2,
+    "piquete": null,
+    "proprietario": 1,
+    "ultima_vacina": null,
+    "ultimo_ferrageamento": null,
+    "ultimo_vermifugo": null,
+    "ultimo_casqueamento": null,
+    "racao_tipo": "Guabi Equi-S",
+    "racao_qtd_manha": "2kg",
+    "racao_qtd_noite": "2kg",
+    "feno_tipo": "Coast Cross",
+    "feno_qtd": "À vontade",
     "complemento_nutricional": "",
     "mensalidade_baia": "0.00"
   }
@@ -833,14 +728,14 @@
     "empresa": 1,
     "nome": "Boreal",
     "categoria": "PROPRIO",
-    "status_saude": "Saudßvel",
+    "status_saude": "Saudável",
     "onde_dorme": "BAIA",
     "foto": "",
     "raca": "crioulo",
     "peso": 424.6,
     "fator_atividade": "0.018",
     "tipo_sela": "Sela Escola",
-    "tipo_cabecada": "Cabeþada PadrÒo",
+    "tipo_cabecada": "Cabeçada Padrão",
     "material_proprio": false,
     "baia": 9,
     "piquete": null,
@@ -853,446 +748,30 @@
     "racao_qtd_manha": "2kg",
     "racao_qtd_noite": "2kg",
     "feno_tipo": "Coast Cross",
-    "feno_qtd": "└ vontade",
+    "feno_qtd": "À vontade",
     "complemento_nutricional": "",
     "mensalidade_baia": "0.00"
   }
 },
 {
   "model": "gateagora.cavalo",
-  "pk": 10,
+  "pk": 6,
   "fields": {
     "empresa": 1,
-    "nome": "Neblina",
+    "nome": "Bravio",
     "categoria": "PROPRIO",
-    "status_saude": "Saudßvel",
-    "onde_dorme": "BAIA",
-    "foto": "",
-    "raca": "quarto_milha",
-    "peso": 518.5,
-    "fator_atividade": "0.018",
-    "tipo_sela": "Sela Escola",
-    "tipo_cabecada": "Cabeþada PadrÒo",
-    "material_proprio": false,
-    "baia": 10,
-    "piquete": null,
-    "proprietario": 1,
-    "ultima_vacina": null,
-    "ultimo_ferrageamento": null,
-    "ultimo_vermifugo": "2025-12-08",
-    "ultimo_casqueamento": null,
-    "racao_tipo": "Guabi Equi-S",
-    "racao_qtd_manha": "2kg",
-    "racao_qtd_noite": "2kg",
-    "feno_tipo": "Coast Cross",
-    "feno_qtd": "└ vontade",
-    "complemento_nutricional": "",
-    "mensalidade_baia": "0.00"
-  }
-},
-{
-  "model": "gateagora.cavalo",
-  "pk": 11,
-  "fields": {
-    "empresa": 1,
-    "nome": "Gaia",
-    "categoria": "PROPRIO",
-    "status_saude": "Saudßvel",
-    "onde_dorme": "BAIA",
-    "foto": "",
-    "raca": "crioulo",
-    "peso": 458.0,
-    "fator_atividade": "0.025",
-    "tipo_sela": "Sela Escola",
-    "tipo_cabecada": "Cabeþada PadrÒo",
-    "material_proprio": false,
-    "baia": 11,
-    "piquete": null,
-    "proprietario": 1,
-    "ultima_vacina": null,
-    "ultimo_ferrageamento": null,
-    "ultimo_vermifugo": null,
-    "ultimo_casqueamento": null,
-    "racao_tipo": "Guabi Equi-S",
-    "racao_qtd_manha": "2kg",
-    "racao_qtd_noite": "2kg",
-    "feno_tipo": "Coast Cross",
-    "feno_qtd": "└ vontade",
-    "complemento_nutricional": "",
-    "mensalidade_baia": "0.00"
-  }
-},
-{
-  "model": "gateagora.cavalo",
-  "pk": 12,
-  "fields": {
-    "empresa": 1,
-    "nome": "Jade",
-    "categoria": "PROPRIO",
-    "status_saude": "Saudßvel",
-    "onde_dorme": "BAIA",
-    "foto": "",
-    "raca": "quarto_milha",
-    "peso": 436.3,
-    "fator_atividade": "0.025",
-    "tipo_sela": "Sela Escola",
-    "tipo_cabecada": "Cabeþada PadrÒo",
-    "material_proprio": false,
-    "baia": 12,
-    "piquete": null,
-    "proprietario": 1,
-    "ultima_vacina": null,
-    "ultimo_ferrageamento": null,
-    "ultimo_vermifugo": null,
-    "ultimo_casqueamento": null,
-    "racao_tipo": "Guabi Equi-S",
-    "racao_qtd_manha": "2kg",
-    "racao_qtd_noite": "2kg",
-    "feno_tipo": "Coast Cross",
-    "feno_qtd": "└ vontade",
-    "complemento_nutricional": "",
-    "mensalidade_baia": "0.00"
-  }
-},
-{
-  "model": "gateagora.cavalo",
-  "pk": 13,
-  "fields": {
-    "empresa": 1,
-    "nome": "PÚgaso",
-    "categoria": "PROPRIO",
-    "status_saude": "Saudßvel",
-    "onde_dorme": "BAIA",
-    "foto": "",
-    "raca": "hipismo",
-    "peso": 487.0,
-    "fator_atividade": "0.035",
-    "tipo_sela": "Sela Escola",
-    "tipo_cabecada": "Cabeþada PadrÒo",
-    "material_proprio": false,
-    "baia": 13,
-    "piquete": null,
-    "proprietario": 1,
-    "ultima_vacina": null,
-    "ultimo_ferrageamento": null,
-    "ultimo_vermifugo": null,
-    "ultimo_casqueamento": null,
-    "racao_tipo": "Guabi Equi-S",
-    "racao_qtd_manha": "2kg",
-    "racao_qtd_noite": "2kg",
-    "feno_tipo": "Coast Cross",
-    "feno_qtd": "└ vontade",
-    "complemento_nutricional": "",
-    "mensalidade_baia": "0.00"
-  }
-},
-{
-  "model": "gateagora.cavalo",
-  "pk": 14,
-  "fields": {
-    "empresa": 1,
-    "nome": "ZÚfiro",
-    "categoria": "PROPRIO",
-    "status_saude": "Saudßvel",
-    "onde_dorme": "BAIA",
-    "foto": "",
-    "raca": "crioulo",
-    "peso": 480.9,
-    "fator_atividade": "0.018",
-    "tipo_sela": "Sela Escola",
-    "tipo_cabecada": "Cabeþada PadrÒo",
-    "material_proprio": false,
-    "baia": 14,
-    "piquete": null,
-    "proprietario": 1,
-    "ultima_vacina": null,
-    "ultimo_ferrageamento": null,
-    "ultimo_vermifugo": null,
-    "ultimo_casqueamento": null,
-    "racao_tipo": "Guabi Equi-S",
-    "racao_qtd_manha": "2kg",
-    "racao_qtd_noite": "2kg",
-    "feno_tipo": "Coast Cross",
-    "feno_qtd": "└ vontade",
-    "complemento_nutricional": "",
-    "mensalidade_baia": "0.00"
-  }
-},
-{
-  "model": "gateagora.cavalo",
-  "pk": 15,
-  "fields": {
-    "empresa": 1,
-    "nome": "═caro",
-    "categoria": "PROPRIO",
-    "status_saude": "Saudßvel",
-    "onde_dorme": "PIQUETE",
-    "foto": "",
-    "raca": "hipismo",
-    "peso": 436.3,
-    "fator_atividade": "0.025",
-    "tipo_sela": "Sela Escola",
-    "tipo_cabecada": "Cabeþada PadrÒo",
-    "material_proprio": false,
-    "baia": null,
-    "piquete": 2,
-    "proprietario": 1,
-    "ultima_vacina": null,
-    "ultimo_ferrageamento": null,
-    "ultimo_vermifugo": null,
-    "ultimo_casqueamento": null,
-    "racao_tipo": "Guabi Equi-S",
-    "racao_qtd_manha": "2kg",
-    "racao_qtd_noite": "2kg",
-    "feno_tipo": "Coast Cross",
-    "feno_qtd": "└ vontade",
-    "complemento_nutricional": "",
-    "mensalidade_baia": "0.00"
-  }
-},
-{
-  "model": "gateagora.cavalo",
-  "pk": 16,
-  "fields": {
-    "empresa": 1,
-    "nome": "Orion",
-    "categoria": "PROPRIO",
-    "status_saude": "Saudßvel",
-    "onde_dorme": "PIQUETE",
-    "foto": "",
-    "raca": "hipismo",
-    "peso": 488.5,
-    "fator_atividade": "0.018",
-    "tipo_sela": "Sela Escola",
-    "tipo_cabecada": "Cabeþada PadrÒo",
-    "material_proprio": false,
-    "baia": null,
-    "piquete": 1,
-    "proprietario": 1,
-    "ultima_vacina": null,
-    "ultimo_ferrageamento": null,
-    "ultimo_vermifugo": null,
-    "ultimo_casqueamento": null,
-    "racao_tipo": "Guabi Equi-S",
-    "racao_qtd_manha": "2kg",
-    "racao_qtd_noite": "2kg",
-    "feno_tipo": "Coast Cross",
-    "feno_qtd": "└ vontade",
-    "complemento_nutricional": "",
-    "mensalidade_baia": "0.00"
-  }
-},
-{
-  "model": "gateagora.cavalo",
-  "pk": 17,
-  "fields": {
-    "empresa": 1,
-    "nome": "TalismÒ",
-    "categoria": "PROPRIO",
-    "status_saude": "Saudßvel",
-    "onde_dorme": "PIQUETE",
-    "foto": "",
-    "raca": "crioulo",
-    "peso": 500.5,
-    "fator_atividade": "0.025",
-    "tipo_sela": "Sela Escola",
-    "tipo_cabecada": "Cabeþada PadrÒo",
-    "material_proprio": false,
-    "baia": null,
-    "piquete": 2,
-    "proprietario": 1,
-    "ultima_vacina": null,
-    "ultimo_ferrageamento": null,
-    "ultimo_vermifugo": null,
-    "ultimo_casqueamento": null,
-    "racao_tipo": "Guabi Equi-S",
-    "racao_qtd_manha": "2kg",
-    "racao_qtd_noite": "2kg",
-    "feno_tipo": "Coast Cross",
-    "feno_qtd": "└ vontade",
-    "complemento_nutricional": "",
-    "mensalidade_baia": "0.00"
-  }
-},
-{
-  "model": "gateagora.cavalo",
-  "pk": 18,
-  "fields": {
-    "empresa": 1,
-    "nome": "Estrela",
-    "categoria": "HOTELARIA",
-    "status_saude": "Saudßvel",
-    "onde_dorme": "BAIA",
-    "foto": "",
-    "raca": "crioulo",
-    "peso": 451.1,
-    "fator_atividade": "0.035",
-    "tipo_sela": "Sela do Proprietßrio",
-    "tipo_cabecada": "Cabeþada PadrÒo",
-    "material_proprio": true,
-    "baia": 15,
-    "piquete": null,
-    "proprietario": 2,
-    "ultima_vacina": null,
-    "ultimo_ferrageamento": null,
-    "ultimo_vermifugo": "2025-12-08",
-    "ultimo_casqueamento": null,
-    "racao_tipo": "Guabi Equi-S",
-    "racao_qtd_manha": "2kg",
-    "racao_qtd_noite": "2kg",
-    "feno_tipo": "Coast Cross",
-    "feno_qtd": "└ vontade",
-    "complemento_nutricional": "",
-    "mensalidade_baia": "1200.00"
-  }
-},
-{
-  "model": "gateagora.cavalo",
-  "pk": 19,
-  "fields": {
-    "empresa": 1,
-    "nome": "RelÔmpago",
-    "categoria": "HOTELARIA",
-    "status_saude": "Saudßvel",
-    "onde_dorme": "BAIA",
-    "foto": "",
-    "raca": "quarto_milha",
-    "peso": 451.3,
-    "fator_atividade": "0.025",
-    "tipo_sela": "Sela Escola",
-    "tipo_cabecada": "Cabeþada PadrÒo",
-    "material_proprio": false,
-    "baia": 16,
-    "piquete": null,
-    "proprietario": 2,
-    "ultima_vacina": null,
-    "ultimo_ferrageamento": null,
-    "ultimo_vermifugo": null,
-    "ultimo_casqueamento": null,
-    "racao_tipo": "Guabi Equi-S",
-    "racao_qtd_manha": "2kg",
-    "racao_qtd_noite": "2kg",
-    "feno_tipo": "Coast Cross",
-    "feno_qtd": "└ vontade",
-    "complemento_nutricional": "",
-    "mensalidade_baia": "1200.00"
-  }
-},
-{
-  "model": "gateagora.cavalo",
-  "pk": 20,
-  "fields": {
-    "empresa": 1,
-    "nome": "SÝrius",
-    "categoria": "HOTELARIA",
-    "status_saude": "Saudßvel",
+    "status_saude": "Saudável",
     "onde_dorme": "BAIA",
     "foto": "",
     "raca": "mang_marchador",
-    "peso": 518.5,
-    "fator_atividade": "0.035",
-    "tipo_sela": "Sela Escola",
-    "tipo_cabecada": "Cabeþada PadrÒo",
-    "material_proprio": false,
-    "baia": 17,
-    "piquete": null,
-    "proprietario": 2,
-    "ultima_vacina": null,
-    "ultimo_ferrageamento": null,
-    "ultimo_vermifugo": null,
-    "ultimo_casqueamento": null,
-    "racao_tipo": "Guabi Equi-S",
-    "racao_qtd_manha": "2kg",
-    "racao_qtd_noite": "2kg",
-    "feno_tipo": "Coast Cross",
-    "feno_qtd": "└ vontade",
-    "complemento_nutricional": "",
-    "mensalidade_baia": "1200.00"
-  }
-},
-{
-  "model": "gateagora.cavalo",
-  "pk": 21,
-  "fields": {
-    "empresa": 1,
-    "nome": "Ventania",
-    "categoria": "HOTELARIA",
-    "status_saude": "Saudßvel",
-    "onde_dorme": "BAIA",
-    "foto": "",
-    "raca": "mang_marchador",
-    "peso": 444.3,
-    "fator_atividade": "0.018",
-    "tipo_sela": "Sela do Proprietßrio",
-    "tipo_cabecada": "Cabeþada PadrÒo",
-    "material_proprio": true,
-    "baia": 18,
-    "piquete": null,
-    "proprietario": 3,
-    "ultima_vacina": null,
-    "ultimo_ferrageamento": null,
-    "ultimo_vermifugo": null,
-    "ultimo_casqueamento": null,
-    "racao_tipo": "Guabi Equi-S",
-    "racao_qtd_manha": "2kg",
-    "racao_qtd_noite": "2kg",
-    "feno_tipo": "Coast Cross",
-    "feno_qtd": "└ vontade",
-    "complemento_nutricional": "",
-    "mensalidade_baia": "1200.00"
-  }
-},
-{
-  "model": "gateagora.cavalo",
-  "pk": 22,
-  "fields": {
-    "empresa": 1,
-    "nome": "Castor",
-    "categoria": "HOTELARIA",
-    "status_saude": "Saudßvel",
-    "onde_dorme": "BAIA",
-    "foto": "",
-    "raca": "hipismo",
-    "peso": 504.5,
-    "fator_atividade": "0.035",
-    "tipo_sela": "Sela Escola",
-    "tipo_cabecada": "Cabeþada PadrÒo",
-    "material_proprio": false,
-    "baia": 19,
-    "piquete": null,
-    "proprietario": 3,
-    "ultima_vacina": null,
-    "ultimo_ferrageamento": null,
-    "ultimo_vermifugo": null,
-    "ultimo_casqueamento": null,
-    "racao_tipo": "Guabi Equi-S",
-    "racao_qtd_manha": "2kg",
-    "racao_qtd_noite": "2kg",
-    "feno_tipo": "Coast Cross",
-    "feno_qtd": "└ vontade",
-    "complemento_nutricional": "",
-    "mensalidade_baia": "1200.00"
-  }
-},
-{
-  "model": "gateagora.cavalo",
-  "pk": 23,
-  "fields": {
-    "empresa": 1,
-    "nome": "PÚrola",
-    "categoria": "HOTELARIA",
-    "status_saude": "Saudßvel",
-    "onde_dorme": "BAIA",
-    "foto": "",
-    "raca": "quarto_milha",
-    "peso": 504.7,
+    "peso": 473.6,
     "fator_atividade": "0.025",
     "tipo_sela": "Sela Escola",
-    "tipo_cabecada": "Cabeþada PadrÒo",
+    "tipo_cabecada": "Cabeçada Padrão",
     "material_proprio": false,
-    "baia": 20,
+    "baia": 6,
     "piquete": null,
-    "proprietario": 3,
+    "proprietario": 1,
     "ultima_vacina": null,
     "ultimo_ferrageamento": null,
     "ultimo_vermifugo": null,
@@ -1301,41 +780,9 @@
     "racao_qtd_manha": "2kg",
     "racao_qtd_noite": "2kg",
     "feno_tipo": "Coast Cross",
-    "feno_qtd": "└ vontade",
+    "feno_qtd": "À vontade",
     "complemento_nutricional": "",
-    "mensalidade_baia": "1200.00"
-  }
-},
-{
-  "model": "gateagora.cavalo",
-  "pk": 24,
-  "fields": {
-    "empresa": 1,
-    "nome": "Flecha",
-    "categoria": "HOTELARIA",
-    "status_saude": "Saudßvel",
-    "onde_dorme": "BAIA",
-    "foto": "",
-    "raca": "mang_marchador",
-    "peso": 466.2,
-    "fator_atividade": "0.018",
-    "tipo_sela": "Sela Escola",
-    "tipo_cabecada": "Cabeþada PadrÒo",
-    "material_proprio": false,
-    "baia": 21,
-    "piquete": null,
-    "proprietario": 4,
-    "ultima_vacina": null,
-    "ultimo_ferrageamento": null,
-    "ultimo_vermifugo": null,
-    "ultimo_casqueamento": null,
-    "racao_tipo": "Guabi Equi-S",
-    "racao_qtd_manha": "2kg",
-    "racao_qtd_noite": "2kg",
-    "feno_tipo": "Coast Cross",
-    "feno_qtd": "└ vontade",
-    "complemento_nutricional": "",
-    "mensalidade_baia": "1200.00"
+    "mensalidade_baia": "0.00"
   }
 },
 {
@@ -1343,16 +790,16 @@
   "pk": 25,
   "fields": {
     "empresa": 1,
-    "nome": "CapitÒo",
+    "nome": "Capitão",
     "categoria": "HOTELARIA",
-    "status_saude": "Saudßvel",
+    "status_saude": "Saudável",
     "onde_dorme": "BAIA",
     "foto": "",
     "raca": "mang_marchador",
     "peso": 439.1,
     "fator_atividade": "0.018",
     "tipo_sela": "Sela Escola",
-    "tipo_cabecada": "Cabeþada PadrÒo",
+    "tipo_cabecada": "Cabeçada Padrão",
     "material_proprio": false,
     "baia": 22,
     "piquete": null,
@@ -1365,190 +812,62 @@
     "racao_qtd_manha": "2kg",
     "racao_qtd_noite": "2kg",
     "feno_tipo": "Coast Cross",
-    "feno_qtd": "└ vontade",
+    "feno_qtd": "À vontade",
     "complemento_nutricional": "",
     "mensalidade_baia": "1200.00"
   }
 },
 {
   "model": "gateagora.cavalo",
-  "pk": 26,
+  "pk": 22,
   "fields": {
     "empresa": 1,
-    "nome": "HÚrcules",
+    "nome": "Castor",
     "categoria": "HOTELARIA",
-    "status_saude": "Saudßvel",
+    "status_saude": "Saudável",
     "onde_dorme": "BAIA",
     "foto": "",
-    "raca": "crioulo",
-    "peso": 445.3,
-    "fator_atividade": "0.018",
-    "tipo_sela": "Sela Escola",
-    "tipo_cabecada": "Cabeþada PadrÒo",
-    "material_proprio": false,
-    "baia": 23,
-    "piquete": null,
-    "proprietario": 4,
-    "ultima_vacina": null,
-    "ultimo_ferrageamento": null,
-    "ultimo_vermifugo": null,
-    "ultimo_casqueamento": null,
-    "racao_tipo": "Guabi Equi-S",
-    "racao_qtd_manha": "2kg",
-    "racao_qtd_noite": "2kg",
-    "feno_tipo": "Coast Cross",
-    "feno_qtd": "└ vontade",
-    "complemento_nutricional": "",
-    "mensalidade_baia": "1200.00"
-  }
-},
-{
-  "model": "gateagora.cavalo",
-  "pk": 27,
-  "fields": {
-    "empresa": 1,
-    "nome": "Naja",
-    "categoria": "HOTELARIA",
-    "status_saude": "Saudßvel",
-    "onde_dorme": "BAIA",
-    "foto": "",
-    "raca": "mang_marchador",
-    "peso": 489.6,
-    "fator_atividade": "0.025",
-    "tipo_sela": "Sela Escola",
-    "tipo_cabecada": "Cabeþada PadrÒo",
-    "material_proprio": false,
-    "baia": 24,
-    "piquete": null,
-    "proprietario": 5,
-    "ultima_vacina": null,
-    "ultimo_ferrageamento": null,
-    "ultimo_vermifugo": null,
-    "ultimo_casqueamento": null,
-    "racao_tipo": "Guabi Equi-S",
-    "racao_qtd_manha": "2kg",
-    "racao_qtd_noite": "2kg",
-    "feno_tipo": "Coast Cross",
-    "feno_qtd": "└ vontade",
-    "complemento_nutricional": "",
-    "mensalidade_baia": "1200.00"
-  }
-},
-{
-  "model": "gateagora.cavalo",
-  "pk": 28,
-  "fields": {
-    "empresa": 1,
-    "nome": "XamÒ",
-    "categoria": "HOTELARIA",
-    "status_saude": "Saudßvel",
-    "onde_dorme": "BAIA",
-    "foto": "",
-    "raca": "mang_marchador",
-    "peso": 489.6,
-    "fator_atividade": "0.025",
-    "tipo_sela": "Sela Escola",
-    "tipo_cabecada": "Cabeþada PadrÒo",
-    "material_proprio": false,
-    "baia": 25,
-    "piquete": null,
-    "proprietario": 5,
-    "ultima_vacina": null,
-    "ultimo_ferrageamento": null,
-    "ultimo_vermifugo": null,
-    "ultimo_casqueamento": null,
-    "racao_tipo": "Guabi Equi-S",
-    "racao_qtd_manha": "2kg",
-    "racao_qtd_noite": "2kg",
-    "feno_tipo": "Coast Cross",
-    "feno_qtd": "└ vontade",
-    "complemento_nutricional": "",
-    "mensalidade_baia": "1200.00"
-  }
-},
-{
-  "model": "gateagora.cavalo",
-  "pk": 29,
-  "fields": {
-    "empresa": 1,
-    "nome": "Maestoso",
-    "categoria": "HOTELARIA",
-    "status_saude": "Saudßvel",
-    "onde_dorme": "BAIA",
-    "foto": "",
-    "raca": "quarto_milha",
-    "peso": 527.1,
-    "fator_atividade": "0.018",
-    "tipo_sela": "Sela Escola",
-    "tipo_cabecada": "Cabeþada PadrÒo",
-    "material_proprio": false,
-    "baia": 26,
-    "piquete": null,
-    "proprietario": 5,
-    "ultima_vacina": null,
-    "ultimo_ferrageamento": null,
-    "ultimo_vermifugo": null,
-    "ultimo_casqueamento": null,
-    "racao_tipo": "Guabi Equi-S",
-    "racao_qtd_manha": "2kg",
-    "racao_qtd_noite": "2kg",
-    "feno_tipo": "Coast Cross",
-    "feno_qtd": "└ vontade",
-    "complemento_nutricional": "",
-    "mensalidade_baia": "1200.00"
-  }
-},
-{
-  "model": "gateagora.cavalo",
-  "pk": 30,
-  "fields": {
-    "empresa": 1,
-    "nome": "Trueno",
-    "categoria": "HOTELARIA",
-    "status_saude": "Saudßvel",
-    "onde_dorme": "BAIA",
-    "foto": "",
-    "raca": "crioulo",
-    "peso": 498.2,
+    "raca": "hipismo",
+    "peso": 504.5,
     "fator_atividade": "0.035",
     "tipo_sela": "Sela Escola",
-    "tipo_cabecada": "Cabeþada PadrÒo",
+    "tipo_cabecada": "Cabeçada Padrão",
     "material_proprio": false,
-    "baia": 27,
+    "baia": 19,
     "piquete": null,
-    "proprietario": 6,
+    "proprietario": 3,
     "ultima_vacina": null,
     "ultimo_ferrageamento": null,
     "ultimo_vermifugo": null,
-    "ultimo_casqueamento": "2026-01-07",
+    "ultimo_casqueamento": null,
     "racao_tipo": "Guabi Equi-S",
     "racao_qtd_manha": "2kg",
     "racao_qtd_noite": "2kg",
     "feno_tipo": "Coast Cross",
-    "feno_qtd": "└ vontade",
+    "feno_qtd": "À vontade",
     "complemento_nutricional": "",
     "mensalidade_baia": "1200.00"
   }
 },
 {
   "model": "gateagora.cavalo",
-  "pk": 31,
+  "pk": 18,
   "fields": {
     "empresa": 1,
-    "nome": "TrovÒo",
+    "nome": "Estrela",
     "categoria": "HOTELARIA",
-    "status_saude": "Saudßvel",
+    "status_saude": "Saudável",
     "onde_dorme": "BAIA",
     "foto": "",
-    "raca": "quarto_milha",
-    "peso": 506.9,
-    "fator_atividade": "0.025",
-    "tipo_sela": "Sela Escola",
-    "tipo_cabecada": "Cabeþada PadrÒo",
-    "material_proprio": false,
-    "baia": 28,
+    "raca": "crioulo",
+    "peso": 451.1,
+    "fator_atividade": "0.035",
+    "tipo_sela": "Sela do Proprietário",
+    "tipo_cabecada": "Cabeçada Padrão",
+    "material_proprio": true,
+    "baia": 15,
     "piquete": null,
-    "proprietario": 6,
+    "proprietario": 2,
     "ultima_vacina": null,
     "ultimo_ferrageamento": null,
     "ultimo_vermifugo": "2025-12-08",
@@ -1557,7 +876,7 @@
     "racao_qtd_manha": "2kg",
     "racao_qtd_noite": "2kg",
     "feno_tipo": "Coast Cross",
-    "feno_qtd": "└ vontade",
+    "feno_qtd": "À vontade",
     "complemento_nutricional": "",
     "mensalidade_baia": "1200.00"
   }
@@ -1569,14 +888,14 @@
     "empresa": 1,
     "nome": "Farol",
     "categoria": "HOTELARIA",
-    "status_saude": "Saudßvel",
+    "status_saude": "Saudável",
     "onde_dorme": "BAIA",
     "foto": "",
     "raca": "crioulo",
     "peso": 459.4,
     "fator_atividade": "0.018",
     "tipo_sela": "Sela Escola",
-    "tipo_cabecada": "Cabeþada PadrÒo",
+    "tipo_cabecada": "Cabeçada Padrão",
     "material_proprio": false,
     "baia": 29,
     "piquete": null,
@@ -1589,9 +908,745 @@
     "racao_qtd_manha": "2kg",
     "racao_qtd_noite": "2kg",
     "feno_tipo": "Coast Cross",
-    "feno_qtd": "└ vontade",
+    "feno_qtd": "À vontade",
     "complemento_nutricional": "",
     "mensalidade_baia": "1200.00"
+  }
+},
+{
+  "model": "gateagora.cavalo",
+  "pk": 24,
+  "fields": {
+    "empresa": 1,
+    "nome": "Flecha",
+    "categoria": "HOTELARIA",
+    "status_saude": "Saudável",
+    "onde_dorme": "BAIA",
+    "foto": "",
+    "raca": "mang_marchador",
+    "peso": 466.2,
+    "fator_atividade": "0.018",
+    "tipo_sela": "Sela Escola",
+    "tipo_cabecada": "Cabeçada Padrão",
+    "material_proprio": false,
+    "baia": 21,
+    "piquete": null,
+    "proprietario": 4,
+    "ultima_vacina": null,
+    "ultimo_ferrageamento": null,
+    "ultimo_vermifugo": null,
+    "ultimo_casqueamento": null,
+    "racao_tipo": "Guabi Equi-S",
+    "racao_qtd_manha": "2kg",
+    "racao_qtd_noite": "2kg",
+    "feno_tipo": "Coast Cross",
+    "feno_qtd": "À vontade",
+    "complemento_nutricional": "",
+    "mensalidade_baia": "1200.00"
+  }
+},
+{
+  "model": "gateagora.cavalo",
+  "pk": 11,
+  "fields": {
+    "empresa": 1,
+    "nome": "Gaia",
+    "categoria": "PROPRIO",
+    "status_saude": "Saudável",
+    "onde_dorme": "BAIA",
+    "foto": "",
+    "raca": "crioulo",
+    "peso": 458.0,
+    "fator_atividade": "0.025",
+    "tipo_sela": "Sela Escola",
+    "tipo_cabecada": "Cabeçada Padrão",
+    "material_proprio": false,
+    "baia": 11,
+    "piquete": null,
+    "proprietario": 1,
+    "ultima_vacina": null,
+    "ultimo_ferrageamento": null,
+    "ultimo_vermifugo": null,
+    "ultimo_casqueamento": null,
+    "racao_tipo": "Guabi Equi-S",
+    "racao_qtd_manha": "2kg",
+    "racao_qtd_noite": "2kg",
+    "feno_tipo": "Coast Cross",
+    "feno_qtd": "À vontade",
+    "complemento_nutricional": "",
+    "mensalidade_baia": "0.00"
+  }
+},
+{
+  "model": "gateagora.cavalo",
+  "pk": 26,
+  "fields": {
+    "empresa": 1,
+    "nome": "Hércules",
+    "categoria": "HOTELARIA",
+    "status_saude": "Saudável",
+    "onde_dorme": "BAIA",
+    "foto": "",
+    "raca": "crioulo",
+    "peso": 445.3,
+    "fator_atividade": "0.018",
+    "tipo_sela": "Sela Escola",
+    "tipo_cabecada": "Cabeçada Padrão",
+    "material_proprio": false,
+    "baia": 23,
+    "piquete": null,
+    "proprietario": 4,
+    "ultima_vacina": null,
+    "ultimo_ferrageamento": null,
+    "ultimo_vermifugo": null,
+    "ultimo_casqueamento": null,
+    "racao_tipo": "Guabi Equi-S",
+    "racao_qtd_manha": "2kg",
+    "racao_qtd_noite": "2kg",
+    "feno_tipo": "Coast Cross",
+    "feno_qtd": "À vontade",
+    "complemento_nutricional": "",
+    "mensalidade_baia": "1200.00"
+  }
+},
+{
+  "model": "gateagora.cavalo",
+  "pk": 12,
+  "fields": {
+    "empresa": 1,
+    "nome": "Jade",
+    "categoria": "PROPRIO",
+    "status_saude": "Saudável",
+    "onde_dorme": "BAIA",
+    "foto": "",
+    "raca": "quarto_milha",
+    "peso": 436.3,
+    "fator_atividade": "0.025",
+    "tipo_sela": "Sela Escola",
+    "tipo_cabecada": "Cabeçada Padrão",
+    "material_proprio": false,
+    "baia": 12,
+    "piquete": null,
+    "proprietario": 1,
+    "ultima_vacina": null,
+    "ultimo_ferrageamento": null,
+    "ultimo_vermifugo": null,
+    "ultimo_casqueamento": null,
+    "racao_tipo": "Guabi Equi-S",
+    "racao_qtd_manha": "2kg",
+    "racao_qtd_noite": "2kg",
+    "feno_tipo": "Coast Cross",
+    "feno_qtd": "À vontade",
+    "complemento_nutricional": "",
+    "mensalidade_baia": "0.00"
+  }
+},
+{
+  "model": "gateagora.cavalo",
+  "pk": 1,
+  "fields": {
+    "empresa": 1,
+    "nome": "Júpiter",
+    "categoria": "PROPRIO",
+    "status_saude": "Saudável",
+    "onde_dorme": "BAIA",
+    "foto": "",
+    "raca": "mang_marchador",
+    "peso": 454.0,
+    "fator_atividade": "0.018",
+    "tipo_sela": "Sela Escola",
+    "tipo_cabecada": "Cabeçada Padrão",
+    "material_proprio": false,
+    "baia": 1,
+    "piquete": null,
+    "proprietario": 1,
+    "ultima_vacina": null,
+    "ultimo_ferrageamento": null,
+    "ultimo_vermifugo": null,
+    "ultimo_casqueamento": "2026-01-07",
+    "racao_tipo": "Guabi Equi-S",
+    "racao_qtd_manha": "2kg",
+    "racao_qtd_noite": "2kg",
+    "feno_tipo": "Coast Cross",
+    "feno_qtd": "À vontade",
+    "complemento_nutricional": "",
+    "mensalidade_baia": "0.00"
+  }
+},
+{
+  "model": "gateagora.cavalo",
+  "pk": 29,
+  "fields": {
+    "empresa": 1,
+    "nome": "Maestoso",
+    "categoria": "HOTELARIA",
+    "status_saude": "Saudável",
+    "onde_dorme": "BAIA",
+    "foto": "",
+    "raca": "quarto_milha",
+    "peso": 527.1,
+    "fator_atividade": "0.018",
+    "tipo_sela": "Sela Escola",
+    "tipo_cabecada": "Cabeçada Padrão",
+    "material_proprio": false,
+    "baia": 26,
+    "piquete": null,
+    "proprietario": 5,
+    "ultima_vacina": null,
+    "ultimo_ferrageamento": null,
+    "ultimo_vermifugo": null,
+    "ultimo_casqueamento": null,
+    "racao_tipo": "Guabi Equi-S",
+    "racao_qtd_manha": "2kg",
+    "racao_qtd_noite": "2kg",
+    "feno_tipo": "Coast Cross",
+    "feno_qtd": "À vontade",
+    "complemento_nutricional": "",
+    "mensalidade_baia": "1200.00"
+  }
+},
+{
+  "model": "gateagora.cavalo",
+  "pk": 5,
+  "fields": {
+    "empresa": 1,
+    "nome": "Mistral",
+    "categoria": "PROPRIO",
+    "status_saude": "Saudável",
+    "onde_dorme": "BAIA",
+    "foto": "",
+    "raca": "quarto_milha",
+    "peso": 500.7,
+    "fator_atividade": "0.035",
+    "tipo_sela": "Sela Escola",
+    "tipo_cabecada": "Cabeçada Padrão",
+    "material_proprio": false,
+    "baia": 5,
+    "piquete": null,
+    "proprietario": 1,
+    "ultima_vacina": null,
+    "ultimo_ferrageamento": null,
+    "ultimo_vermifugo": null,
+    "ultimo_casqueamento": null,
+    "racao_tipo": "Guabi Equi-S",
+    "racao_qtd_manha": "2kg",
+    "racao_qtd_noite": "2kg",
+    "feno_tipo": "Coast Cross",
+    "feno_qtd": "À vontade",
+    "complemento_nutricional": "",
+    "mensalidade_baia": "0.00"
+  }
+},
+{
+  "model": "gateagora.cavalo",
+  "pk": 27,
+  "fields": {
+    "empresa": 1,
+    "nome": "Naja",
+    "categoria": "HOTELARIA",
+    "status_saude": "Saudável",
+    "onde_dorme": "BAIA",
+    "foto": "",
+    "raca": "mang_marchador",
+    "peso": 489.6,
+    "fator_atividade": "0.025",
+    "tipo_sela": "Sela Escola",
+    "tipo_cabecada": "Cabeçada Padrão",
+    "material_proprio": false,
+    "baia": 24,
+    "piquete": null,
+    "proprietario": 5,
+    "ultima_vacina": null,
+    "ultimo_ferrageamento": null,
+    "ultimo_vermifugo": null,
+    "ultimo_casqueamento": null,
+    "racao_tipo": "Guabi Equi-S",
+    "racao_qtd_manha": "2kg",
+    "racao_qtd_noite": "2kg",
+    "feno_tipo": "Coast Cross",
+    "feno_qtd": "À vontade",
+    "complemento_nutricional": "",
+    "mensalidade_baia": "1200.00"
+  }
+},
+{
+  "model": "gateagora.cavalo",
+  "pk": 10,
+  "fields": {
+    "empresa": 1,
+    "nome": "Neblina",
+    "categoria": "PROPRIO",
+    "status_saude": "Saudável",
+    "onde_dorme": "BAIA",
+    "foto": "",
+    "raca": "quarto_milha",
+    "peso": 518.5,
+    "fator_atividade": "0.018",
+    "tipo_sela": "Sela Escola",
+    "tipo_cabecada": "Cabeçada Padrão",
+    "material_proprio": false,
+    "baia": 10,
+    "piquete": null,
+    "proprietario": 1,
+    "ultima_vacina": null,
+    "ultimo_ferrageamento": null,
+    "ultimo_vermifugo": "2025-12-08",
+    "ultimo_casqueamento": null,
+    "racao_tipo": "Guabi Equi-S",
+    "racao_qtd_manha": "2kg",
+    "racao_qtd_noite": "2kg",
+    "feno_tipo": "Coast Cross",
+    "feno_qtd": "À vontade",
+    "complemento_nutricional": "",
+    "mensalidade_baia": "0.00"
+  }
+},
+{
+  "model": "gateagora.cavalo",
+  "pk": 16,
+  "fields": {
+    "empresa": 1,
+    "nome": "Orion",
+    "categoria": "PROPRIO",
+    "status_saude": "Saudável",
+    "onde_dorme": "PIQUETE",
+    "foto": "",
+    "raca": "hipismo",
+    "peso": 488.5,
+    "fator_atividade": "0.018",
+    "tipo_sela": "Sela Escola",
+    "tipo_cabecada": "Cabeçada Padrão",
+    "material_proprio": false,
+    "baia": null,
+    "piquete": 1,
+    "proprietario": 1,
+    "ultima_vacina": null,
+    "ultimo_ferrageamento": null,
+    "ultimo_vermifugo": null,
+    "ultimo_casqueamento": null,
+    "racao_tipo": "Guabi Equi-S",
+    "racao_qtd_manha": "2kg",
+    "racao_qtd_noite": "2kg",
+    "feno_tipo": "Coast Cross",
+    "feno_qtd": "À vontade",
+    "complemento_nutricional": "",
+    "mensalidade_baia": "0.00"
+  }
+},
+{
+  "model": "gateagora.cavalo",
+  "pk": 13,
+  "fields": {
+    "empresa": 1,
+    "nome": "Pégaso",
+    "categoria": "PROPRIO",
+    "status_saude": "Saudável",
+    "onde_dorme": "BAIA",
+    "foto": "",
+    "raca": "hipismo",
+    "peso": 487.0,
+    "fator_atividade": "0.035",
+    "tipo_sela": "Sela Escola",
+    "tipo_cabecada": "Cabeçada Padrão",
+    "material_proprio": false,
+    "baia": 13,
+    "piquete": null,
+    "proprietario": 1,
+    "ultima_vacina": null,
+    "ultimo_ferrageamento": null,
+    "ultimo_vermifugo": null,
+    "ultimo_casqueamento": null,
+    "racao_tipo": "Guabi Equi-S",
+    "racao_qtd_manha": "2kg",
+    "racao_qtd_noite": "2kg",
+    "feno_tipo": "Coast Cross",
+    "feno_qtd": "À vontade",
+    "complemento_nutricional": "",
+    "mensalidade_baia": "0.00"
+  }
+},
+{
+  "model": "gateagora.cavalo",
+  "pk": 23,
+  "fields": {
+    "empresa": 1,
+    "nome": "Pérola",
+    "categoria": "HOTELARIA",
+    "status_saude": "Saudável",
+    "onde_dorme": "BAIA",
+    "foto": "",
+    "raca": "quarto_milha",
+    "peso": 504.7,
+    "fator_atividade": "0.025",
+    "tipo_sela": "Sela Escola",
+    "tipo_cabecada": "Cabeçada Padrão",
+    "material_proprio": false,
+    "baia": 20,
+    "piquete": null,
+    "proprietario": 3,
+    "ultima_vacina": null,
+    "ultimo_ferrageamento": null,
+    "ultimo_vermifugo": null,
+    "ultimo_casqueamento": null,
+    "racao_tipo": "Guabi Equi-S",
+    "racao_qtd_manha": "2kg",
+    "racao_qtd_noite": "2kg",
+    "feno_tipo": "Coast Cross",
+    "feno_qtd": "À vontade",
+    "complemento_nutricional": "",
+    "mensalidade_baia": "1200.00"
+  }
+},
+{
+  "model": "gateagora.cavalo",
+  "pk": 3,
+  "fields": {
+    "empresa": 1,
+    "nome": "Quiron",
+    "categoria": "PROPRIO",
+    "status_saude": "Saudável",
+    "onde_dorme": "BAIA",
+    "foto": "",
+    "raca": "crioulo",
+    "peso": 429.3,
+    "fator_atividade": "0.018",
+    "tipo_sela": "Sela Escola",
+    "tipo_cabecada": "Cabeçada Padrão",
+    "material_proprio": false,
+    "baia": 3,
+    "piquete": null,
+    "proprietario": 1,
+    "ultima_vacina": null,
+    "ultimo_ferrageamento": null,
+    "ultimo_vermifugo": null,
+    "ultimo_casqueamento": null,
+    "racao_tipo": "Guabi Equi-S",
+    "racao_qtd_manha": "2kg",
+    "racao_qtd_noite": "2kg",
+    "feno_tipo": "Coast Cross",
+    "feno_qtd": "À vontade",
+    "complemento_nutricional": "",
+    "mensalidade_baia": "0.00"
+  }
+},
+{
+  "model": "gateagora.cavalo",
+  "pk": 19,
+  "fields": {
+    "empresa": 1,
+    "nome": "Relâmpago",
+    "categoria": "HOTELARIA",
+    "status_saude": "Saudável",
+    "onde_dorme": "BAIA",
+    "foto": "",
+    "raca": "quarto_milha",
+    "peso": 451.3,
+    "fator_atividade": "0.025",
+    "tipo_sela": "Sela Escola",
+    "tipo_cabecada": "Cabeçada Padrão",
+    "material_proprio": false,
+    "baia": 16,
+    "piquete": null,
+    "proprietario": 2,
+    "ultima_vacina": null,
+    "ultimo_ferrageamento": null,
+    "ultimo_vermifugo": null,
+    "ultimo_casqueamento": null,
+    "racao_tipo": "Guabi Equi-S",
+    "racao_qtd_manha": "2kg",
+    "racao_qtd_noite": "2kg",
+    "feno_tipo": "Coast Cross",
+    "feno_qtd": "À vontade",
+    "complemento_nutricional": "",
+    "mensalidade_baia": "1200.00"
+  }
+},
+{
+  "model": "gateagora.cavalo",
+  "pk": 7,
+  "fields": {
+    "empresa": 1,
+    "nome": "Safira",
+    "categoria": "PROPRIO",
+    "status_saude": "Saudável",
+    "onde_dorme": "BAIA",
+    "foto": "",
+    "raca": "crioulo",
+    "peso": 475.2,
+    "fator_atividade": "0.035",
+    "tipo_sela": "Sela Escola",
+    "tipo_cabecada": "Cabeçada Padrão",
+    "material_proprio": false,
+    "baia": 7,
+    "piquete": null,
+    "proprietario": 1,
+    "ultima_vacina": null,
+    "ultimo_ferrageamento": null,
+    "ultimo_vermifugo": null,
+    "ultimo_casqueamento": null,
+    "racao_tipo": "Guabi Equi-S",
+    "racao_qtd_manha": "2kg",
+    "racao_qtd_noite": "2kg",
+    "feno_tipo": "Coast Cross",
+    "feno_qtd": "À vontade",
+    "complemento_nutricional": "",
+    "mensalidade_baia": "0.00"
+  }
+},
+{
+  "model": "gateagora.cavalo",
+  "pk": 20,
+  "fields": {
+    "empresa": 1,
+    "nome": "Sírius",
+    "categoria": "HOTELARIA",
+    "status_saude": "Saudável",
+    "onde_dorme": "BAIA",
+    "foto": "",
+    "raca": "mang_marchador",
+    "peso": 518.5,
+    "fator_atividade": "0.035",
+    "tipo_sela": "Sela Escola",
+    "tipo_cabecada": "Cabeçada Padrão",
+    "material_proprio": false,
+    "baia": 17,
+    "piquete": null,
+    "proprietario": 2,
+    "ultima_vacina": null,
+    "ultimo_ferrageamento": null,
+    "ultimo_vermifugo": null,
+    "ultimo_casqueamento": null,
+    "racao_tipo": "Guabi Equi-S",
+    "racao_qtd_manha": "2kg",
+    "racao_qtd_noite": "2kg",
+    "feno_tipo": "Coast Cross",
+    "feno_qtd": "À vontade",
+    "complemento_nutricional": "",
+    "mensalidade_baia": "1200.00"
+  }
+},
+{
+  "model": "gateagora.cavalo",
+  "pk": 17,
+  "fields": {
+    "empresa": 1,
+    "nome": "Talismã",
+    "categoria": "PROPRIO",
+    "status_saude": "Saudável",
+    "onde_dorme": "PIQUETE",
+    "foto": "",
+    "raca": "crioulo",
+    "peso": 500.5,
+    "fator_atividade": "0.025",
+    "tipo_sela": "Sela Escola",
+    "tipo_cabecada": "Cabeçada Padrão",
+    "material_proprio": false,
+    "baia": null,
+    "piquete": 2,
+    "proprietario": 1,
+    "ultima_vacina": null,
+    "ultimo_ferrageamento": null,
+    "ultimo_vermifugo": null,
+    "ultimo_casqueamento": null,
+    "racao_tipo": "Guabi Equi-S",
+    "racao_qtd_manha": "2kg",
+    "racao_qtd_noite": "2kg",
+    "feno_tipo": "Coast Cross",
+    "feno_qtd": "À vontade",
+    "complemento_nutricional": "",
+    "mensalidade_baia": "0.00"
+  }
+},
+{
+  "model": "gateagora.cavalo",
+  "pk": 31,
+  "fields": {
+    "empresa": 1,
+    "nome": "Trovão",
+    "categoria": "HOTELARIA",
+    "status_saude": "Saudável",
+    "onde_dorme": "BAIA",
+    "foto": "",
+    "raca": "quarto_milha",
+    "peso": 506.9,
+    "fator_atividade": "0.025",
+    "tipo_sela": "Sela Escola",
+    "tipo_cabecada": "Cabeçada Padrão",
+    "material_proprio": false,
+    "baia": 28,
+    "piquete": null,
+    "proprietario": 6,
+    "ultima_vacina": null,
+    "ultimo_ferrageamento": null,
+    "ultimo_vermifugo": "2025-12-08",
+    "ultimo_casqueamento": null,
+    "racao_tipo": "Guabi Equi-S",
+    "racao_qtd_manha": "2kg",
+    "racao_qtd_noite": "2kg",
+    "feno_tipo": "Coast Cross",
+    "feno_qtd": "À vontade",
+    "complemento_nutricional": "",
+    "mensalidade_baia": "1200.00"
+  }
+},
+{
+  "model": "gateagora.cavalo",
+  "pk": 30,
+  "fields": {
+    "empresa": 1,
+    "nome": "Trueno",
+    "categoria": "HOTELARIA",
+    "status_saude": "Saudável",
+    "onde_dorme": "BAIA",
+    "foto": "",
+    "raca": "crioulo",
+    "peso": 498.2,
+    "fator_atividade": "0.035",
+    "tipo_sela": "Sela Escola",
+    "tipo_cabecada": "Cabeçada Padrão",
+    "material_proprio": false,
+    "baia": 27,
+    "piquete": null,
+    "proprietario": 6,
+    "ultima_vacina": null,
+    "ultimo_ferrageamento": null,
+    "ultimo_vermifugo": null,
+    "ultimo_casqueamento": "2026-01-07",
+    "racao_tipo": "Guabi Equi-S",
+    "racao_qtd_manha": "2kg",
+    "racao_qtd_noite": "2kg",
+    "feno_tipo": "Coast Cross",
+    "feno_qtd": "À vontade",
+    "complemento_nutricional": "",
+    "mensalidade_baia": "1200.00"
+  }
+},
+{
+  "model": "gateagora.cavalo",
+  "pk": 21,
+  "fields": {
+    "empresa": 1,
+    "nome": "Ventania",
+    "categoria": "HOTELARIA",
+    "status_saude": "Saudável",
+    "onde_dorme": "BAIA",
+    "foto": "",
+    "raca": "mang_marchador",
+    "peso": 444.3,
+    "fator_atividade": "0.018",
+    "tipo_sela": "Sela do Proprietário",
+    "tipo_cabecada": "Cabeçada Padrão",
+    "material_proprio": true,
+    "baia": 18,
+    "piquete": null,
+    "proprietario": 3,
+    "ultima_vacina": null,
+    "ultimo_ferrageamento": null,
+    "ultimo_vermifugo": null,
+    "ultimo_casqueamento": null,
+    "racao_tipo": "Guabi Equi-S",
+    "racao_qtd_manha": "2kg",
+    "racao_qtd_noite": "2kg",
+    "feno_tipo": "Coast Cross",
+    "feno_qtd": "À vontade",
+    "complemento_nutricional": "",
+    "mensalidade_baia": "1200.00"
+  }
+},
+{
+  "model": "gateagora.cavalo",
+  "pk": 28,
+  "fields": {
+    "empresa": 1,
+    "nome": "Xamã",
+    "categoria": "HOTELARIA",
+    "status_saude": "Saudável",
+    "onde_dorme": "BAIA",
+    "foto": "",
+    "raca": "mang_marchador",
+    "peso": 489.6,
+    "fator_atividade": "0.025",
+    "tipo_sela": "Sela Escola",
+    "tipo_cabecada": "Cabeçada Padrão",
+    "material_proprio": false,
+    "baia": 25,
+    "piquete": null,
+    "proprietario": 5,
+    "ultima_vacina": null,
+    "ultimo_ferrageamento": null,
+    "ultimo_vermifugo": null,
+    "ultimo_casqueamento": null,
+    "racao_tipo": "Guabi Equi-S",
+    "racao_qtd_manha": "2kg",
+    "racao_qtd_noite": "2kg",
+    "feno_tipo": "Coast Cross",
+    "feno_qtd": "À vontade",
+    "complemento_nutricional": "",
+    "mensalidade_baia": "1200.00"
+  }
+},
+{
+  "model": "gateagora.cavalo",
+  "pk": 14,
+  "fields": {
+    "empresa": 1,
+    "nome": "Zéfiro",
+    "categoria": "PROPRIO",
+    "status_saude": "Saudável",
+    "onde_dorme": "BAIA",
+    "foto": "",
+    "raca": "crioulo",
+    "peso": 480.9,
+    "fator_atividade": "0.018",
+    "tipo_sela": "Sela Escola",
+    "tipo_cabecada": "Cabeçada Padrão",
+    "material_proprio": false,
+    "baia": 14,
+    "piquete": null,
+    "proprietario": 1,
+    "ultima_vacina": null,
+    "ultimo_ferrageamento": null,
+    "ultimo_vermifugo": null,
+    "ultimo_casqueamento": null,
+    "racao_tipo": "Guabi Equi-S",
+    "racao_qtd_manha": "2kg",
+    "racao_qtd_noite": "2kg",
+    "feno_tipo": "Coast Cross",
+    "feno_qtd": "À vontade",
+    "complemento_nutricional": "",
+    "mensalidade_baia": "0.00"
+  }
+},
+{
+  "model": "gateagora.cavalo",
+  "pk": 15,
+  "fields": {
+    "empresa": 1,
+    "nome": "Ícaro",
+    "categoria": "PROPRIO",
+    "status_saude": "Saudável",
+    "onde_dorme": "PIQUETE",
+    "foto": "",
+    "raca": "hipismo",
+    "peso": 436.3,
+    "fator_atividade": "0.025",
+    "tipo_sela": "Sela Escola",
+    "tipo_cabecada": "Cabeçada Padrão",
+    "material_proprio": false,
+    "baia": null,
+    "piquete": 2,
+    "proprietario": 1,
+    "ultima_vacina": null,
+    "ultimo_ferrageamento": null,
+    "ultimo_vermifugo": null,
+    "ultimo_casqueamento": null,
+    "racao_tipo": "Guabi Equi-S",
+    "racao_qtd_manha": "2kg",
+    "racao_qtd_noite": "2kg",
+    "feno_tipo": "Coast Cross",
+    "feno_qtd": "À vontade",
+    "complemento_nutricional": "",
+    "mensalidade_baia": "0.00"
   }
 },
 {
@@ -1679,8 +1734,8 @@
   "fields": {
     "cavalo": 25,
     "data": "2026-03-10T13:30:00Z",
-    "titulo": "Aplicar VermÝfugo",
-    "descricao": "VermifugaþÒo programada para 10/03/2026",
+    "titulo": "Aplicar Vermífugo",
+    "descricao": "Vermifugação programada para 10/03/2026",
     "foto_evidencia": "",
     "veterinario": ""
   }
@@ -1691,8 +1746,8 @@
   "fields": {
     "cavalo": 31,
     "data": "2026-03-10T13:30:00Z",
-    "titulo": "Aplicar VermÝfugo",
-    "descricao": "VermifugaþÒo programada para 10/03/2026",
+    "titulo": "Aplicar Vermífugo",
+    "descricao": "Vermifugação programada para 10/03/2026",
     "foto_evidencia": "",
     "veterinario": ""
   }
@@ -1703,8 +1758,8 @@
   "fields": {
     "cavalo": 10,
     "data": "2026-03-10T13:30:00Z",
-    "titulo": "Aplicar VermÝfugo",
-    "descricao": "VermifugaþÒo programada para 10/03/2026",
+    "titulo": "Aplicar Vermífugo",
+    "descricao": "Vermifugação programada para 10/03/2026",
     "foto_evidencia": "",
     "veterinario": ""
   }
@@ -1715,25 +1770,10 @@
   "fields": {
     "cavalo": 18,
     "data": "2026-03-10T13:30:00Z",
-    "titulo": "Aplicar VermÝfugo",
-    "descricao": "VermifugaþÒo programada para 10/03/2026",
+    "titulo": "Aplicar Vermífugo",
+    "descricao": "Vermifugação programada para 10/03/2026",
     "foto_evidencia": "",
     "veterinario": ""
-  }
-},
-{
-  "model": "gateagora.aula",
-  "pk": 1,
-  "fields": {
-    "empresa": 1,
-    "aluno": 14,
-    "cavalo": 2,
-    "instrutor": 5,
-    "data_hora": "2025-11-01T18:30:00Z",
-    "local": "picadeiro_1",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
   }
 },
 {
@@ -1745,6 +1785,21 @@
     "cavalo": 20,
     "instrutor": 5,
     "data_hora": "2025-11-01T14:00:00Z",
+    "local": "picadeiro_1",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
+  "pk": 1,
+  "fields": {
+    "empresa": 1,
+    "aluno": 14,
+    "cavalo": 2,
+    "instrutor": 5,
+    "data_hora": "2025-11-01T18:30:00Z",
     "local": "picadeiro_1",
     "tipo": "NORMAL",
     "concluida": true,
@@ -1828,6 +1883,21 @@
 },
 {
   "model": "gateagora.aula",
+  "pk": 11,
+  "fields": {
+    "empresa": 1,
+    "aluno": 10,
+    "cavalo": 1,
+    "instrutor": 5,
+    "data_hora": "2025-11-05T11:00:00Z",
+    "local": "picadeiro_1",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
   "pk": 8,
   "fields": {
     "empresa": 1,
@@ -1873,14 +1943,14 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 11,
+  "pk": 13,
   "fields": {
     "empresa": 1,
-    "aluno": 10,
-    "cavalo": 1,
+    "aluno": 15,
+    "cavalo": 16,
     "instrutor": 5,
-    "data_hora": "2025-11-05T11:00:00Z",
-    "local": "picadeiro_1",
+    "data_hora": "2025-11-06T11:00:00Z",
+    "local": "picadeiro_2",
     "tipo": "NORMAL",
     "concluida": true,
     "relatorio_treino": ""
@@ -1903,21 +1973,6 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 13,
-  "fields": {
-    "empresa": 1,
-    "aluno": 15,
-    "cavalo": 16,
-    "instrutor": 5,
-    "data_hora": "2025-11-06T11:00:00Z",
-    "local": "picadeiro_2",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
   "pk": 14,
   "fields": {
     "empresa": 1,
@@ -1925,36 +1980,6 @@
     "cavalo": 31,
     "instrutor": 5,
     "data_hora": "2025-11-07T12:30:00Z",
-    "local": "picadeiro_2",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
-  "pk": 15,
-  "fields": {
-    "empresa": 1,
-    "aluno": 10,
-    "cavalo": 7,
-    "instrutor": 5,
-    "data_hora": "2025-11-07T18:30:00Z",
-    "local": "picadeiro_1",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
-  "pk": 16,
-  "fields": {
-    "empresa": 1,
-    "aluno": 3,
-    "cavalo": 28,
-    "instrutor": 5,
-    "data_hora": "2025-11-07T20:00:00Z",
     "local": "picadeiro_2",
     "tipo": "NORMAL",
     "concluida": true,
@@ -1986,6 +2011,36 @@
     "instrutor": 5,
     "data_hora": "2025-11-07T17:00:00Z",
     "local": "pista_salto",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
+  "pk": 15,
+  "fields": {
+    "empresa": 1,
+    "aluno": 10,
+    "cavalo": 7,
+    "instrutor": 5,
+    "data_hora": "2025-11-07T18:30:00Z",
+    "local": "picadeiro_1",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
+  "pk": 16,
+  "fields": {
+    "empresa": 1,
+    "aluno": 3,
+    "cavalo": 28,
+    "instrutor": 5,
+    "data_hora": "2025-11-07T20:00:00Z",
+    "local": "picadeiro_2",
     "tipo": "NORMAL",
     "concluida": true,
     "relatorio_treino": ""
@@ -2038,13 +2093,13 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 22,
+  "pk": 25,
   "fields": {
     "empresa": 1,
-    "aluno": 15,
-    "cavalo": 7,
+    "aluno": 14,
+    "cavalo": 31,
     "instrutor": 5,
-    "data_hora": "2025-11-10T17:00:00Z",
+    "data_hora": "2025-11-10T14:00:00Z",
     "local": "picadeiro_1",
     "tipo": "NORMAL",
     "concluida": true,
@@ -2053,13 +2108,13 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 23,
+  "pk": 22,
   "fields": {
     "empresa": 1,
-    "aluno": 3,
-    "cavalo": 1,
+    "aluno": 15,
+    "cavalo": 7,
     "instrutor": 5,
-    "data_hora": "2025-11-10T20:00:00Z",
+    "data_hora": "2025-11-10T17:00:00Z",
     "local": "picadeiro_1",
     "tipo": "NORMAL",
     "concluida": true,
@@ -2083,13 +2138,13 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 25,
+  "pk": 23,
   "fields": {
     "empresa": 1,
-    "aluno": 14,
-    "cavalo": 31,
+    "aluno": 3,
+    "cavalo": 1,
     "instrutor": 5,
-    "data_hora": "2025-11-10T14:00:00Z",
+    "data_hora": "2025-11-10T20:00:00Z",
     "local": "picadeiro_1",
     "tipo": "NORMAL",
     "concluida": true,
@@ -2143,6 +2198,21 @@
 },
 {
   "model": "gateagora.aula",
+  "pk": 30,
+  "fields": {
+    "empresa": 1,
+    "aluno": 12,
+    "cavalo": 4,
+    "instrutor": 5,
+    "data_hora": "2025-11-11T18:30:00Z",
+    "local": "picadeiro_1",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
   "pk": 29,
   "fields": {
     "empresa": 1,
@@ -2158,14 +2228,44 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 30,
+  "pk": 34,
   "fields": {
     "empresa": 1,
-    "aluno": 12,
-    "cavalo": 4,
+    "aluno": 2,
+    "cavalo": 3,
     "instrutor": 5,
-    "data_hora": "2025-11-11T18:30:00Z",
-    "local": "picadeiro_1",
+    "data_hora": "2025-11-12T11:00:00Z",
+    "local": "pista_salto",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
+  "pk": 33,
+  "fields": {
+    "empresa": 1,
+    "aluno": 8,
+    "cavalo": 16,
+    "instrutor": 5,
+    "data_hora": "2025-11-12T12:30:00Z",
+    "local": "pista_salto",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
+  "pk": 35,
+  "fields": {
+    "empresa": 1,
+    "aluno": 8,
+    "cavalo": 27,
+    "instrutor": 5,
+    "data_hora": "2025-11-12T14:00:00Z",
+    "local": "pista_salto",
     "tipo": "NORMAL",
     "concluida": true,
     "relatorio_treino": ""
@@ -2203,58 +2303,13 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 33,
+  "pk": 39,
   "fields": {
     "empresa": 1,
-    "aluno": 8,
-    "cavalo": 16,
+    "aluno": 14,
+    "cavalo": 7,
     "instrutor": 5,
-    "data_hora": "2025-11-12T12:30:00Z",
-    "local": "pista_salto",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
-  "pk": 34,
-  "fields": {
-    "empresa": 1,
-    "aluno": 2,
-    "cavalo": 3,
-    "instrutor": 5,
-    "data_hora": "2025-11-12T11:00:00Z",
-    "local": "pista_salto",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
-  "pk": 35,
-  "fields": {
-    "empresa": 1,
-    "aluno": 8,
-    "cavalo": 27,
-    "instrutor": 5,
-    "data_hora": "2025-11-12T14:00:00Z",
-    "local": "pista_salto",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
-  "pk": 36,
-  "fields": {
-    "empresa": 1,
-    "aluno": 11,
-    "cavalo": 26,
-    "instrutor": 5,
-    "data_hora": "2025-11-13T14:00:00Z",
+    "data_hora": "2025-11-13T11:00:00Z",
     "local": "picadeiro_1",
     "tipo": "NORMAL",
     "concluida": true,
@@ -2278,6 +2333,21 @@
 },
 {
   "model": "gateagora.aula",
+  "pk": 36,
+  "fields": {
+    "empresa": 1,
+    "aluno": 11,
+    "cavalo": 26,
+    "instrutor": 5,
+    "data_hora": "2025-11-13T14:00:00Z",
+    "local": "picadeiro_1",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
   "pk": 38,
   "fields": {
     "empresa": 1,
@@ -2285,51 +2355,6 @@
     "cavalo": 5,
     "instrutor": 5,
     "data_hora": "2025-11-13T20:00:00Z",
-    "local": "picadeiro_1",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
-  "pk": 39,
-  "fields": {
-    "empresa": 1,
-    "aluno": 14,
-    "cavalo": 7,
-    "instrutor": 5,
-    "data_hora": "2025-11-13T11:00:00Z",
-    "local": "picadeiro_1",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
-  "pk": 40,
-  "fields": {
-    "empresa": 1,
-    "aluno": 12,
-    "cavalo": 5,
-    "instrutor": 5,
-    "data_hora": "2025-11-14T18:30:00Z",
-    "local": "picadeiro_1",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
-  "pk": 41,
-  "fields": {
-    "empresa": 1,
-    "aluno": 12,
-    "cavalo": 19,
-    "instrutor": 5,
-    "data_hora": "2025-11-14T14:00:00Z",
     "local": "picadeiro_1",
     "tipo": "NORMAL",
     "concluida": true,
@@ -2353,13 +2378,28 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 43,
+  "pk": 41,
   "fields": {
     "empresa": 1,
-    "aluno": 11,
-    "cavalo": 7,
+    "aluno": 12,
+    "cavalo": 19,
     "instrutor": 5,
-    "data_hora": "2025-11-15T20:00:00Z",
+    "data_hora": "2025-11-14T14:00:00Z",
+    "local": "picadeiro_1",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
+  "pk": 40,
+  "fields": {
+    "empresa": 1,
+    "aluno": 12,
+    "cavalo": 5,
+    "instrutor": 5,
+    "data_hora": "2025-11-14T18:30:00Z",
     "local": "picadeiro_1",
     "tipo": "NORMAL",
     "concluida": true,
@@ -2375,6 +2415,36 @@
     "cavalo": 8,
     "instrutor": 5,
     "data_hora": "2025-11-15T18:30:00Z",
+    "local": "picadeiro_1",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
+  "pk": 43,
+  "fields": {
+    "empresa": 1,
+    "aluno": 11,
+    "cavalo": 7,
+    "instrutor": 5,
+    "data_hora": "2025-11-15T20:00:00Z",
+    "local": "picadeiro_1",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
+  "pk": 47,
+  "fields": {
+    "empresa": 1,
+    "aluno": 14,
+    "cavalo": 17,
+    "instrutor": 5,
+    "data_hora": "2025-11-17T12:30:00Z",
     "local": "picadeiro_1",
     "tipo": "NORMAL",
     "concluida": true,
@@ -2413,14 +2483,14 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 47,
+  "pk": 49,
   "fields": {
     "empresa": 1,
-    "aluno": 14,
-    "cavalo": 17,
+    "aluno": 12,
+    "cavalo": 9,
     "instrutor": 5,
-    "data_hora": "2025-11-17T12:30:00Z",
-    "local": "picadeiro_1",
+    "data_hora": "2025-11-18T17:00:00Z",
+    "local": "pista_salto",
     "tipo": "NORMAL",
     "concluida": true,
     "relatorio_treino": ""
@@ -2443,21 +2513,6 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 49,
-  "fields": {
-    "empresa": 1,
-    "aluno": 12,
-    "cavalo": 9,
-    "instrutor": 5,
-    "data_hora": "2025-11-18T17:00:00Z",
-    "local": "pista_salto",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
   "pk": 50,
   "fields": {
     "empresa": 1,
@@ -2466,6 +2521,21 @@
     "instrutor": 5,
     "data_hora": "2025-11-19T12:30:00Z",
     "local": "picadeiro_1",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
+  "pk": 53,
+  "fields": {
+    "empresa": 1,
+    "aluno": 15,
+    "cavalo": 10,
+    "instrutor": 5,
+    "data_hora": "2025-11-19T14:00:00Z",
+    "local": "picadeiro_2",
     "tipo": "NORMAL",
     "concluida": true,
     "relatorio_treino": ""
@@ -2496,21 +2566,6 @@
     "instrutor": 5,
     "data_hora": "2025-11-19T18:30:00Z",
     "local": "pista_salto",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
-  "pk": 53,
-  "fields": {
-    "empresa": 1,
-    "aluno": 15,
-    "cavalo": 10,
-    "instrutor": 5,
-    "data_hora": "2025-11-19T14:00:00Z",
-    "local": "picadeiro_2",
     "tipo": "NORMAL",
     "concluida": true,
     "relatorio_treino": ""
@@ -2563,14 +2618,14 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 57,
+  "pk": 60,
   "fields": {
     "empresa": 1,
-    "aluno": 13,
-    "cavalo": 2,
+    "aluno": 9,
+    "cavalo": 7,
     "instrutor": 5,
-    "data_hora": "2025-11-21T18:30:00Z",
-    "local": "picadeiro_1",
+    "data_hora": "2025-11-21T11:00:00Z",
+    "local": "picadeiro_2",
     "tipo": "NORMAL",
     "concluida": true,
     "relatorio_treino": ""
@@ -2585,36 +2640,6 @@
     "cavalo": 22,
     "instrutor": 5,
     "data_hora": "2025-11-21T12:30:00Z",
-    "local": "picadeiro_2",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
-  "pk": 59,
-  "fields": {
-    "empresa": 1,
-    "aluno": 3,
-    "cavalo": 16,
-    "instrutor": 5,
-    "data_hora": "2025-11-21T20:00:00Z",
-    "local": "picadeiro_2",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
-  "pk": 60,
-  "fields": {
-    "empresa": 1,
-    "aluno": 9,
-    "cavalo": 7,
-    "instrutor": 5,
-    "data_hora": "2025-11-21T11:00:00Z",
     "local": "picadeiro_2",
     "tipo": "NORMAL",
     "concluida": true,
@@ -2638,14 +2663,29 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 62,
+  "pk": 57,
   "fields": {
     "empresa": 1,
-    "aluno": 10,
-    "cavalo": 15,
+    "aluno": 13,
+    "cavalo": 2,
     "instrutor": 5,
-    "data_hora": "2025-11-22T17:00:00Z",
+    "data_hora": "2025-11-21T18:30:00Z",
     "local": "picadeiro_1",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
+  "pk": 59,
+  "fields": {
+    "empresa": 1,
+    "aluno": 3,
+    "cavalo": 16,
+    "instrutor": 5,
+    "data_hora": "2025-11-21T20:00:00Z",
+    "local": "picadeiro_2",
     "tipo": "NORMAL",
     "concluida": true,
     "relatorio_treino": ""
@@ -2661,6 +2701,21 @@
     "instrutor": 5,
     "data_hora": "2025-11-22T14:00:00Z",
     "local": "picadeiro_2",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
+  "pk": 62,
+  "fields": {
+    "empresa": 1,
+    "aluno": 10,
+    "cavalo": 15,
+    "instrutor": 5,
+    "data_hora": "2025-11-22T17:00:00Z",
+    "local": "picadeiro_1",
     "tipo": "NORMAL",
     "concluida": true,
     "relatorio_treino": ""
@@ -2698,13 +2753,13 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 66,
+  "pk": 67,
   "fields": {
     "empresa": 1,
-    "aluno": 8,
+    "aluno": 2,
     "cavalo": 17,
     "instrutor": 5,
-    "data_hora": "2025-11-24T18:30:00Z",
+    "data_hora": "2025-11-24T17:00:00Z",
     "local": "picadeiro_1",
     "tipo": "NORMAL",
     "concluida": true,
@@ -2713,13 +2768,13 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 67,
+  "pk": 66,
   "fields": {
     "empresa": 1,
-    "aluno": 2,
+    "aluno": 8,
     "cavalo": 17,
     "instrutor": 5,
-    "data_hora": "2025-11-24T17:00:00Z",
+    "data_hora": "2025-11-24T18:30:00Z",
     "local": "picadeiro_1",
     "tipo": "NORMAL",
     "concluida": true,
@@ -2736,36 +2791,6 @@
     "instrutor": 5,
     "data_hora": "2025-11-24T20:00:00Z",
     "local": "picadeiro_2",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
-  "pk": 69,
-  "fields": {
-    "empresa": 1,
-    "aluno": 2,
-    "cavalo": 13,
-    "instrutor": 5,
-    "data_hora": "2025-11-25T17:00:00Z",
-    "local": "picadeiro_2",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
-  "pk": 70,
-  "fields": {
-    "empresa": 1,
-    "aluno": 7,
-    "cavalo": 28,
-    "instrutor": 5,
-    "data_hora": "2025-11-25T18:30:00Z",
-    "local": "picadeiro_1",
     "tipo": "NORMAL",
     "concluida": true,
     "relatorio_treino": ""
@@ -2803,13 +2828,43 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 73,
+  "pk": 69,
   "fields": {
     "empresa": 1,
-    "aluno": 11,
-    "cavalo": 20,
+    "aluno": 2,
+    "cavalo": 13,
     "instrutor": 5,
-    "data_hora": "2025-11-26T18:30:00Z",
+    "data_hora": "2025-11-25T17:00:00Z",
+    "local": "picadeiro_2",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
+  "pk": 70,
+  "fields": {
+    "empresa": 1,
+    "aluno": 7,
+    "cavalo": 28,
+    "instrutor": 5,
+    "data_hora": "2025-11-25T18:30:00Z",
+    "local": "picadeiro_1",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
+  "pk": 75,
+  "fields": {
+    "empresa": 1,
+    "aluno": 4,
+    "cavalo": 19,
+    "instrutor": 5,
+    "data_hora": "2025-11-26T11:00:00Z",
     "local": "pista_salto",
     "tipo": "NORMAL",
     "concluida": true,
@@ -2833,13 +2888,13 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 75,
+  "pk": 73,
   "fields": {
     "empresa": 1,
-    "aluno": 4,
-    "cavalo": 19,
+    "aluno": 11,
+    "cavalo": 20,
     "instrutor": 5,
-    "data_hora": "2025-11-26T11:00:00Z",
+    "data_hora": "2025-11-26T18:30:00Z",
     "local": "pista_salto",
     "tipo": "NORMAL",
     "concluida": true,
@@ -2863,14 +2918,14 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 77,
+  "pk": 81,
   "fields": {
     "empresa": 1,
-    "aluno": 11,
-    "cavalo": 19,
+    "aluno": 9,
+    "cavalo": 6,
     "instrutor": 5,
-    "data_hora": "2025-11-27T20:00:00Z",
-    "local": "picadeiro_1",
+    "data_hora": "2025-11-27T11:00:00Z",
+    "local": "picadeiro_2",
     "tipo": "NORMAL",
     "concluida": true,
     "relatorio_treino": ""
@@ -2923,14 +2978,14 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 81,
+  "pk": 77,
   "fields": {
     "empresa": 1,
-    "aluno": 9,
-    "cavalo": 6,
+    "aluno": 11,
+    "cavalo": 19,
     "instrutor": 5,
-    "data_hora": "2025-11-27T11:00:00Z",
-    "local": "picadeiro_2",
+    "data_hora": "2025-11-27T20:00:00Z",
+    "local": "picadeiro_1",
     "tipo": "NORMAL",
     "concluida": true,
     "relatorio_treino": ""
@@ -2998,6 +3053,51 @@
 },
 {
   "model": "gateagora.aula",
+  "pk": 89,
+  "fields": {
+    "empresa": 1,
+    "aluno": 14,
+    "cavalo": 9,
+    "instrutor": 5,
+    "data_hora": "2025-11-29T11:00:00Z",
+    "local": "picadeiro_2",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
+  "pk": 88,
+  "fields": {
+    "empresa": 1,
+    "aluno": 15,
+    "cavalo": 16,
+    "instrutor": 5,
+    "data_hora": "2025-11-29T12:30:00Z",
+    "local": "picadeiro_1",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
+  "pk": 90,
+  "fields": {
+    "empresa": 1,
+    "aluno": 3,
+    "cavalo": 21,
+    "instrutor": 5,
+    "data_hora": "2025-11-29T14:00:00Z",
+    "local": "picadeiro_2",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
   "pk": 86,
   "fields": {
     "empresa": 1,
@@ -3021,81 +3121,6 @@
     "instrutor": 5,
     "data_hora": "2025-11-29T20:00:00Z",
     "local": "picadeiro_1",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
-  "pk": 88,
-  "fields": {
-    "empresa": 1,
-    "aluno": 15,
-    "cavalo": 16,
-    "instrutor": 5,
-    "data_hora": "2025-11-29T12:30:00Z",
-    "local": "picadeiro_1",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
-  "pk": 89,
-  "fields": {
-    "empresa": 1,
-    "aluno": 14,
-    "cavalo": 9,
-    "instrutor": 5,
-    "data_hora": "2025-11-29T11:00:00Z",
-    "local": "picadeiro_2",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
-  "pk": 90,
-  "fields": {
-    "empresa": 1,
-    "aluno": 3,
-    "cavalo": 21,
-    "instrutor": 5,
-    "data_hora": "2025-11-29T14:00:00Z",
-    "local": "picadeiro_2",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
-  "pk": 91,
-  "fields": {
-    "empresa": 1,
-    "aluno": 14,
-    "cavalo": 17,
-    "instrutor": 5,
-    "data_hora": "2025-12-01T18:30:00Z",
-    "local": "picadeiro_1",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
-  "pk": 92,
-  "fields": {
-    "empresa": 1,
-    "aluno": 3,
-    "cavalo": 18,
-    "instrutor": 5,
-    "data_hora": "2025-12-01T17:00:00Z",
-    "local": "pista_salto",
     "tipo": "NORMAL",
     "concluida": true,
     "relatorio_treino": ""
@@ -3133,6 +3158,36 @@
 },
 {
   "model": "gateagora.aula",
+  "pk": 92,
+  "fields": {
+    "empresa": 1,
+    "aluno": 3,
+    "cavalo": 18,
+    "instrutor": 5,
+    "data_hora": "2025-12-01T17:00:00Z",
+    "local": "pista_salto",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
+  "pk": 91,
+  "fields": {
+    "empresa": 1,
+    "aluno": 14,
+    "cavalo": 17,
+    "instrutor": 5,
+    "data_hora": "2025-12-01T18:30:00Z",
+    "local": "picadeiro_1",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
   "pk": 95,
   "fields": {
     "empresa": 1,
@@ -3140,6 +3195,21 @@
     "cavalo": 16,
     "instrutor": 5,
     "data_hora": "2025-12-01T20:00:00Z",
+    "local": "picadeiro_2",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
+  "pk": 98,
+  "fields": {
+    "empresa": 1,
+    "aluno": 10,
+    "cavalo": 5,
+    "instrutor": 5,
+    "data_hora": "2025-12-02T11:00:00Z",
     "local": "picadeiro_2",
     "tipo": "NORMAL",
     "concluida": true,
@@ -3163,36 +3233,6 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 97,
-  "fields": {
-    "empresa": 1,
-    "aluno": 4,
-    "cavalo": 10,
-    "instrutor": 5,
-    "data_hora": "2025-12-02T18:30:00Z",
-    "local": "pista_salto",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
-  "pk": 98,
-  "fields": {
-    "empresa": 1,
-    "aluno": 10,
-    "cavalo": 5,
-    "instrutor": 5,
-    "data_hora": "2025-12-02T11:00:00Z",
-    "local": "picadeiro_2",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
   "pk": 99,
   "fields": {
     "empresa": 1,
@@ -3208,13 +3248,13 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 100,
+  "pk": 97,
   "fields": {
     "empresa": 1,
-    "aluno": 2,
-    "cavalo": 2,
+    "aluno": 4,
+    "cavalo": 10,
     "instrutor": 5,
-    "data_hora": "2025-12-03T17:00:00Z",
+    "data_hora": "2025-12-02T18:30:00Z",
     "local": "pista_salto",
     "tipo": "NORMAL",
     "concluida": true,
@@ -3253,13 +3293,13 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 103,
+  "pk": 104,
   "fields": {
     "empresa": 1,
-    "aluno": 13,
-    "cavalo": 15,
+    "aluno": 10,
+    "cavalo": 18,
     "instrutor": 5,
-    "data_hora": "2025-12-03T20:00:00Z",
+    "data_hora": "2025-12-03T14:00:00Z",
     "local": "picadeiro_2",
     "tipo": "NORMAL",
     "concluida": true,
@@ -3268,13 +3308,28 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 104,
+  "pk": 100,
   "fields": {
     "empresa": 1,
-    "aluno": 10,
-    "cavalo": 18,
+    "aluno": 2,
+    "cavalo": 2,
     "instrutor": 5,
-    "data_hora": "2025-12-03T14:00:00Z",
+    "data_hora": "2025-12-03T17:00:00Z",
+    "local": "pista_salto",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
+  "pk": 103,
+  "fields": {
+    "empresa": 1,
+    "aluno": 13,
+    "cavalo": 15,
+    "instrutor": 5,
+    "data_hora": "2025-12-03T20:00:00Z",
     "local": "picadeiro_2",
     "tipo": "NORMAL",
     "concluida": true,
@@ -3298,14 +3353,14 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 106,
+  "pk": 109,
   "fields": {
     "empresa": 1,
-    "aluno": 9,
-    "cavalo": 2,
+    "aluno": 14,
+    "cavalo": 12,
     "instrutor": 5,
-    "data_hora": "2025-12-04T17:00:00Z",
-    "local": "picadeiro_2",
+    "data_hora": "2025-12-04T12:30:00Z",
+    "local": "picadeiro_1",
     "tipo": "NORMAL",
     "concluida": true,
     "relatorio_treino": ""
@@ -3328,6 +3383,21 @@
 },
 {
   "model": "gateagora.aula",
+  "pk": 106,
+  "fields": {
+    "empresa": 1,
+    "aluno": 9,
+    "cavalo": 2,
+    "instrutor": 5,
+    "data_hora": "2025-12-04T17:00:00Z",
+    "local": "picadeiro_2",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
   "pk": 108,
   "fields": {
     "empresa": 1,
@@ -3336,51 +3406,6 @@
     "instrutor": 5,
     "data_hora": "2025-12-04T18:30:00Z",
     "local": "picadeiro_1",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
-  "pk": 109,
-  "fields": {
-    "empresa": 1,
-    "aluno": 14,
-    "cavalo": 12,
-    "instrutor": 5,
-    "data_hora": "2025-12-04T12:30:00Z",
-    "local": "picadeiro_1",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
-  "pk": 110,
-  "fields": {
-    "empresa": 1,
-    "aluno": 12,
-    "cavalo": 22,
-    "instrutor": 5,
-    "data_hora": "2025-12-05T17:00:00Z",
-    "local": "picadeiro_2",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
-  "pk": 111,
-  "fields": {
-    "empresa": 1,
-    "aluno": 11,
-    "cavalo": 27,
-    "instrutor": 5,
-    "data_hora": "2025-12-05T14:00:00Z",
-    "local": "picadeiro_2",
     "tipo": "NORMAL",
     "concluida": true,
     "relatorio_treino": ""
@@ -3403,13 +3428,13 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 113,
+  "pk": 111,
   "fields": {
     "empresa": 1,
-    "aluno": 4,
-    "cavalo": 4,
+    "aluno": 11,
+    "cavalo": 27,
     "instrutor": 5,
-    "data_hora": "2025-12-05T20:00:00Z",
+    "data_hora": "2025-12-05T14:00:00Z",
     "local": "picadeiro_2",
     "tipo": "NORMAL",
     "concluida": true,
@@ -3418,14 +3443,29 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 114,
+  "pk": 110,
   "fields": {
     "empresa": 1,
-    "aluno": 7,
-    "cavalo": 16,
+    "aluno": 12,
+    "cavalo": 22,
     "instrutor": 5,
-    "data_hora": "2025-12-06T20:00:00Z",
-    "local": "picadeiro_1",
+    "data_hora": "2025-12-05T17:00:00Z",
+    "local": "picadeiro_2",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
+  "pk": 113,
+  "fields": {
+    "empresa": 1,
+    "aluno": 4,
+    "cavalo": 4,
+    "instrutor": 5,
+    "data_hora": "2025-12-05T20:00:00Z",
+    "local": "picadeiro_2",
     "tipo": "NORMAL",
     "concluida": true,
     "relatorio_treino": ""
@@ -3463,14 +3503,14 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 117,
+  "pk": 114,
   "fields": {
     "empresa": 1,
-    "aluno": 14,
-    "cavalo": 17,
+    "aluno": 7,
+    "cavalo": 16,
     "instrutor": 5,
-    "data_hora": "2025-12-08T18:30:00Z",
-    "local": "picadeiro_2",
+    "data_hora": "2025-12-06T20:00:00Z",
+    "local": "picadeiro_1",
     "tipo": "NORMAL",
     "concluida": true,
     "relatorio_treino": ""
@@ -3493,6 +3533,21 @@
 },
 {
   "model": "gateagora.aula",
+  "pk": 117,
+  "fields": {
+    "empresa": 1,
+    "aluno": 14,
+    "cavalo": 17,
+    "instrutor": 5,
+    "data_hora": "2025-12-08T18:30:00Z",
+    "local": "picadeiro_2",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
   "pk": 119,
   "fields": {
     "empresa": 1,
@@ -3501,6 +3556,21 @@
     "instrutor": 5,
     "data_hora": "2025-12-09T11:00:00Z",
     "local": "picadeiro_2",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
+  "pk": 122,
+  "fields": {
+    "empresa": 1,
+    "aluno": 4,
+    "cavalo": 20,
+    "instrutor": 5,
+    "data_hora": "2025-12-09T12:30:00Z",
+    "local": "pista_salto",
     "tipo": "NORMAL",
     "concluida": true,
     "relatorio_treino": ""
@@ -3538,13 +3608,13 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 122,
+  "pk": 124,
   "fields": {
     "empresa": 1,
-    "aluno": 4,
-    "cavalo": 20,
+    "aluno": 12,
+    "cavalo": 5,
     "instrutor": 5,
-    "data_hora": "2025-12-09T12:30:00Z",
+    "data_hora": "2025-12-10T11:00:00Z",
     "local": "pista_salto",
     "tipo": "NORMAL",
     "concluida": true,
@@ -3560,21 +3630,6 @@
     "cavalo": 28,
     "instrutor": 5,
     "data_hora": "2025-12-10T18:30:00Z",
-    "local": "pista_salto",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
-  "pk": 124,
-  "fields": {
-    "empresa": 1,
-    "aluno": 12,
-    "cavalo": 5,
-    "instrutor": 5,
-    "data_hora": "2025-12-10T11:00:00Z",
     "local": "pista_salto",
     "tipo": "NORMAL",
     "concluida": true,
@@ -3643,13 +3698,43 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 129,
+  "pk": 133,
   "fields": {
     "empresa": 1,
-    "aluno": 8,
-    "cavalo": 18,
+    "aluno": 9,
+    "cavalo": 32,
     "instrutor": 5,
-    "data_hora": "2025-12-12T20:00:00Z",
+    "data_hora": "2025-12-12T11:00:00Z",
+    "local": "picadeiro_1",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
+  "pk": 132,
+  "fields": {
+    "empresa": 1,
+    "aluno": 7,
+    "cavalo": 32,
+    "instrutor": 5,
+    "data_hora": "2025-12-12T12:30:00Z",
+    "local": "picadeiro_2",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
+  "pk": 131,
+  "fields": {
+    "empresa": 1,
+    "aluno": 2,
+    "cavalo": 25,
+    "instrutor": 5,
+    "data_hora": "2025-12-12T14:00:00Z",
     "local": "picadeiro_2",
     "tipo": "NORMAL",
     "concluida": true,
@@ -3673,44 +3758,14 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 131,
+  "pk": 129,
   "fields": {
     "empresa": 1,
-    "aluno": 2,
-    "cavalo": 25,
+    "aluno": 8,
+    "cavalo": 18,
     "instrutor": 5,
-    "data_hora": "2025-12-12T14:00:00Z",
+    "data_hora": "2025-12-12T20:00:00Z",
     "local": "picadeiro_2",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
-  "pk": 132,
-  "fields": {
-    "empresa": 1,
-    "aluno": 7,
-    "cavalo": 32,
-    "instrutor": 5,
-    "data_hora": "2025-12-12T12:30:00Z",
-    "local": "picadeiro_2",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
-  "pk": 133,
-  "fields": {
-    "empresa": 1,
-    "aluno": 9,
-    "cavalo": 32,
-    "instrutor": 5,
-    "data_hora": "2025-12-12T11:00:00Z",
-    "local": "picadeiro_1",
     "tipo": "NORMAL",
     "concluida": true,
     "relatorio_treino": ""
@@ -3733,14 +3788,14 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 135,
+  "pk": 137,
   "fields": {
     "empresa": 1,
-    "aluno": 7,
-    "cavalo": 13,
+    "aluno": 15,
+    "cavalo": 16,
     "instrutor": 5,
-    "data_hora": "2025-12-13T20:00:00Z",
-    "local": "picadeiro_1",
+    "data_hora": "2025-12-13T17:00:00Z",
+    "local": "pista_salto",
     "tipo": "NORMAL",
     "concluida": true,
     "relatorio_treino": ""
@@ -3763,14 +3818,14 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 137,
+  "pk": 135,
   "fields": {
     "empresa": 1,
-    "aluno": 15,
-    "cavalo": 16,
+    "aluno": 7,
+    "cavalo": 13,
     "instrutor": 5,
-    "data_hora": "2025-12-13T17:00:00Z",
-    "local": "pista_salto",
+    "data_hora": "2025-12-13T20:00:00Z",
+    "local": "picadeiro_1",
     "tipo": "NORMAL",
     "concluida": true,
     "relatorio_treino": ""
@@ -3778,13 +3833,28 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 138,
+  "pk": 141,
   "fields": {
     "empresa": 1,
-    "aluno": 11,
-    "cavalo": 15,
+    "aluno": 15,
+    "cavalo": 23,
     "instrutor": 5,
-    "data_hora": "2025-12-15T20:00:00Z",
+    "data_hora": "2025-12-15T11:00:00Z",
+    "local": "picadeiro_2",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
+  "pk": 142,
+  "fields": {
+    "empresa": 1,
+    "aluno": 4,
+    "cavalo": 22,
+    "instrutor": 5,
+    "data_hora": "2025-12-15T14:00:00Z",
     "local": "picadeiro_2",
     "tipo": "NORMAL",
     "concluida": true,
@@ -3823,73 +3893,13 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 141,
+  "pk": 138,
   "fields": {
     "empresa": 1,
-    "aluno": 15,
-    "cavalo": 23,
+    "aluno": 11,
+    "cavalo": 15,
     "instrutor": 5,
-    "data_hora": "2025-12-15T11:00:00Z",
-    "local": "picadeiro_2",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
-  "pk": 142,
-  "fields": {
-    "empresa": 1,
-    "aluno": 4,
-    "cavalo": 22,
-    "instrutor": 5,
-    "data_hora": "2025-12-15T14:00:00Z",
-    "local": "picadeiro_2",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
-  "pk": 143,
-  "fields": {
-    "empresa": 1,
-    "aluno": 4,
-    "cavalo": 13,
-    "instrutor": 5,
-    "data_hora": "2025-12-16T14:00:00Z",
-    "local": "picadeiro_2",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
-  "pk": 144,
-  "fields": {
-    "empresa": 1,
-    "aluno": 8,
-    "cavalo": 12,
-    "instrutor": 5,
-    "data_hora": "2025-12-16T20:00:00Z",
-    "local": "picadeiro_1",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
-  "pk": 145,
-  "fields": {
-    "empresa": 1,
-    "aluno": 10,
-    "cavalo": 31,
-    "instrutor": 5,
-    "data_hora": "2025-12-16T18:30:00Z",
+    "data_hora": "2025-12-15T20:00:00Z",
     "local": "picadeiro_2",
     "tipo": "NORMAL",
     "concluida": true,
@@ -3913,6 +3923,21 @@
 },
 {
   "model": "gateagora.aula",
+  "pk": 143,
+  "fields": {
+    "empresa": 1,
+    "aluno": 4,
+    "cavalo": 13,
+    "instrutor": 5,
+    "data_hora": "2025-12-16T14:00:00Z",
+    "local": "picadeiro_2",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
   "pk": 147,
   "fields": {
     "empresa": 1,
@@ -3921,6 +3946,51 @@
     "instrutor": 5,
     "data_hora": "2025-12-16T17:00:00Z",
     "local": "picadeiro_1",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
+  "pk": 145,
+  "fields": {
+    "empresa": 1,
+    "aluno": 10,
+    "cavalo": 31,
+    "instrutor": 5,
+    "data_hora": "2025-12-16T18:30:00Z",
+    "local": "picadeiro_2",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
+  "pk": 144,
+  "fields": {
+    "empresa": 1,
+    "aluno": 8,
+    "cavalo": 12,
+    "instrutor": 5,
+    "data_hora": "2025-12-16T20:00:00Z",
+    "local": "picadeiro_1",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
+  "pk": 150,
+  "fields": {
+    "empresa": 1,
+    "aluno": 11,
+    "cavalo": 9,
+    "instrutor": 5,
+    "data_hora": "2025-12-17T11:00:00Z",
+    "local": "pista_salto",
     "tipo": "NORMAL",
     "concluida": true,
     "relatorio_treino": ""
@@ -3958,21 +4028,6 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 150,
-  "fields": {
-    "empresa": 1,
-    "aluno": 11,
-    "cavalo": 9,
-    "instrutor": 5,
-    "data_hora": "2025-12-17T11:00:00Z",
-    "local": "pista_salto",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
   "pk": 151,
   "fields": {
     "empresa": 1,
@@ -3980,51 +4035,6 @@
     "cavalo": 7,
     "instrutor": 5,
     "data_hora": "2025-12-17T18:30:00Z",
-    "local": "picadeiro_1",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
-  "pk": 152,
-  "fields": {
-    "empresa": 1,
-    "aluno": 9,
-    "cavalo": 4,
-    "instrutor": 5,
-    "data_hora": "2025-12-18T17:00:00Z",
-    "local": "picadeiro_2",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
-  "pk": 153,
-  "fields": {
-    "empresa": 1,
-    "aluno": 14,
-    "cavalo": 8,
-    "instrutor": 5,
-    "data_hora": "2025-12-18T20:00:00Z",
-    "local": "picadeiro_1",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
-  "pk": 154,
-  "fields": {
-    "empresa": 1,
-    "aluno": 13,
-    "cavalo": 32,
-    "instrutor": 5,
-    "data_hora": "2025-12-18T18:30:00Z",
     "local": "picadeiro_1",
     "tipo": "NORMAL",
     "concluida": true,
@@ -4048,14 +4058,14 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 156,
+  "pk": 152,
   "fields": {
     "empresa": 1,
-    "aluno": 10,
-    "cavalo": 8,
+    "aluno": 9,
+    "cavalo": 4,
     "instrutor": 5,
-    "data_hora": "2025-12-19T18:30:00Z",
-    "local": "pista_salto",
+    "data_hora": "2025-12-18T17:00:00Z",
+    "local": "picadeiro_2",
     "tipo": "NORMAL",
     "concluida": true,
     "relatorio_treino": ""
@@ -4063,14 +4073,29 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 157,
+  "pk": 154,
   "fields": {
     "empresa": 1,
     "aluno": 13,
-    "cavalo": 15,
+    "cavalo": 32,
     "instrutor": 5,
-    "data_hora": "2025-12-19T14:00:00Z",
-    "local": "pista_salto",
+    "data_hora": "2025-12-18T18:30:00Z",
+    "local": "picadeiro_1",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
+  "pk": 153,
+  "fields": {
+    "empresa": 1,
+    "aluno": 14,
+    "cavalo": 8,
+    "instrutor": 5,
+    "data_hora": "2025-12-18T20:00:00Z",
+    "local": "picadeiro_1",
     "tipo": "NORMAL",
     "concluida": true,
     "relatorio_treino": ""
@@ -4093,13 +4118,13 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 159,
+  "pk": 157,
   "fields": {
     "empresa": 1,
-    "aluno": 2,
-    "cavalo": 4,
+    "aluno": 13,
+    "cavalo": 15,
     "instrutor": 5,
-    "data_hora": "2025-12-20T18:30:00Z",
+    "data_hora": "2025-12-19T14:00:00Z",
     "local": "pista_salto",
     "tipo": "NORMAL",
     "concluida": true,
@@ -4108,14 +4133,14 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 160,
+  "pk": 156,
   "fields": {
     "empresa": 1,
-    "aluno": 4,
-    "cavalo": 7,
+    "aluno": 10,
+    "cavalo": 8,
     "instrutor": 5,
-    "data_hora": "2025-12-20T17:00:00Z",
-    "local": "picadeiro_1",
+    "data_hora": "2025-12-19T18:30:00Z",
+    "local": "pista_salto",
     "tipo": "NORMAL",
     "concluida": true,
     "relatorio_treino": ""
@@ -4138,6 +4163,36 @@
 },
 {
   "model": "gateagora.aula",
+  "pk": 160,
+  "fields": {
+    "empresa": 1,
+    "aluno": 4,
+    "cavalo": 7,
+    "instrutor": 5,
+    "data_hora": "2025-12-20T17:00:00Z",
+    "local": "picadeiro_1",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
+  "pk": 159,
+  "fields": {
+    "empresa": 1,
+    "aluno": 2,
+    "cavalo": 4,
+    "instrutor": 5,
+    "data_hora": "2025-12-20T18:30:00Z",
+    "local": "pista_salto",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
   "pk": 162,
   "fields": {
     "empresa": 1,
@@ -4146,6 +4201,21 @@
     "instrutor": 5,
     "data_hora": "2025-12-20T20:00:00Z",
     "local": "picadeiro_1",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
+  "pk": 165,
+  "fields": {
+    "empresa": 1,
+    "aluno": 7,
+    "cavalo": 15,
+    "instrutor": 5,
+    "data_hora": "2025-12-22T11:00:00Z",
+    "local": "picadeiro_2",
     "tipo": "NORMAL",
     "concluida": true,
     "relatorio_treino": ""
@@ -4175,51 +4245,6 @@
     "cavalo": 31,
     "instrutor": 5,
     "data_hora": "2025-12-22T18:30:00Z",
-    "local": "picadeiro_2",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
-  "pk": 165,
-  "fields": {
-    "empresa": 1,
-    "aluno": 7,
-    "cavalo": 15,
-    "instrutor": 5,
-    "data_hora": "2025-12-22T11:00:00Z",
-    "local": "picadeiro_2",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
-  "pk": 166,
-  "fields": {
-    "empresa": 1,
-    "aluno": 10,
-    "cavalo": 17,
-    "instrutor": 5,
-    "data_hora": "2025-12-23T20:00:00Z",
-    "local": "pista_salto",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
-  "pk": 167,
-  "fields": {
-    "empresa": 1,
-    "aluno": 2,
-    "cavalo": 13,
-    "instrutor": 5,
-    "data_hora": "2025-12-23T17:00:00Z",
     "local": "picadeiro_2",
     "tipo": "NORMAL",
     "concluida": true,
@@ -4258,6 +4283,36 @@
 },
 {
   "model": "gateagora.aula",
+  "pk": 167,
+  "fields": {
+    "empresa": 1,
+    "aluno": 2,
+    "cavalo": 13,
+    "instrutor": 5,
+    "data_hora": "2025-12-23T17:00:00Z",
+    "local": "picadeiro_2",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
+  "pk": 166,
+  "fields": {
+    "empresa": 1,
+    "aluno": 10,
+    "cavalo": 17,
+    "instrutor": 5,
+    "data_hora": "2025-12-23T20:00:00Z",
+    "local": "pista_salto",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
   "pk": 170,
   "fields": {
     "empresa": 1,
@@ -4288,14 +4343,14 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 172,
+  "pk": 174,
   "fields": {
     "empresa": 1,
-    "aluno": 15,
-    "cavalo": 32,
+    "aluno": 4,
+    "cavalo": 21,
     "instrutor": 5,
-    "data_hora": "2025-12-25T20:00:00Z",
-    "local": "picadeiro_2",
+    "data_hora": "2025-12-25T14:00:00Z",
+    "local": "pista_salto",
     "tipo": "NORMAL",
     "concluida": true,
     "relatorio_treino": ""
@@ -4318,21 +4373,6 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 174,
-  "fields": {
-    "empresa": 1,
-    "aluno": 4,
-    "cavalo": 21,
-    "instrutor": 5,
-    "data_hora": "2025-12-25T14:00:00Z",
-    "local": "pista_salto",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
   "pk": 175,
   "fields": {
     "empresa": 1,
@@ -4348,28 +4388,13 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 176,
+  "pk": 172,
   "fields": {
     "empresa": 1,
-    "aluno": 3,
-    "cavalo": 18,
+    "aluno": 15,
+    "cavalo": 32,
     "instrutor": 5,
-    "data_hora": "2025-12-26T20:00:00Z",
-    "local": "pista_salto",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
-  "pk": 177,
-  "fields": {
-    "empresa": 1,
-    "aluno": 7,
-    "cavalo": 12,
-    "instrutor": 5,
-    "data_hora": "2025-12-26T18:30:00Z",
+    "data_hora": "2025-12-25T20:00:00Z",
     "local": "picadeiro_2",
     "tipo": "NORMAL",
     "concluida": true,
@@ -4393,14 +4418,29 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 179,
+  "pk": 177,
   "fields": {
     "empresa": 1,
-    "aluno": 8,
-    "cavalo": 31,
+    "aluno": 7,
+    "cavalo": 12,
     "instrutor": 5,
-    "data_hora": "2025-12-27T18:30:00Z",
+    "data_hora": "2025-12-26T18:30:00Z",
     "local": "picadeiro_2",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
+  "pk": 176,
+  "fields": {
+    "empresa": 1,
+    "aluno": 3,
+    "cavalo": 18,
+    "instrutor": 5,
+    "data_hora": "2025-12-26T20:00:00Z",
+    "local": "pista_salto",
     "tipo": "NORMAL",
     "concluida": true,
     "relatorio_treino": ""
@@ -4415,6 +4455,21 @@
     "cavalo": 22,
     "instrutor": 5,
     "data_hora": "2025-12-27T17:00:00Z",
+    "local": "picadeiro_2",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
+  "pk": 179,
+  "fields": {
+    "empresa": 1,
+    "aluno": 8,
+    "cavalo": 31,
+    "instrutor": 5,
+    "data_hora": "2025-12-27T18:30:00Z",
     "local": "picadeiro_2",
     "tipo": "NORMAL",
     "concluida": true,
@@ -4438,36 +4493,6 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 182,
-  "fields": {
-    "empresa": 1,
-    "aluno": 13,
-    "cavalo": 3,
-    "instrutor": 5,
-    "data_hora": "2025-12-29T17:00:00Z",
-    "local": "picadeiro_2",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
-  "pk": 183,
-  "fields": {
-    "empresa": 1,
-    "aluno": 8,
-    "cavalo": 21,
-    "instrutor": 5,
-    "data_hora": "2025-12-29T20:00:00Z",
-    "local": "picadeiro_2",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
   "pk": 184,
   "fields": {
     "empresa": 1,
@@ -4475,6 +4500,21 @@
     "cavalo": 8,
     "instrutor": 5,
     "data_hora": "2025-12-29T14:00:00Z",
+    "local": "picadeiro_2",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
+  "pk": 182,
+  "fields": {
+    "empresa": 1,
+    "aluno": 13,
+    "cavalo": 3,
+    "instrutor": 5,
+    "data_hora": "2025-12-29T17:00:00Z",
     "local": "picadeiro_2",
     "tipo": "NORMAL",
     "concluida": true,
@@ -4498,14 +4538,14 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 186,
+  "pk": 183,
   "fields": {
     "empresa": 1,
-    "aluno": 2,
-    "cavalo": 32,
+    "aluno": 8,
+    "cavalo": 21,
     "instrutor": 5,
-    "data_hora": "2025-12-30T17:00:00Z",
-    "local": "pista_salto",
+    "data_hora": "2025-12-29T20:00:00Z",
+    "local": "picadeiro_2",
     "tipo": "NORMAL",
     "concluida": true,
     "relatorio_treino": ""
@@ -4558,6 +4598,21 @@
 },
 {
   "model": "gateagora.aula",
+  "pk": 186,
+  "fields": {
+    "empresa": 1,
+    "aluno": 2,
+    "cavalo": 32,
+    "instrutor": 5,
+    "data_hora": "2025-12-30T17:00:00Z",
+    "local": "pista_salto",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
   "pk": 190,
   "fields": {
     "empresa": 1,
@@ -4566,6 +4621,21 @@
     "instrutor": 5,
     "data_hora": "2025-12-30T20:00:00Z",
     "local": "pista_salto",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
+  "pk": 193,
+  "fields": {
+    "empresa": 1,
+    "aluno": 8,
+    "cavalo": 10,
+    "instrutor": 5,
+    "data_hora": "2025-12-31T11:00:00Z",
+    "local": "picadeiro_2",
     "tipo": "NORMAL",
     "concluida": true,
     "relatorio_treino": ""
@@ -4603,28 +4673,13 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 193,
+  "pk": 197,
   "fields": {
     "empresa": 1,
-    "aluno": 8,
-    "cavalo": 10,
+    "aluno": 11,
+    "cavalo": 27,
     "instrutor": 5,
-    "data_hora": "2025-12-31T11:00:00Z",
-    "local": "picadeiro_2",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
-  "pk": 194,
-  "fields": {
-    "empresa": 1,
-    "aluno": 14,
-    "cavalo": 16,
-    "instrutor": 5,
-    "data_hora": "2026-01-01T18:30:00Z",
+    "data_hora": "2026-01-01T12:30:00Z",
     "local": "picadeiro_2",
     "tipo": "NORMAL",
     "concluida": true,
@@ -4663,13 +4718,13 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 197,
+  "pk": 194,
   "fields": {
     "empresa": 1,
-    "aluno": 11,
-    "cavalo": 27,
+    "aluno": 14,
+    "cavalo": 16,
     "instrutor": 5,
-    "data_hora": "2026-01-01T12:30:00Z",
+    "data_hora": "2026-01-01T18:30:00Z",
     "local": "picadeiro_2",
     "tipo": "NORMAL",
     "concluida": true,
@@ -4708,21 +4763,6 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 200,
-  "fields": {
-    "empresa": 1,
-    "aluno": 12,
-    "cavalo": 25,
-    "instrutor": 5,
-    "data_hora": "2026-01-02T18:30:00Z",
-    "local": "picadeiro_2",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
   "pk": 201,
   "fields": {
     "empresa": 1,
@@ -4738,29 +4778,14 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 202,
+  "pk": 200,
   "fields": {
     "empresa": 1,
-    "aluno": 13,
-    "cavalo": 3,
+    "aluno": 12,
+    "cavalo": 25,
     "instrutor": 5,
-    "data_hora": "2026-01-03T18:30:00Z",
+    "data_hora": "2026-01-02T18:30:00Z",
     "local": "picadeiro_2",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
-  "pk": 203,
-  "fields": {
-    "empresa": 1,
-    "aluno": 4,
-    "cavalo": 31,
-    "instrutor": 5,
-    "data_hora": "2026-01-03T17:00:00Z",
-    "local": "pista_salto",
     "tipo": "NORMAL",
     "concluida": true,
     "relatorio_treino": ""
@@ -4783,14 +4808,29 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 205,
+  "pk": 203,
   "fields": {
     "empresa": 1,
-    "aluno": 15,
-    "cavalo": 22,
+    "aluno": 4,
+    "cavalo": 31,
     "instrutor": 5,
-    "data_hora": "2026-01-05T17:00:00Z",
-    "local": "picadeiro_1",
+    "data_hora": "2026-01-03T17:00:00Z",
+    "local": "pista_salto",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
+  "pk": 202,
+  "fields": {
+    "empresa": 1,
+    "aluno": 13,
+    "cavalo": 3,
+    "instrutor": 5,
+    "data_hora": "2026-01-03T18:30:00Z",
+    "local": "picadeiro_2",
     "tipo": "NORMAL",
     "concluida": true,
     "relatorio_treino": ""
@@ -4828,14 +4868,29 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 208,
+  "pk": 205,
   "fields": {
     "empresa": 1,
-    "aluno": 14,
-    "cavalo": 17,
+    "aluno": 15,
+    "cavalo": 22,
     "instrutor": 5,
-    "data_hora": "2026-01-06T17:00:00Z",
-    "local": "picadeiro_2",
+    "data_hora": "2026-01-05T17:00:00Z",
+    "local": "picadeiro_1",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
+  "pk": 210,
+  "fields": {
+    "empresa": 1,
+    "aluno": 8,
+    "cavalo": 22,
+    "instrutor": 5,
+    "data_hora": "2026-01-06T11:00:00Z",
+    "local": "pista_salto",
     "tipo": "NORMAL",
     "concluida": true,
     "relatorio_treino": ""
@@ -4858,14 +4913,29 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 210,
+  "pk": 208,
+  "fields": {
+    "empresa": 1,
+    "aluno": 14,
+    "cavalo": 17,
+    "instrutor": 5,
+    "data_hora": "2026-01-06T17:00:00Z",
+    "local": "picadeiro_2",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
+  "pk": 213,
   "fields": {
     "empresa": 1,
     "aluno": 8,
-    "cavalo": 22,
+    "cavalo": 7,
     "instrutor": 5,
-    "data_hora": "2026-01-06T11:00:00Z",
-    "local": "pista_salto",
+    "data_hora": "2026-01-07T11:00:00Z",
+    "local": "picadeiro_2",
     "tipo": "NORMAL",
     "concluida": true,
     "relatorio_treino": ""
@@ -4903,14 +4973,14 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 213,
+  "pk": 215,
   "fields": {
     "empresa": 1,
-    "aluno": 8,
-    "cavalo": 7,
+    "aluno": 7,
+    "cavalo": 21,
     "instrutor": 5,
-    "data_hora": "2026-01-07T11:00:00Z",
-    "local": "picadeiro_2",
+    "data_hora": "2026-01-07T18:30:00Z",
+    "local": "picadeiro_1",
     "tipo": "NORMAL",
     "concluida": true,
     "relatorio_treino": ""
@@ -4933,14 +5003,14 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 215,
+  "pk": 219,
   "fields": {
     "empresa": 1,
-    "aluno": 7,
-    "cavalo": 21,
+    "aluno": 13,
+    "cavalo": 16,
     "instrutor": 5,
-    "data_hora": "2026-01-07T18:30:00Z",
-    "local": "picadeiro_1",
+    "data_hora": "2026-01-08T11:00:00Z",
+    "local": "picadeiro_2",
     "tipo": "NORMAL",
     "concluida": true,
     "relatorio_treino": ""
@@ -4955,6 +5025,21 @@
     "cavalo": 27,
     "instrutor": 5,
     "data_hora": "2026-01-08T14:00:00Z",
+    "local": "pista_salto",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
+  "pk": 218,
+  "fields": {
+    "empresa": 1,
+    "aluno": 9,
+    "cavalo": 6,
+    "instrutor": 5,
+    "data_hora": "2026-01-08T17:00:00Z",
     "local": "pista_salto",
     "tipo": "NORMAL",
     "concluida": true,
@@ -4978,36 +5063,6 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 218,
-  "fields": {
-    "empresa": 1,
-    "aluno": 9,
-    "cavalo": 6,
-    "instrutor": 5,
-    "data_hora": "2026-01-08T17:00:00Z",
-    "local": "pista_salto",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
-  "pk": 219,
-  "fields": {
-    "empresa": 1,
-    "aluno": 13,
-    "cavalo": 16,
-    "instrutor": 5,
-    "data_hora": "2026-01-08T11:00:00Z",
-    "local": "picadeiro_2",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
   "pk": 220,
   "fields": {
     "empresa": 1,
@@ -5016,21 +5071,6 @@
     "instrutor": 5,
     "data_hora": "2026-01-09T12:30:00Z",
     "local": "pista_salto",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
-  "pk": 221,
-  "fields": {
-    "empresa": 1,
-    "aluno": 7,
-    "cavalo": 30,
-    "instrutor": 5,
-    "data_hora": "2026-01-09T17:00:00Z",
-    "local": "picadeiro_2",
     "tipo": "NORMAL",
     "concluida": true,
     "relatorio_treino": ""
@@ -5053,6 +5093,36 @@
 },
 {
   "model": "gateagora.aula",
+  "pk": 221,
+  "fields": {
+    "empresa": 1,
+    "aluno": 7,
+    "cavalo": 30,
+    "instrutor": 5,
+    "data_hora": "2026-01-09T17:00:00Z",
+    "local": "picadeiro_2",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
+  "pk": 227,
+  "fields": {
+    "empresa": 1,
+    "aluno": 11,
+    "cavalo": 19,
+    "instrutor": 5,
+    "data_hora": "2026-01-10T12:30:00Z",
+    "local": "picadeiro_1",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
   "pk": 223,
   "fields": {
     "empresa": 1,
@@ -5061,6 +5131,21 @@
     "instrutor": 5,
     "data_hora": "2026-01-10T14:00:00Z",
     "local": "picadeiro_2",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
+  "pk": 226,
+  "fields": {
+    "empresa": 1,
+    "aluno": 13,
+    "cavalo": 23,
+    "instrutor": 5,
+    "data_hora": "2026-01-10T17:00:00Z",
+    "local": "pista_salto",
     "tipo": "NORMAL",
     "concluida": true,
     "relatorio_treino": ""
@@ -5098,13 +5183,13 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 226,
+  "pk": 229,
   "fields": {
     "empresa": 1,
-    "aluno": 13,
-    "cavalo": 23,
+    "aluno": 12,
+    "cavalo": 15,
     "instrutor": 5,
-    "data_hora": "2026-01-10T17:00:00Z",
+    "data_hora": "2026-01-12T11:00:00Z",
     "local": "pista_salto",
     "tipo": "NORMAL",
     "concluida": true,
@@ -5113,14 +5198,14 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 227,
+  "pk": 232,
   "fields": {
     "empresa": 1,
-    "aluno": 11,
-    "cavalo": 19,
+    "aluno": 8,
+    "cavalo": 3,
     "instrutor": 5,
-    "data_hora": "2026-01-10T12:30:00Z",
-    "local": "picadeiro_1",
+    "data_hora": "2026-01-12T12:30:00Z",
+    "local": "picadeiro_2",
     "tipo": "NORMAL",
     "concluida": true,
     "relatorio_treino": ""
@@ -5135,21 +5220,6 @@
     "cavalo": 15,
     "instrutor": 5,
     "data_hora": "2026-01-12T14:00:00Z",
-    "local": "pista_salto",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
-  "pk": 229,
-  "fields": {
-    "empresa": 1,
-    "aluno": 12,
-    "cavalo": 15,
-    "instrutor": 5,
-    "data_hora": "2026-01-12T11:00:00Z",
     "local": "pista_salto",
     "tipo": "NORMAL",
     "concluida": true,
@@ -5188,21 +5258,6 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 232,
-  "fields": {
-    "empresa": 1,
-    "aluno": 8,
-    "cavalo": 3,
-    "instrutor": 5,
-    "data_hora": "2026-01-12T12:30:00Z",
-    "local": "picadeiro_2",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
   "pk": 233,
   "fields": {
     "empresa": 1,
@@ -5211,21 +5266,6 @@
     "instrutor": 5,
     "data_hora": "2026-01-13T11:00:00Z",
     "local": "picadeiro_2",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
-  "pk": 234,
-  "fields": {
-    "empresa": 1,
-    "aluno": 4,
-    "cavalo": 27,
-    "instrutor": 5,
-    "data_hora": "2026-01-13T18:30:00Z",
-    "local": "picadeiro_1",
     "tipo": "NORMAL",
     "concluida": true,
     "relatorio_treino": ""
@@ -5255,6 +5295,21 @@
     "cavalo": 18,
     "instrutor": 5,
     "data_hora": "2026-01-13T17:00:00Z",
+    "local": "picadeiro_1",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
+  "pk": 234,
+  "fields": {
+    "empresa": 1,
+    "aluno": 4,
+    "cavalo": 27,
+    "instrutor": 5,
+    "data_hora": "2026-01-13T18:30:00Z",
     "local": "picadeiro_1",
     "tipo": "NORMAL",
     "concluida": true,
@@ -5308,21 +5363,6 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 240,
-  "fields": {
-    "empresa": 1,
-    "aluno": 7,
-    "cavalo": 17,
-    "instrutor": 5,
-    "data_hora": "2026-01-14T20:00:00Z",
-    "local": "pista_salto",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
   "pk": 241,
   "fields": {
     "empresa": 1,
@@ -5338,14 +5378,14 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 242,
+  "pk": 240,
   "fields": {
     "empresa": 1,
-    "aluno": 3,
-    "cavalo": 15,
+    "aluno": 7,
+    "cavalo": 17,
     "instrutor": 5,
-    "data_hora": "2026-01-15T18:30:00Z",
-    "local": "picadeiro_2",
+    "data_hora": "2026-01-14T20:00:00Z",
+    "local": "pista_salto",
     "tipo": "NORMAL",
     "concluida": true,
     "relatorio_treino": ""
@@ -5353,13 +5393,13 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 243,
+  "pk": 245,
   "fields": {
     "empresa": 1,
-    "aluno": 7,
-    "cavalo": 21,
+    "aluno": 14,
+    "cavalo": 20,
     "instrutor": 5,
-    "data_hora": "2026-01-15T17:00:00Z",
+    "data_hora": "2026-01-15T11:00:00Z",
     "local": "pista_salto",
     "tipo": "NORMAL",
     "concluida": true,
@@ -5383,14 +5423,29 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 245,
+  "pk": 243,
   "fields": {
     "empresa": 1,
-    "aluno": 14,
-    "cavalo": 20,
+    "aluno": 7,
+    "cavalo": 21,
     "instrutor": 5,
-    "data_hora": "2026-01-15T11:00:00Z",
+    "data_hora": "2026-01-15T17:00:00Z",
     "local": "pista_salto",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
+  "pk": 242,
+  "fields": {
+    "empresa": 1,
+    "aluno": 3,
+    "cavalo": 15,
+    "instrutor": 5,
+    "data_hora": "2026-01-15T18:30:00Z",
+    "local": "picadeiro_2",
     "tipo": "NORMAL",
     "concluida": true,
     "relatorio_treino": ""
@@ -5428,21 +5483,6 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 248,
-  "fields": {
-    "empresa": 1,
-    "aluno": 14,
-    "cavalo": 24,
-    "instrutor": 5,
-    "data_hora": "2026-01-16T20:00:00Z",
-    "local": "pista_salto",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
   "pk": 249,
   "fields": {
     "empresa": 1,
@@ -5466,6 +5506,21 @@
     "instrutor": 5,
     "data_hora": "2026-01-16T18:30:00Z",
     "local": "picadeiro_2",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
+  "pk": 248,
+  "fields": {
+    "empresa": 1,
+    "aluno": 14,
+    "cavalo": 24,
+    "instrutor": 5,
+    "data_hora": "2026-01-16T20:00:00Z",
+    "local": "pista_salto",
     "tipo": "NORMAL",
     "concluida": true,
     "relatorio_treino": ""
@@ -5503,14 +5558,14 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 253,
+  "pk": 256,
   "fields": {
     "empresa": 1,
-    "aluno": 15,
-    "cavalo": 23,
+    "aluno": 3,
+    "cavalo": 14,
     "instrutor": 5,
-    "data_hora": "2026-01-19T17:00:00Z",
-    "local": "picadeiro_1",
+    "data_hora": "2026-01-19T11:00:00Z",
+    "local": "pista_salto",
     "tipo": "NORMAL",
     "concluida": true,
     "relatorio_treino": ""
@@ -5548,14 +5603,14 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 256,
+  "pk": 253,
   "fields": {
     "empresa": 1,
-    "aluno": 3,
-    "cavalo": 14,
+    "aluno": 15,
+    "cavalo": 23,
     "instrutor": 5,
-    "data_hora": "2026-01-19T11:00:00Z",
-    "local": "pista_salto",
+    "data_hora": "2026-01-19T17:00:00Z",
+    "local": "picadeiro_1",
     "tipo": "NORMAL",
     "concluida": true,
     "relatorio_treino": ""
@@ -5578,13 +5633,13 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 258,
+  "pk": 261,
   "fields": {
     "empresa": 1,
-    "aluno": 15,
-    "cavalo": 14,
+    "aluno": 9,
+    "cavalo": 9,
     "instrutor": 5,
-    "data_hora": "2026-01-20T12:30:00Z",
+    "data_hora": "2026-01-20T11:00:00Z",
     "local": "pista_salto",
     "tipo": "NORMAL",
     "concluida": true,
@@ -5593,14 +5648,14 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 259,
+  "pk": 258,
   "fields": {
     "empresa": 1,
-    "aluno": 10,
-    "cavalo": 15,
+    "aluno": 15,
+    "cavalo": 14,
     "instrutor": 5,
-    "data_hora": "2026-01-20T20:00:00Z",
-    "local": "picadeiro_2",
+    "data_hora": "2026-01-20T12:30:00Z",
+    "local": "pista_salto",
     "tipo": "NORMAL",
     "concluida": true,
     "relatorio_treino": ""
@@ -5623,29 +5678,14 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 261,
+  "pk": 259,
   "fields": {
     "empresa": 1,
-    "aluno": 9,
-    "cavalo": 9,
+    "aluno": 10,
+    "cavalo": 15,
     "instrutor": 5,
-    "data_hora": "2026-01-20T11:00:00Z",
-    "local": "pista_salto",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
-  "pk": 262,
-  "fields": {
-    "empresa": 1,
-    "aluno": 7,
-    "cavalo": 23,
-    "instrutor": 5,
-    "data_hora": "2026-01-21T12:30:00Z",
-    "local": "picadeiro_1",
+    "data_hora": "2026-01-20T20:00:00Z",
+    "local": "picadeiro_2",
     "tipo": "NORMAL",
     "concluida": true,
     "relatorio_treino": ""
@@ -5668,13 +5708,13 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 264,
+  "pk": 262,
   "fields": {
     "empresa": 1,
-    "aluno": 9,
-    "cavalo": 17,
+    "aluno": 7,
+    "cavalo": 23,
     "instrutor": 5,
-    "data_hora": "2026-01-21T18:30:00Z",
+    "data_hora": "2026-01-21T12:30:00Z",
     "local": "picadeiro_1",
     "tipo": "NORMAL",
     "concluida": true,
@@ -5698,14 +5738,14 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 266,
+  "pk": 264,
   "fields": {
     "empresa": 1,
-    "aluno": 14,
-    "cavalo": 29,
+    "aluno": 9,
+    "cavalo": 17,
     "instrutor": 5,
-    "data_hora": "2026-01-22T20:00:00Z",
-    "local": "picadeiro_2",
+    "data_hora": "2026-01-21T18:30:00Z",
+    "local": "picadeiro_1",
     "tipo": "NORMAL",
     "concluida": true,
     "relatorio_treino": ""
@@ -5728,14 +5768,14 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 268,
+  "pk": 266,
   "fields": {
     "empresa": 1,
     "aluno": 14,
-    "cavalo": 2,
+    "cavalo": 29,
     "instrutor": 5,
-    "data_hora": "2026-01-23T18:30:00Z",
-    "local": "picadeiro_1",
+    "data_hora": "2026-01-22T20:00:00Z",
+    "local": "picadeiro_2",
     "tipo": "NORMAL",
     "concluida": true,
     "relatorio_treino": ""
@@ -5773,14 +5813,14 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 271,
+  "pk": 268,
   "fields": {
     "empresa": 1,
-    "aluno": 8,
-    "cavalo": 9,
+    "aluno": 14,
+    "cavalo": 2,
     "instrutor": 5,
-    "data_hora": "2026-01-24T11:00:00Z",
-    "local": "picadeiro_2",
+    "data_hora": "2026-01-23T18:30:00Z",
+    "local": "picadeiro_1",
     "tipo": "NORMAL",
     "concluida": true,
     "relatorio_treino": ""
@@ -5788,13 +5828,13 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 272,
+  "pk": 271,
   "fields": {
     "empresa": 1,
-    "aluno": 2,
-    "cavalo": 21,
+    "aluno": 8,
+    "cavalo": 9,
     "instrutor": 5,
-    "data_hora": "2026-01-24T20:00:00Z",
+    "data_hora": "2026-01-24T11:00:00Z",
     "local": "picadeiro_2",
     "tipo": "NORMAL",
     "concluida": true,
@@ -5848,6 +5888,36 @@
 },
 {
   "model": "gateagora.aula",
+  "pk": 272,
+  "fields": {
+    "empresa": 1,
+    "aluno": 2,
+    "cavalo": 21,
+    "instrutor": 5,
+    "data_hora": "2026-01-24T20:00:00Z",
+    "local": "picadeiro_2",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
+  "pk": 278,
+  "fields": {
+    "empresa": 1,
+    "aluno": 8,
+    "cavalo": 21,
+    "instrutor": 5,
+    "data_hora": "2026-01-26T12:30:00Z",
+    "local": "picadeiro_2",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
   "pk": 276,
   "fields": {
     "empresa": 1,
@@ -5878,28 +5948,13 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 278,
+  "pk": 282,
   "fields": {
     "empresa": 1,
-    "aluno": 8,
-    "cavalo": 21,
+    "aluno": 4,
+    "cavalo": 24,
     "instrutor": 5,
-    "data_hora": "2026-01-26T12:30:00Z",
-    "local": "picadeiro_2",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
-  "pk": 279,
-  "fields": {
-    "empresa": 1,
-    "aluno": 3,
-    "cavalo": 31,
-    "instrutor": 5,
-    "data_hora": "2026-01-27T20:00:00Z",
+    "data_hora": "2026-01-27T11:00:00Z",
     "local": "picadeiro_1",
     "tipo": "NORMAL",
     "concluida": true,
@@ -5938,13 +5993,13 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 282,
+  "pk": 279,
   "fields": {
     "empresa": 1,
-    "aluno": 4,
-    "cavalo": 24,
+    "aluno": 3,
+    "cavalo": 31,
     "instrutor": 5,
-    "data_hora": "2026-01-27T11:00:00Z",
+    "data_hora": "2026-01-27T20:00:00Z",
     "local": "picadeiro_1",
     "tipo": "NORMAL",
     "concluida": true,
@@ -5983,21 +6038,6 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 285,
-  "fields": {
-    "empresa": 1,
-    "aluno": 12,
-    "cavalo": 7,
-    "instrutor": 5,
-    "data_hora": "2026-01-29T20:00:00Z",
-    "local": "pista_salto",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
   "pk": 286,
   "fields": {
     "empresa": 1,
@@ -6006,6 +6046,21 @@
     "instrutor": 5,
     "data_hora": "2026-01-29T11:00:00Z",
     "local": "picadeiro_1",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
+  "pk": 289,
+  "fields": {
+    "empresa": 1,
+    "aluno": 12,
+    "cavalo": 8,
+    "instrutor": 5,
+    "data_hora": "2026-01-29T12:30:00Z",
+    "local": "picadeiro_2",
     "tipo": "NORMAL",
     "concluida": true,
     "relatorio_treino": ""
@@ -6043,13 +6098,28 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 289,
+  "pk": 285,
   "fields": {
     "empresa": 1,
     "aluno": 12,
-    "cavalo": 8,
+    "cavalo": 7,
     "instrutor": 5,
-    "data_hora": "2026-01-29T12:30:00Z",
+    "data_hora": "2026-01-29T20:00:00Z",
+    "local": "pista_salto",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
+  "pk": 292,
+  "fields": {
+    "empresa": 1,
+    "aluno": 11,
+    "cavalo": 22,
+    "instrutor": 5,
+    "data_hora": "2026-01-30T11:00:00Z",
     "local": "picadeiro_2",
     "tipo": "NORMAL",
     "concluida": true,
@@ -6081,21 +6151,6 @@
     "instrutor": 5,
     "data_hora": "2026-01-30T18:30:00Z",
     "local": "pista_salto",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
-  "pk": 292,
-  "fields": {
-    "empresa": 1,
-    "aluno": 11,
-    "cavalo": 22,
-    "instrutor": 5,
-    "data_hora": "2026-01-30T11:00:00Z",
-    "local": "picadeiro_2",
     "tipo": "NORMAL",
     "concluida": true,
     "relatorio_treino": ""
@@ -6148,6 +6203,21 @@
 },
 {
   "model": "gateagora.aula",
+  "pk": 297,
+  "fields": {
+    "empresa": 1,
+    "aluno": 2,
+    "cavalo": 6,
+    "instrutor": 5,
+    "data_hora": "2026-02-02T18:30:00Z",
+    "local": "picadeiro_1",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
   "pk": 296,
   "fields": {
     "empresa": 1,
@@ -6163,14 +6233,14 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 297,
+  "pk": 300,
   "fields": {
     "empresa": 1,
     "aluno": 2,
-    "cavalo": 6,
+    "cavalo": 29,
     "instrutor": 5,
-    "data_hora": "2026-02-02T18:30:00Z",
-    "local": "picadeiro_1",
+    "data_hora": "2026-02-03T11:00:00Z",
+    "local": "picadeiro_2",
     "tipo": "NORMAL",
     "concluida": true,
     "relatorio_treino": ""
@@ -6208,14 +6278,14 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 300,
+  "pk": 303,
   "fields": {
     "empresa": 1,
-    "aluno": 2,
-    "cavalo": 29,
+    "aluno": 3,
+    "cavalo": 20,
     "instrutor": 5,
-    "data_hora": "2026-02-03T11:00:00Z",
-    "local": "picadeiro_2",
+    "data_hora": "2026-02-04T11:00:00Z",
+    "local": "picadeiro_1",
     "tipo": "NORMAL",
     "concluida": true,
     "relatorio_treino": ""
@@ -6246,21 +6316,6 @@
     "instrutor": 5,
     "data_hora": "2026-02-04T18:30:00Z",
     "local": "pista_salto",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
-  "pk": 303,
-  "fields": {
-    "empresa": 1,
-    "aluno": 3,
-    "cavalo": 20,
-    "instrutor": 5,
-    "data_hora": "2026-02-04T11:00:00Z",
-    "local": "picadeiro_1",
     "tipo": "NORMAL",
     "concluida": true,
     "relatorio_treino": ""
@@ -6343,6 +6398,21 @@
 },
 {
   "model": "gateagora.aula",
+  "pk": 311,
+  "fields": {
+    "empresa": 1,
+    "aluno": 14,
+    "cavalo": 5,
+    "instrutor": 5,
+    "data_hora": "2026-02-07T14:00:00Z",
+    "local": "picadeiro_2",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
   "pk": 309,
   "fields": {
     "empresa": 1,
@@ -6373,14 +6443,14 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 311,
+  "pk": 316,
   "fields": {
     "empresa": 1,
-    "aluno": 14,
-    "cavalo": 5,
+    "aluno": 2,
+    "cavalo": 26,
     "instrutor": 5,
-    "data_hora": "2026-02-07T14:00:00Z",
-    "local": "picadeiro_2",
+    "data_hora": "2026-02-09T11:00:00Z",
+    "local": "pista_salto",
     "tipo": "NORMAL",
     "concluida": true,
     "relatorio_treino": ""
@@ -6388,13 +6458,13 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 312,
+  "pk": 315,
   "fields": {
     "empresa": 1,
-    "aluno": 13,
-    "cavalo": 2,
+    "aluno": 8,
+    "cavalo": 16,
     "instrutor": 5,
-    "data_hora": "2026-02-09T18:30:00Z",
+    "data_hora": "2026-02-09T12:30:00Z",
     "local": "picadeiro_2",
     "tipo": "NORMAL",
     "concluida": true,
@@ -6418,6 +6488,21 @@
 },
 {
   "model": "gateagora.aula",
+  "pk": 312,
+  "fields": {
+    "empresa": 1,
+    "aluno": 13,
+    "cavalo": 2,
+    "instrutor": 5,
+    "data_hora": "2026-02-09T18:30:00Z",
+    "local": "picadeiro_2",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
   "pk": 314,
   "fields": {
     "empresa": 1,
@@ -6433,29 +6518,14 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 315,
+  "pk": 318,
   "fields": {
     "empresa": 1,
-    "aluno": 8,
-    "cavalo": 16,
+    "aluno": 12,
+    "cavalo": 11,
     "instrutor": 5,
-    "data_hora": "2026-02-09T12:30:00Z",
-    "local": "picadeiro_2",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
-  "pk": 316,
-  "fields": {
-    "empresa": 1,
-    "aluno": 2,
-    "cavalo": 26,
-    "instrutor": 5,
-    "data_hora": "2026-02-09T11:00:00Z",
-    "local": "pista_salto",
+    "data_hora": "2026-02-10T14:00:00Z",
+    "local": "picadeiro_1",
     "tipo": "NORMAL",
     "concluida": true,
     "relatorio_treino": ""
@@ -6470,21 +6540,6 @@
     "cavalo": 22,
     "instrutor": 5,
     "data_hora": "2026-02-10T17:00:00Z",
-    "local": "picadeiro_1",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
-  "pk": 318,
-  "fields": {
-    "empresa": 1,
-    "aluno": 12,
-    "cavalo": 11,
-    "instrutor": 5,
-    "data_hora": "2026-02-10T14:00:00Z",
     "local": "picadeiro_1",
     "tipo": "NORMAL",
     "concluida": true,
@@ -6553,6 +6608,36 @@
 },
 {
   "model": "gateagora.aula",
+  "pk": 327,
+  "fields": {
+    "empresa": 1,
+    "aluno": 15,
+    "cavalo": 5,
+    "instrutor": 5,
+    "data_hora": "2026-02-13T12:30:00Z",
+    "local": "picadeiro_2",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
+  "pk": 326,
+  "fields": {
+    "empresa": 1,
+    "aluno": 2,
+    "cavalo": 4,
+    "instrutor": 5,
+    "data_hora": "2026-02-13T14:00:00Z",
+    "local": "picadeiro_2",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
   "pk": 323,
   "fields": {
     "empresa": 1,
@@ -6598,51 +6683,6 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 326,
-  "fields": {
-    "empresa": 1,
-    "aluno": 2,
-    "cavalo": 4,
-    "instrutor": 5,
-    "data_hora": "2026-02-13T14:00:00Z",
-    "local": "picadeiro_2",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
-  "pk": 327,
-  "fields": {
-    "empresa": 1,
-    "aluno": 15,
-    "cavalo": 5,
-    "instrutor": 5,
-    "data_hora": "2026-02-13T12:30:00Z",
-    "local": "picadeiro_2",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
-  "pk": 328,
-  "fields": {
-    "empresa": 1,
-    "aluno": 8,
-    "cavalo": 6,
-    "instrutor": 5,
-    "data_hora": "2026-02-14T17:00:00Z",
-    "local": "pista_salto",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
   "pk": 329,
   "fields": {
     "empresa": 1,
@@ -6650,21 +6690,6 @@
     "cavalo": 25,
     "instrutor": 5,
     "data_hora": "2026-02-14T11:00:00Z",
-    "local": "picadeiro_2",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
-  "pk": 330,
-  "fields": {
-    "empresa": 1,
-    "aluno": 2,
-    "cavalo": 3,
-    "instrutor": 5,
-    "data_hora": "2026-02-14T18:30:00Z",
     "local": "picadeiro_2",
     "tipo": "NORMAL",
     "concluida": true,
@@ -6696,6 +6721,36 @@
     "instrutor": 5,
     "data_hora": "2026-02-14T14:00:00Z",
     "local": "pista_salto",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
+  "pk": 328,
+  "fields": {
+    "empresa": 1,
+    "aluno": 8,
+    "cavalo": 6,
+    "instrutor": 5,
+    "data_hora": "2026-02-14T17:00:00Z",
+    "local": "pista_salto",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
+  "pk": 330,
+  "fields": {
+    "empresa": 1,
+    "aluno": 2,
+    "cavalo": 3,
+    "instrutor": 5,
+    "data_hora": "2026-02-14T18:30:00Z",
+    "local": "picadeiro_2",
     "tipo": "NORMAL",
     "concluida": true,
     "relatorio_treino": ""
@@ -6763,21 +6818,6 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 337,
-  "fields": {
-    "empresa": 1,
-    "aluno": 3,
-    "cavalo": 4,
-    "instrutor": 5,
-    "data_hora": "2026-02-17T20:00:00Z",
-    "local": "pista_salto",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
   "pk": 338,
   "fields": {
     "empresa": 1,
@@ -6786,6 +6826,21 @@
     "instrutor": 5,
     "data_hora": "2026-02-17T18:30:00Z",
     "local": "picadeiro_1",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
+  "pk": 337,
+  "fields": {
+    "empresa": 1,
+    "aluno": 3,
+    "cavalo": 4,
+    "instrutor": 5,
+    "data_hora": "2026-02-17T20:00:00Z",
+    "local": "pista_salto",
     "tipo": "NORMAL",
     "concluida": true,
     "relatorio_treino": ""
@@ -6808,13 +6863,13 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 340,
+  "pk": 342,
   "fields": {
     "empresa": 1,
-    "aluno": 8,
-    "cavalo": 10,
+    "aluno": 2,
+    "cavalo": 6,
     "instrutor": 5,
-    "data_hora": "2026-02-18T18:30:00Z",
+    "data_hora": "2026-02-18T12:30:00Z",
     "local": "picadeiro_2",
     "tipo": "NORMAL",
     "concluida": true,
@@ -6838,74 +6893,14 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 342,
+  "pk": 340,
   "fields": {
     "empresa": 1,
-    "aluno": 2,
-    "cavalo": 6,
+    "aluno": 8,
+    "cavalo": 10,
     "instrutor": 5,
-    "data_hora": "2026-02-18T12:30:00Z",
+    "data_hora": "2026-02-18T18:30:00Z",
     "local": "picadeiro_2",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
-  "pk": 343,
-  "fields": {
-    "empresa": 1,
-    "aluno": 3,
-    "cavalo": 28,
-    "instrutor": 5,
-    "data_hora": "2026-02-19T20:00:00Z",
-    "local": "pista_salto",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
-  "pk": 344,
-  "fields": {
-    "empresa": 1,
-    "aluno": 12,
-    "cavalo": 2,
-    "instrutor": 5,
-    "data_hora": "2026-02-19T14:00:00Z",
-    "local": "picadeiro_2",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
-  "pk": 345,
-  "fields": {
-    "empresa": 1,
-    "aluno": 11,
-    "cavalo": 12,
-    "instrutor": 5,
-    "data_hora": "2026-02-19T12:30:00Z",
-    "local": "picadeiro_1",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
-  "pk": 346,
-  "fields": {
-    "empresa": 1,
-    "aluno": 12,
-    "cavalo": 32,
-    "instrutor": 5,
-    "data_hora": "2026-02-19T18:30:00Z",
-    "local": "picadeiro_1",
     "tipo": "NORMAL",
     "concluida": true,
     "relatorio_treino": ""
@@ -6928,13 +6923,58 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 348,
+  "pk": 345,
   "fields": {
     "empresa": 1,
-    "aluno": 15,
-    "cavalo": 3,
+    "aluno": 11,
+    "cavalo": 12,
     "instrutor": 5,
-    "data_hora": "2026-02-20T14:00:00Z",
+    "data_hora": "2026-02-19T12:30:00Z",
+    "local": "picadeiro_1",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
+  "pk": 344,
+  "fields": {
+    "empresa": 1,
+    "aluno": 12,
+    "cavalo": 2,
+    "instrutor": 5,
+    "data_hora": "2026-02-19T14:00:00Z",
+    "local": "picadeiro_2",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
+  "pk": 346,
+  "fields": {
+    "empresa": 1,
+    "aluno": 12,
+    "cavalo": 32,
+    "instrutor": 5,
+    "data_hora": "2026-02-19T18:30:00Z",
+    "local": "picadeiro_1",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
+  "pk": 343,
+  "fields": {
+    "empresa": 1,
+    "aluno": 3,
+    "cavalo": 28,
+    "instrutor": 5,
+    "data_hora": "2026-02-19T20:00:00Z",
     "local": "pista_salto",
     "tipo": "NORMAL",
     "concluida": true,
@@ -6958,6 +6998,36 @@
 },
 {
   "model": "gateagora.aula",
+  "pk": 348,
+  "fields": {
+    "empresa": 1,
+    "aluno": 15,
+    "cavalo": 3,
+    "instrutor": 5,
+    "data_hora": "2026-02-20T14:00:00Z",
+    "local": "pista_salto",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
+  "pk": 354,
+  "fields": {
+    "empresa": 1,
+    "aluno": 14,
+    "cavalo": 15,
+    "instrutor": 5,
+    "data_hora": "2026-02-21T11:00:00Z",
+    "local": "pista_salto",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
   "pk": 350,
   "fields": {
     "empresa": 1,
@@ -6973,13 +7043,13 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 351,
+  "pk": 353,
   "fields": {
     "empresa": 1,
-    "aluno": 13,
-    "cavalo": 24,
+    "aluno": 2,
+    "cavalo": 19,
     "instrutor": 5,
-    "data_hora": "2026-02-21T20:00:00Z",
+    "data_hora": "2026-02-21T14:00:00Z",
     "local": "pista_salto",
     "tipo": "NORMAL",
     "concluida": true,
@@ -7003,13 +7073,13 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 353,
+  "pk": 351,
   "fields": {
     "empresa": 1,
-    "aluno": 2,
-    "cavalo": 19,
+    "aluno": 13,
+    "cavalo": 24,
     "instrutor": 5,
-    "data_hora": "2026-02-21T14:00:00Z",
+    "data_hora": "2026-02-21T20:00:00Z",
     "local": "pista_salto",
     "tipo": "NORMAL",
     "concluida": true,
@@ -7018,14 +7088,14 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 354,
+  "pk": 357,
   "fields": {
     "empresa": 1,
-    "aluno": 14,
-    "cavalo": 15,
+    "aluno": 15,
+    "cavalo": 27,
     "instrutor": 5,
-    "data_hora": "2026-02-21T11:00:00Z",
-    "local": "pista_salto",
+    "data_hora": "2026-02-23T12:30:00Z",
+    "local": "picadeiro_1",
     "tipo": "NORMAL",
     "concluida": true,
     "relatorio_treino": ""
@@ -7063,36 +7133,6 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 357,
-  "fields": {
-    "empresa": 1,
-    "aluno": 15,
-    "cavalo": 27,
-    "instrutor": 5,
-    "data_hora": "2026-02-23T12:30:00Z",
-    "local": "picadeiro_1",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
-  "pk": 358,
-  "fields": {
-    "empresa": 1,
-    "aluno": 7,
-    "cavalo": 31,
-    "instrutor": 5,
-    "data_hora": "2026-02-24T18:30:00Z",
-    "local": "picadeiro_2",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
   "pk": 359,
   "fields": {
     "empresa": 1,
@@ -7115,6 +7155,21 @@
     "cavalo": 8,
     "instrutor": 5,
     "data_hora": "2026-02-24T14:00:00Z",
+    "local": "picadeiro_2",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
+  "pk": 358,
+  "fields": {
+    "empresa": 1,
+    "aluno": 7,
+    "cavalo": 31,
+    "instrutor": 5,
+    "data_hora": "2026-02-24T18:30:00Z",
     "local": "picadeiro_2",
     "tipo": "NORMAL",
     "concluida": true,
@@ -7168,6 +7223,21 @@
 },
 {
   "model": "gateagora.aula",
+  "pk": 366,
+  "fields": {
+    "empresa": 1,
+    "aluno": 8,
+    "cavalo": 22,
+    "instrutor": 5,
+    "data_hora": "2026-02-26T12:30:00Z",
+    "local": "picadeiro_1",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
   "pk": 364,
   "fields": {
     "empresa": 1,
@@ -7191,21 +7261,6 @@
     "instrutor": 5,
     "data_hora": "2026-02-26T20:00:00Z",
     "local": "picadeiro_2",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
-  "pk": 366,
-  "fields": {
-    "empresa": 1,
-    "aluno": 8,
-    "cavalo": 22,
-    "instrutor": 5,
-    "data_hora": "2026-02-26T12:30:00Z",
-    "local": "picadeiro_1",
     "tipo": "NORMAL",
     "concluida": true,
     "relatorio_treino": ""
@@ -7258,6 +7313,21 @@
 },
 {
   "model": "gateagora.aula",
+  "pk": 373,
+  "fields": {
+    "empresa": 1,
+    "aluno": 8,
+    "cavalo": 32,
+    "instrutor": 5,
+    "data_hora": "2026-02-28T11:00:00Z",
+    "local": "pista_salto",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
   "pk": 370,
   "fields": {
     "empresa": 1,
@@ -7266,21 +7336,6 @@
     "instrutor": 5,
     "data_hora": "2026-02-28T12:30:00Z",
     "local": "picadeiro_2",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
-  "pk": 371,
-  "fields": {
-    "empresa": 1,
-    "aluno": 8,
-    "cavalo": 4,
-    "instrutor": 5,
-    "data_hora": "2026-02-28T20:00:00Z",
-    "local": "picadeiro_1",
     "tipo": "NORMAL",
     "concluida": true,
     "relatorio_treino": ""
@@ -7303,29 +7358,14 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 373,
+  "pk": 371,
   "fields": {
     "empresa": 1,
     "aluno": 8,
-    "cavalo": 32,
+    "cavalo": 4,
     "instrutor": 5,
-    "data_hora": "2026-02-28T11:00:00Z",
-    "local": "pista_salto",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
-  "pk": 374,
-  "fields": {
-    "empresa": 1,
-    "aluno": 2,
-    "cavalo": 16,
-    "instrutor": 5,
-    "data_hora": "2026-03-02T20:00:00Z",
-    "local": "pista_salto",
+    "data_hora": "2026-02-28T20:00:00Z",
+    "local": "picadeiro_1",
     "tipo": "NORMAL",
     "concluida": true,
     "relatorio_treino": ""
@@ -7348,14 +7388,14 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 376,
+  "pk": 374,
   "fields": {
     "empresa": 1,
-    "aluno": 10,
-    "cavalo": 27,
+    "aluno": 2,
+    "cavalo": 16,
     "instrutor": 5,
-    "data_hora": "2026-03-03T18:30:00Z",
-    "local": "picadeiro_1",
+    "data_hora": "2026-03-02T20:00:00Z",
+    "local": "pista_salto",
     "tipo": "NORMAL",
     "concluida": true,
     "relatorio_treino": ""
@@ -7378,6 +7418,21 @@
 },
 {
   "model": "gateagora.aula",
+  "pk": 376,
+  "fields": {
+    "empresa": 1,
+    "aluno": 10,
+    "cavalo": 27,
+    "instrutor": 5,
+    "data_hora": "2026-03-03T18:30:00Z",
+    "local": "picadeiro_1",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
   "pk": 378,
   "fields": {
     "empresa": 1,
@@ -7386,6 +7441,21 @@
     "instrutor": 5,
     "data_hora": "2026-03-04T11:00:00Z",
     "local": "pista_salto",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
+  "pk": 381,
+  "fields": {
+    "empresa": 1,
+    "aluno": 8,
+    "cavalo": 23,
+    "instrutor": 5,
+    "data_hora": "2026-03-04T12:30:00Z",
+    "local": "picadeiro_1",
     "tipo": "NORMAL",
     "concluida": true,
     "relatorio_treino": ""
@@ -7423,36 +7493,6 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 381,
-  "fields": {
-    "empresa": 1,
-    "aluno": 8,
-    "cavalo": 23,
-    "instrutor": 5,
-    "data_hora": "2026-03-04T12:30:00Z",
-    "local": "picadeiro_1",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
-  "pk": 382,
-  "fields": {
-    "empresa": 1,
-    "aluno": 9,
-    "cavalo": 3,
-    "instrutor": 5,
-    "data_hora": "2026-03-05T18:30:00Z",
-    "local": "picadeiro_2",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
   "pk": 383,
   "fields": {
     "empresa": 1,
@@ -7468,14 +7508,14 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 384,
+  "pk": 382,
   "fields": {
     "empresa": 1,
-    "aluno": 3,
-    "cavalo": 12,
+    "aluno": 9,
+    "cavalo": 3,
     "instrutor": 5,
-    "data_hora": "2026-03-06T20:00:00Z",
-    "local": "picadeiro_1",
+    "data_hora": "2026-03-05T18:30:00Z",
+    "local": "picadeiro_2",
     "tipo": "NORMAL",
     "concluida": true,
     "relatorio_treino": ""
@@ -7505,6 +7545,21 @@
     "cavalo": 13,
     "instrutor": 5,
     "data_hora": "2026-03-06T18:30:00Z",
+    "local": "picadeiro_1",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
+  "pk": 384,
+  "fields": {
+    "empresa": 1,
+    "aluno": 3,
+    "cavalo": 12,
+    "instrutor": 5,
+    "data_hora": "2026-03-06T20:00:00Z",
     "local": "picadeiro_1",
     "tipo": "NORMAL",
     "concluida": true,
@@ -7633,6 +7688,21 @@
 },
 {
   "model": "gateagora.aula",
+  "pk": 397,
+  "fields": {
+    "empresa": 1,
+    "aluno": 11,
+    "cavalo": 20,
+    "instrutor": 5,
+    "data_hora": "2026-03-10T12:30:00Z",
+    "local": "picadeiro_2",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
   "pk": 395,
   "fields": {
     "empresa": 1,
@@ -7663,16 +7733,16 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 397,
+  "pk": 402,
   "fields": {
     "empresa": 1,
-    "aluno": 11,
-    "cavalo": 20,
+    "aluno": 15,
+    "cavalo": 11,
     "instrutor": 5,
-    "data_hora": "2026-03-10T12:30:00Z",
-    "local": "picadeiro_2",
+    "data_hora": "2026-03-11T11:00:00Z",
+    "local": "picadeiro_1",
     "tipo": "NORMAL",
-    "concluida": true,
+    "concluida": false,
     "relatorio_treino": ""
   }
 },
@@ -7685,21 +7755,6 @@
     "cavalo": 23,
     "instrutor": 5,
     "data_hora": "2026-03-11T12:30:00Z",
-    "local": "pista_salto",
-    "tipo": "NORMAL",
-    "concluida": false,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
-  "pk": 399,
-  "fields": {
-    "empresa": 1,
-    "aluno": 13,
-    "cavalo": 18,
-    "instrutor": 5,
-    "data_hora": "2026-03-11T17:00:00Z",
     "local": "pista_salto",
     "tipo": "NORMAL",
     "concluida": false,
@@ -7723,6 +7778,21 @@
 },
 {
   "model": "gateagora.aula",
+  "pk": 399,
+  "fields": {
+    "empresa": 1,
+    "aluno": 13,
+    "cavalo": 18,
+    "instrutor": 5,
+    "data_hora": "2026-03-11T17:00:00Z",
+    "local": "pista_salto",
+    "tipo": "NORMAL",
+    "concluida": false,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
   "pk": 401,
   "fields": {
     "empresa": 1,
@@ -7730,51 +7800,6 @@
     "cavalo": 26,
     "instrutor": 5,
     "data_hora": "2026-03-11T20:00:00Z",
-    "local": "picadeiro_2",
-    "tipo": "NORMAL",
-    "concluida": false,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
-  "pk": 402,
-  "fields": {
-    "empresa": 1,
-    "aluno": 15,
-    "cavalo": 11,
-    "instrutor": 5,
-    "data_hora": "2026-03-11T11:00:00Z",
-    "local": "picadeiro_1",
-    "tipo": "NORMAL",
-    "concluida": false,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
-  "pk": 403,
-  "fields": {
-    "empresa": 1,
-    "aluno": 9,
-    "cavalo": 5,
-    "instrutor": 5,
-    "data_hora": "2026-03-12T18:30:00Z",
-    "local": "picadeiro_1",
-    "tipo": "NORMAL",
-    "concluida": false,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
-  "pk": 404,
-  "fields": {
-    "empresa": 1,
-    "aluno": 3,
-    "cavalo": 24,
-    "instrutor": 5,
-    "data_hora": "2026-03-12T17:00:00Z",
     "local": "picadeiro_2",
     "tipo": "NORMAL",
     "concluida": false,
@@ -7798,14 +7823,44 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 406,
+  "pk": 404,
+  "fields": {
+    "empresa": 1,
+    "aluno": 3,
+    "cavalo": 24,
+    "instrutor": 5,
+    "data_hora": "2026-03-12T17:00:00Z",
+    "local": "picadeiro_2",
+    "tipo": "NORMAL",
+    "concluida": false,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
+  "pk": 403,
+  "fields": {
+    "empresa": 1,
+    "aluno": 9,
+    "cavalo": 5,
+    "instrutor": 5,
+    "data_hora": "2026-03-12T18:30:00Z",
+    "local": "picadeiro_1",
+    "tipo": "NORMAL",
+    "concluida": false,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
+  "pk": 408,
   "fields": {
     "empresa": 1,
     "aluno": 12,
-    "cavalo": 29,
+    "cavalo": 26,
     "instrutor": 5,
-    "data_hora": "2026-03-13T20:00:00Z",
-    "local": "picadeiro_1",
+    "data_hora": "2026-03-13T14:00:00Z",
+    "local": "picadeiro_2",
     "tipo": "NORMAL",
     "concluida": false,
     "relatorio_treino": ""
@@ -7828,13 +7883,28 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 408,
+  "pk": 406,
   "fields": {
     "empresa": 1,
     "aluno": 12,
-    "cavalo": 26,
+    "cavalo": 29,
     "instrutor": 5,
-    "data_hora": "2026-03-13T14:00:00Z",
+    "data_hora": "2026-03-13T20:00:00Z",
+    "local": "picadeiro_1",
+    "tipo": "NORMAL",
+    "concluida": false,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
+  "pk": 410,
+  "fields": {
+    "empresa": 1,
+    "aluno": 13,
+    "cavalo": 8,
+    "instrutor": 5,
+    "data_hora": "2026-03-14T11:00:00Z",
     "local": "picadeiro_2",
     "tipo": "NORMAL",
     "concluida": false,
@@ -7858,14 +7928,14 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 410,
+  "pk": 412,
   "fields": {
     "empresa": 1,
-    "aluno": 13,
-    "cavalo": 8,
+    "aluno": 2,
+    "cavalo": 19,
     "instrutor": 5,
-    "data_hora": "2026-03-14T11:00:00Z",
-    "local": "picadeiro_2",
+    "data_hora": "2026-03-14T14:00:00Z",
+    "local": "pista_salto",
     "tipo": "NORMAL",
     "concluida": false,
     "relatorio_treino": ""
@@ -7888,13 +7958,13 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 412,
+  "pk": 414,
   "fields": {
     "empresa": 1,
-    "aluno": 2,
-    "cavalo": 19,
+    "aluno": 3,
+    "cavalo": 21,
     "instrutor": 5,
-    "data_hora": "2026-03-14T14:00:00Z",
+    "data_hora": "2026-03-16T11:00:00Z",
     "local": "pista_salto",
     "tipo": "NORMAL",
     "concluida": false,
@@ -7918,29 +7988,14 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 414,
+  "pk": 417,
   "fields": {
     "empresa": 1,
-    "aluno": 3,
-    "cavalo": 21,
+    "aluno": 9,
+    "cavalo": 12,
     "instrutor": 5,
-    "data_hora": "2026-03-16T11:00:00Z",
-    "local": "pista_salto",
-    "tipo": "NORMAL",
-    "concluida": false,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
-  "pk": 415,
-  "fields": {
-    "empresa": 1,
-    "aluno": 12,
-    "cavalo": 5,
-    "instrutor": 5,
-    "data_hora": "2026-03-16T20:00:00Z",
-    "local": "pista_salto",
+    "data_hora": "2026-03-16T17:00:00Z",
+    "local": "picadeiro_2",
     "tipo": "NORMAL",
     "concluida": false,
     "relatorio_treino": ""
@@ -7963,14 +8018,14 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 417,
+  "pk": 415,
   "fields": {
     "empresa": 1,
-    "aluno": 9,
-    "cavalo": 12,
+    "aluno": 12,
+    "cavalo": 5,
     "instrutor": 5,
-    "data_hora": "2026-03-16T17:00:00Z",
-    "local": "picadeiro_2",
+    "data_hora": "2026-03-16T20:00:00Z",
+    "local": "pista_salto",
     "tipo": "NORMAL",
     "concluida": false,
     "relatorio_treino": ""
@@ -8083,6 +8138,21 @@
 },
 {
   "model": "gateagora.aula",
+  "pk": 427,
+  "fields": {
+    "empresa": 1,
+    "aluno": 4,
+    "cavalo": 15,
+    "instrutor": 5,
+    "data_hora": "2026-03-20T11:00:00Z",
+    "local": "picadeiro_2",
+    "tipo": "NORMAL",
+    "concluida": true,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
   "pk": 425,
   "fields": {
     "empresa": 1,
@@ -8113,21 +8183,6 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 427,
-  "fields": {
-    "empresa": 1,
-    "aluno": 4,
-    "cavalo": 15,
-    "instrutor": 5,
-    "data_hora": "2026-03-20T11:00:00Z",
-    "local": "picadeiro_2",
-    "tipo": "NORMAL",
-    "concluida": true,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
   "pk": 428,
   "fields": {
     "empresa": 1,
@@ -8143,13 +8198,13 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 429,
+  "pk": 430,
   "fields": {
     "empresa": 1,
-    "aluno": 3,
-    "cavalo": 20,
+    "aluno": 15,
+    "cavalo": 6,
     "instrutor": 5,
-    "data_hora": "2026-03-21T14:00:00Z",
+    "data_hora": "2026-03-21T12:30:00Z",
     "local": "pista_salto",
     "tipo": "NORMAL",
     "concluida": false,
@@ -8158,13 +8213,13 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 430,
+  "pk": 429,
   "fields": {
     "empresa": 1,
-    "aluno": 15,
-    "cavalo": 6,
+    "aluno": 3,
+    "cavalo": 20,
     "instrutor": 5,
-    "data_hora": "2026-03-21T12:30:00Z",
+    "data_hora": "2026-03-21T14:00:00Z",
     "local": "pista_salto",
     "tipo": "NORMAL",
     "concluida": false,
@@ -8203,21 +8258,6 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 433,
-  "fields": {
-    "empresa": 1,
-    "aluno": 8,
-    "cavalo": 3,
-    "instrutor": 5,
-    "data_hora": "2026-03-23T18:30:00Z",
-    "local": "pista_salto",
-    "tipo": "NORMAL",
-    "concluida": false,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
   "pk": 434,
   "fields": {
     "empresa": 1,
@@ -8233,29 +8273,14 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 435,
+  "pk": 433,
   "fields": {
     "empresa": 1,
-    "aluno": 14,
-    "cavalo": 19,
+    "aluno": 8,
+    "cavalo": 3,
     "instrutor": 5,
-    "data_hora": "2026-03-24T18:30:00Z",
+    "data_hora": "2026-03-23T18:30:00Z",
     "local": "pista_salto",
-    "tipo": "NORMAL",
-    "concluida": false,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
-  "pk": 436,
-  "fields": {
-    "empresa": 1,
-    "aluno": 11,
-    "cavalo": 31,
-    "instrutor": 5,
-    "data_hora": "2026-03-24T17:00:00Z",
-    "local": "picadeiro_1",
     "tipo": "NORMAL",
     "concluida": false,
     "relatorio_treino": ""
@@ -8278,13 +8303,13 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 438,
+  "pk": 436,
   "fields": {
     "empresa": 1,
-    "aluno": 14,
-    "cavalo": 30,
+    "aluno": 11,
+    "cavalo": 31,
     "instrutor": 5,
-    "data_hora": "2026-03-25T11:00:00Z",
+    "data_hora": "2026-03-24T17:00:00Z",
     "local": "picadeiro_1",
     "tipo": "NORMAL",
     "concluida": false,
@@ -8293,14 +8318,29 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 439,
+  "pk": 435,
   "fields": {
     "empresa": 1,
-    "aluno": 12,
-    "cavalo": 10,
+    "aluno": 14,
+    "cavalo": 19,
     "instrutor": 5,
-    "data_hora": "2026-03-25T20:00:00Z",
-    "local": "picadeiro_2",
+    "data_hora": "2026-03-24T18:30:00Z",
+    "local": "pista_salto",
+    "tipo": "NORMAL",
+    "concluida": false,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
+  "pk": 438,
+  "fields": {
+    "empresa": 1,
+    "aluno": 14,
+    "cavalo": 30,
+    "instrutor": 5,
+    "data_hora": "2026-03-25T11:00:00Z",
+    "local": "picadeiro_1",
     "tipo": "NORMAL",
     "concluida": false,
     "relatorio_treino": ""
@@ -8323,21 +8363,6 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 441,
-  "fields": {
-    "empresa": 1,
-    "aluno": 12,
-    "cavalo": 26,
-    "instrutor": 5,
-    "data_hora": "2026-03-25T17:00:00Z",
-    "local": "picadeiro_1",
-    "tipo": "NORMAL",
-    "concluida": false,
-    "relatorio_treino": ""
-  }
-},
-{
-  "model": "gateagora.aula",
   "pk": 442,
   "fields": {
     "empresa": 1,
@@ -8353,14 +8378,29 @@
 },
 {
   "model": "gateagora.aula",
-  "pk": 443,
+  "pk": 441,
   "fields": {
     "empresa": 1,
-    "aluno": 14,
-    "cavalo": 16,
+    "aluno": 12,
+    "cavalo": 26,
     "instrutor": 5,
-    "data_hora": "2026-03-26T17:00:00Z",
+    "data_hora": "2026-03-25T17:00:00Z",
     "local": "picadeiro_1",
+    "tipo": "NORMAL",
+    "concluida": false,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
+  "pk": 439,
+  "fields": {
+    "empresa": 1,
+    "aluno": 12,
+    "cavalo": 10,
+    "instrutor": 5,
+    "data_hora": "2026-03-25T20:00:00Z",
+    "local": "picadeiro_2",
     "tipo": "NORMAL",
     "concluida": false,
     "relatorio_treino": ""
@@ -8390,6 +8430,21 @@
     "cavalo": 27,
     "instrutor": 5,
     "data_hora": "2026-03-26T14:00:00Z",
+    "local": "picadeiro_1",
+    "tipo": "NORMAL",
+    "concluida": false,
+    "relatorio_treino": ""
+  }
+},
+{
+  "model": "gateagora.aula",
+  "pk": 443,
+  "fields": {
+    "empresa": 1,
+    "aluno": 14,
+    "cavalo": 16,
+    "instrutor": 5,
+    "data_hora": "2026-03-26T17:00:00Z",
     "local": "picadeiro_1",
     "tipo": "NORMAL",
     "concluida": false,
@@ -8506,7 +8561,7 @@
   "pk": 1,
   "fields": {
     "empresa": 1,
-    "nome": "RaþÒo Guabi Equi-S",
+    "nome": "Ração Guabi Equi-S",
     "quantidade_atual": 4,
     "alerta_minimo": 5,
     "unidade": "Sacos",
@@ -8730,61 +8785,6 @@
     "date_joined": "2026-03-09T02:18:24.125Z",
     "groups": [],
     "user_permissions": []
-  }
-},
-{
-  "model": "gateagora.perfil",
-  "pk": 1,
-  "fields": {
-    "user": [
-      "Admin"
-    ],
-    "empresa": 1,
-    "cargo": "Gestor"
-  }
-},
-{
-  "model": "gateagora.perfil",
-  "pk": 2,
-  "fields": {
-    "user": [
-      "admin4"
-    ],
-    "empresa": 1,
-    "cargo": "Gestor"
-  }
-},
-{
-  "model": "gateagora.perfil",
-  "pk": 3,
-  "fields": {
-    "user": [
-      "alessandro_admin"
-    ],
-    "empresa": 1,
-    "cargo": "Gestor"
-  }
-},
-{
-  "model": "gateagora.perfil",
-  "pk": 4,
-  "fields": {
-    "user": [
-      "gestor_hipica1"
-    ],
-    "empresa": 1,
-    "cargo": "Gestor"
-  }
-},
-{
-  "model": "gateagora.perfil",
-  "pk": 5,
-  "fields": {
-    "user": [
-      "professor_hipica1"
-    ],
-    "empresa": 1,
-    "cargo": "Professor"
   }
 }
 ]
