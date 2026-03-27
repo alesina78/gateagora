@@ -1,0 +1,161 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Configurar Prazos de Manejo — {{ empresa.nome }}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"/>
+  <link rel="stylesheet" href="{% static 'css/themes.css' %}">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
+    body { font-family: 'Inter', sans-serif; background-color: var(--bg-main); color: var(--text-main); }
+    .card { background-color: var(--card-bg); border: 1px solid var(--border); border-radius: 1.5rem; }
+    .glass { background-color: var(--card-bg); border-bottom: 1px solid var(--border); backdrop-filter: blur(10px); }
+    input[type="number"] { -moz-appearance: textfield; }
+    input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; }
+  </style>
+</head>
+<body>
+
+<nav class="glass sticky top-0 z-50 px-6 py-3">
+  <div class="container mx-auto flex justify-between items-center">
+    <a href="{% url 'dashboard' %}" class="flex items-center gap-3 group">
+      <div class="bg-indigo-600 p-2 rounded-xl shadow-lg group-hover:bg-indigo-700 transition">
+        <i class="fa-solid fa-chess-knight text-white text-xl"></i>
+      </div>
+      <div>
+        <h1 class="text-xl font-extrabold tracking-tight" style="color:var(--text-strong)">Gate 4</h1>
+        <p class="text-[10px] font-bold uppercase tracking-widest" style="color:var(--text-muted)">{{ empresa.nome }}</p>
+      </div>
+    </a>
+    <a href="{% url 'dashboard' %}"
+       class="text-[10px] font-bold uppercase px-3 py-1.5 rounded-xl flex items-center gap-2 transition"
+       style="background-color:var(--indigo-soft);color:var(--indigo-text);border:1px solid rgba(99,102,241,0.2);">
+      <i class="fa-solid fa-arrow-left"></i> Dashboard
+    </a>
+  </div>
+</nav>
+
+<div class="container mx-auto px-4 py-8 max-w-lg">
+
+  <div class="mb-8">
+    <h2 class="text-2xl font-black uppercase italic" style="color:var(--text-strong)">
+      <i class="fa-solid fa-sliders mr-2" style="color:var(--indigo-text)"></i>Prazos de Manejo
+    </h2>
+    <p class="text-sm mt-1" style="color:var(--text-muted)">
+      Defina em dias a frequência de cada procedimento para esta propriedade.
+      O alerta de Saúde &amp; Vet usará esses valores para identificar cavalos com pendências.
+    </p>
+  </div>
+
+  {% if messages %}
+  {% for msg in messages %}
+  <div class="mb-4 px-4 py-3 rounded-xl text-sm font-bold bg-emerald-100 text-emerald-800">
+    {{ msg }}
+  </div>
+  {% endfor %}
+  {% endif %}
+
+  <form method="post" class="card p-8 space-y-6">
+    {% csrf_token %}
+
+    {% with campos=forloop %}
+
+    <!-- Vacinação -->
+    <div>
+      <label class="text-[10px] font-black uppercase block mb-1.5" style="color:var(--text-muted)">
+        <i class="fa-solid fa-syringe mr-1" style="color:var(--indigo-text)"></i>
+        Intervalo entre Vacinações
+      </label>
+      <div class="flex items-center gap-3">
+        <input type="number" name="prazo_vacina" value="{{ cfg.prazo_vacina }}" min="1" max="730" required
+          class="w-28 rounded-xl px-3 py-2.5 text-lg font-black text-center"
+          style="background-color:var(--card-alt);color:var(--text-main);border:1px solid var(--border);">
+        <span class="text-sm font-bold" style="color:var(--text-muted)">dias</span>
+        <span class="text-[9px] px-2 py-1 rounded-full font-bold ml-auto"
+              style="background-color:var(--card-alt);color:var(--text-muted);">
+          padrão: 365 dias
+        </span>
+      </div>
+    </div>
+
+    <!-- Vermifugação -->
+    <div>
+      <label class="text-[10px] font-black uppercase block mb-1.5" style="color:var(--text-muted)">
+        <i class="fa-solid fa-capsules mr-1" style="color:var(--amber-text)"></i>
+        Intervalo entre Vermifugações
+      </label>
+      <div class="flex items-center gap-3">
+        <input type="number" name="prazo_vermifugo" value="{{ cfg.prazo_vermifugo }}" min="1" max="365" required
+          class="w-28 rounded-xl px-3 py-2.5 text-lg font-black text-center"
+          style="background-color:var(--card-alt);color:var(--text-main);border:1px solid var(--border);">
+        <span class="text-sm font-bold" style="color:var(--text-muted)">dias</span>
+        <span class="text-[9px] px-2 py-1 rounded-full font-bold ml-auto"
+              style="background-color:var(--card-alt);color:var(--text-muted);">
+          padrão: 90 dias
+        </span>
+      </div>
+    </div>
+
+    <!-- Ferrageamento -->
+    <div>
+      <label class="text-[10px] font-black uppercase block mb-1.5" style="color:var(--text-muted)">
+        <i class="fa-solid fa-hammer mr-1" style="color:var(--red-text)"></i>
+        Intervalo entre Ferrageamentos
+      </label>
+      <div class="flex items-center gap-3">
+        <input type="number" name="prazo_ferrageamento" value="{{ cfg.prazo_ferrageamento }}" min="1" max="180" required
+          class="w-28 rounded-xl px-3 py-2.5 text-lg font-black text-center"
+          style="background-color:var(--card-alt);color:var(--text-main);border:1px solid var(--border);">
+        <span class="text-sm font-bold" style="color:var(--text-muted)">dias</span>
+        <span class="text-[9px] px-2 py-1 rounded-full font-bold ml-auto"
+              style="background-color:var(--card-alt);color:var(--text-muted);">
+          padrão: 60 dias
+        </span>
+      </div>
+    </div>
+
+    <!-- Casqueamento -->
+    <div>
+      <label class="text-[10px] font-black uppercase block mb-1.5" style="color:var(--text-muted)">
+        <i class="fa-solid fa-shoe-prints mr-1" style="color:var(--emerald-text)"></i>
+        Intervalo entre Casqueamentos
+      </label>
+      <div class="flex items-center gap-3">
+        <input type="number" name="prazo_casqueamento" value="{{ cfg.prazo_casqueamento }}" min="1" max="180" required
+          class="w-28 rounded-xl px-3 py-2.5 text-lg font-black text-center"
+          style="background-color:var(--card-alt);color:var(--text-main);border:1px solid var(--border);">
+        <span class="text-sm font-bold" style="color:var(--text-muted)">dias</span>
+        <span class="text-[9px] px-2 py-1 rounded-full font-bold ml-auto"
+              style="background-color:var(--card-alt);color:var(--text-muted);">
+          padrão: 60 dias
+        </span>
+      </div>
+    </div>
+
+    {% endwith %}
+
+    <div class="pt-2" style="border-top:1px solid var(--border)">
+      <button type="submit"
+        class="w-full py-4 rounded-2xl font-black uppercase text-sm tracking-wider flex items-center justify-center gap-2 transition"
+        style="background:#4f46e5;color:#fff;">
+        <i class="fa-solid fa-floppy-disk"></i>
+        Salvar Prazos
+      </button>
+    </div>
+  </form>
+
+  <!-- Nota explicativa -->
+  <div class="mt-6 px-4 py-4 rounded-2xl text-[10px]" style="background-color:var(--card-alt);color:var(--text-muted);border:1px solid var(--border);">
+    <p class="font-black uppercase mb-1" style="color:var(--text-main)">Como funciona o alerta?</p>
+    Um cavalo aparece no painel <strong>Saúde &amp; Vet</strong> se qualquer um desses prazos estiver vencido
+    <strong>ou</strong> se o campo <em>Status de Saúde</em> estiver diferente de <em>Saudável</em>.
+    Ele só sai do alerta quando <strong>todos</strong> os procedimentos estiverem dentro do prazo
+    <strong>e</strong> o status for Saudável.
+  </div>
+
+</div>
+</body>
+</html>

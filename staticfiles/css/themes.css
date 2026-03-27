@@ -1,0 +1,99 @@
+:root, html {
+  /* DARK - ZAINO */
+  --bg-main:    #0d1117;
+  --card-bg:    #161b22;
+  --card-alt:   #1c2128;
+  --text-main:  #c9d1d9;
+  --text-muted: #8b949e;
+  --text-strong:#ffffff;
+  --primary:    #10b981;
+  --border:     #30363d;
+  --alert-bg:   rgba(255,255,255,0.03);
+
+  /* extras usados no HTML */
+  --emerald-text:  #10b981;
+  --indigo-text:   #818cf8;
+  --amber-text:    #fbbf24;
+  --red-text:      #f87171;
+  --emerald-soft:  rgba(16,185,129,0.10);
+  --amber-soft:    rgba(245,158,11,0.10);
+  --red-soft:      rgba(239,68,68,0.10);
+  --indigo-soft:   rgba(99,102,241,0.12);
+  --white-soft:    rgba(255,255,255,0.05);
+}
+
+/* ☀️ MODO TORDILHO — ELEGANTE / GESTORES */
+[data-theme="tordilho"] {
+  --bg-main:    #f2efe9;
+  --card-bg:    #faf8f5;
+  --card-alt:   #edeae3;
+  --text-main:  #2c2c2c;
+  --text-muted: #7a7670;
+  --text-strong:#111111;
+  --primary:    #0a5c43;
+  --border:     #d8d3c8;
+  --alert-bg:   rgba(0,0,0,0.03);
+
+  /* extras — versões claras e elegantes */
+  --emerald-text:  #0a5c43;
+  --indigo-text:   #3730a3;
+  --amber-text:    #92400e;
+  --red-text:      #b91c1c;
+  --emerald-soft:  rgba(10,92,67,0.09);
+  --amber-soft:    rgba(146,64,14,0.09);
+  --red-soft:      rgba(185,28,28,0.08);
+  --indigo-soft:   rgba(55,48,163,0.08);
+  --white-soft:    rgba(0,0,0,0.04);
+}
+
+/* ── BASE ── */
+body {
+  background-color: var(--bg-main) !important;
+  color: var(--text-main) !important;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* ── CARDS ── */
+.card, .card-static, .glass,
+.bg-white, .bg-slate-900, .bg-neutral-900 {
+  background-color: var(--card-bg) !important;
+  border-color: var(--border) !important;
+  color: var(--text-main) !important;
+}
+
+/* ── TEXTOS ── */
+h1, h2, h3, strong { color: var(--text-strong) !important; }
+p, span, td, th    { color: var(--text-main); }
+.text-white        { color: var(--text-strong) !important; }
+.text-slate-200, .text-slate-300 { color: var(--text-main)  !important; }
+.text-slate-400, .text-slate-500, .text-slate-600 { color: var(--text-muted) !important; }
+
+/* ── LINKS ── */
+a { color: var(--primary); }
+
+/* ── NAVBAR ── */
+nav.glass {
+  background-color: var(--card-bg) !important;
+  border-bottom: 1px solid var(--border);
+}
+
+/* ── BOTÕES ── */
+button { color: var(--text-main); }
+
+/* ── ALERTAS ── */
+.alerta-box { background: var(--alert-bg); }
+
+/* ── BORDAS SLATE HARDCODED ── */
+.border-slate-700, .border-slate-800 { border-color: var(--border) !important; }
+.border-slate-700\/50 { border-color: var(--border) !important; }
+
+/* ── FUNDOS SLATE HARDCODED ── */
+.bg-slate-700 { background-color: var(--border) !important; }
+.bg-slate-800 { background-color: var(--card-alt) !important; }
+
+/* ── SCROLL ── */
+.custom-scrollbar::-webkit-scrollbar-track { background: var(--bg-main); }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+
+/* ── FOOTER ── */
+footer { border-color: var(--border) !important; }

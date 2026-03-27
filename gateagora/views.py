@@ -22,7 +22,8 @@ from reportlab.lib.pagesizes import A4
 
 from .models import (
     Empresa, Perfil, Aluno, Cavalo, Baia, Piquete, Aula,
-    ItemEstoque, MovimentacaoFinanceira, DocumentoCavalo
+    ItemEstoque, MovimentacaoFinanceira, DocumentoCavalo,
+    ConfigPrazoManejo, Fatura
 )
 
 BRAND_NAME = "Gate 4"
@@ -37,6 +38,13 @@ class CustomLoginView(LoginView):
 
 
 # ── Utilitários ───────────────────────────────────────────────────────────────
+# Função para formatar valores monetários no padrão brasileiro
+def formata_real(valor):
+    try:
+        val = float(valor) if valor else 0.0
+        return f"{val:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    except:
+        return "0,00"
 
 def _iter_ultimos_meses(base: date, n: int = 6):
     out = []
@@ -54,6 +62,7 @@ def _iter_ultimos_meses(base: date, n: int = 6):
 
 @login_required
 def dashboard(request):
+    # 1. Identifica a empresa
     empresa = getattr(request, "empresa", None)
     if not empresa:
         if hasattr(request.user, "perfil"):
@@ -63,7 +72,73 @@ def dashboard(request):
 
     hoje = timezone.localdate()
 
-    # 1) Agenda — só aulas não concluídas de hoje
+    # Import local (boa prática quando não está no topo)
+    from .models import Fatura
+
+    # Faturas críticas (vencidas ou vencendo hoje) - para cobrança rápida
+    # 1.1 LOGICA DE COBRANÇA (Faturas críticas: vencidas ou vencendo hoje)
+    hoje = timezone.localdate()
+    faturas_criticas = Fatura.objects.filter(
+        empresa=empresa,
+        status__in=['PENDENTE', 'ATRASADO'],
+        data_vencimento__lte=hoje
+    ).select_related('aluno').order_by('data_vencimento')
+
+    listagem_cobranca = []
+    for fatura in faturas_criticas:
+        cavalos_aluno = Cavalo.objects.filter(proprietario=fatura.aluno, empresa=empresa)
+        valor_hotelaria = sum(c.mensalidade_baia for c in cavalos_aluno)
+        
+        aulas_aluno = Aula.objects.filter(
+            aluno=fatura.aluno, empresa=empresa, concluida=True,
+            data_hora__month=fatura.data_vencimento.month,
+            data_hora__year=fatura.data_vencimento.year
+        ).count()
+        
+        # Se der erro no Decimal, use float(aulas_aluno)
+        valor_total_aulas = float(aulas_aluno) * float(fatura.aluno.valor_aula)
+
+        txt_hotelaria = formata_real(valor_hotelaria)
+        txt_aulas = formata_real(valor_total_aulas)
+        txt_total = formata_real(fatura.valor)
+
+        # --- DEFINE SE MOSTRA O RESUMO ---
+        if (float(valor_hotelaria) + float(valor_total_aulas)) == float(fatura.valor):
+            detalhes_servicos = (
+                f"Resumo dos Serviços:\n"
+                f"- Hotelaria: R$ {txt_hotelaria}\n"
+                f"- Aulas ({aulas_aluno} sessões): R$ {txt_aulas}\n\n"
+            )
+        else:
+            detalhes_servicos = ""
+
+        # --- MONTA A MENSAGEM ---
+        msg_texto = (
+            f"Olá *{fatura.aluno.nome}*, tudo bem?\n\n"
+            f"Passando para lembrar da fatura em aberto no sistema:\n\n"
+            f"{detalhes_servicos}"
+            f"*Total Geral:* R$ {txt_total}\n"
+            f"*Vencimento:* {fatura.data_vencimento.strftime('%d/%m')}\n\n"
+            f"Se você já realizou o pagamento, basta nos enviar o comprovante por aqui.\n\n"
+            f"Atenciosamente,\n"
+            f"Equipe {empresa.nome}\n"
+            f"Gerado por Gate 4 Management"
+    )
+
+        msg_url = quote(msg_texto)
+        fone = "".join(filter(str.isdigit, str(fatura.aluno.telefone or "")))
+        link_zap = f"https://wa.me/55{fone}?text={msg_url}" if fone else "#"
+        
+        listagem_cobranca.append({
+            "fatura_id":  fatura.id,
+            "aluno":      fatura.aluno.nome,
+            "vencimento": fatura.data_vencimento,
+            "valor":      formata_real(fatura.valor),
+            "atrasado":   fatura.data_vencimento < hoje,
+            "link_zap":   link_zap  # MUDAMOS DE link_whatsapp PARA link_zap
+        })
+
+    # 1) Próximas aulas de hoje
     proximas_aulas = (
         Aula.objects
         .filter(empresa=empresa, concluida=False, data_hora__date=hoje)
@@ -72,7 +147,7 @@ def dashboard(request):
     )
 
     # 2) Alertas
-    estoque_critico     = ItemEstoque.objects.filter(
+    estoque_critico = ItemEstoque.objects.filter(
         empresa=empresa, quantidade_atual__lte=F('alerta_minimo')
     )
     estoque_baixo_count = estoque_critico.count()
@@ -85,17 +160,88 @@ def dashboard(request):
         .order_by('data_validade')
     )
 
-    cavalos_alerta_lista = (
+    # Prazos configuráveis por empresa (usa defaults se não cadastrado)
+    try:
+        cfg = ConfigPrazoManejo.objects.get(empresa=empresa)
+        prazo_vacina        = cfg.prazo_vacina
+        prazo_vermifugo     = cfg.prazo_vermifugo
+        prazo_ferrageamento = cfg.prazo_ferrageamento
+        prazo_casqueamento  = cfg.prazo_casqueamento
+    except ConfigPrazoManejo.DoesNotExist:
+        prazo_vacina        = 365
+        prazo_vermifugo     = 90
+        prazo_ferrageamento = 60
+        prazo_casqueamento  = 60
+
+    def _dias_atraso(data_campo):
+        if not data_campo:
+            return 9999  # nunca feito = máximo atraso
+        return (hoje - data_campo).days
+
+    def _cavalo_em_alerta(c):
+        if c.status_saude != 'Saudável':
+            return True
+        if _dias_atraso(c.ultima_vacina)    > prazo_vacina:    return True
+        if _dias_atraso(c.ultimo_vermifugo) > prazo_vermifugo: return True
+        # Ferrado: verifica ferrageamento (casqueamento ja esta incluso no processo)
+        # Descalco: verifica so casqueamento
+        if c.usa_ferradura == 'SIM':
+            if _dias_atraso(c.ultimo_ferrageamento) > prazo_ferrageamento: return True
+        else:
+            if _dias_atraso(c.ultimo_casqueamento) > prazo_casqueamento: return True
+        return False
+
+    def _score_criticidade(c):
+        atraso_casco = (
+            max(0, _dias_atraso(c.ultimo_ferrageamento) - prazo_ferrageamento)
+            if c.usa_ferradura == 'SIM'
+            else max(0, _dias_atraso(c.ultimo_casqueamento) - prazo_casqueamento)
+        )
+        atrasos = [
+            max(0, _dias_atraso(c.ultima_vacina)    - prazo_vacina),
+            max(0, _dias_atraso(c.ultimo_vermifugo) - prazo_vermifugo),
+            atraso_casco,
+        ]
+        bonus_status = 10000 if c.status_saude != 'Saudável' else 0
+        return sum(atrasos) + bonus_status
+
+    todos_cavalos = (
         Cavalo.objects
         .filter(empresa=empresa)
-        .exclude(status_saude='Saudável')
         .select_related('proprietario')
-        .order_by('status_saude')
     )
 
+    cavalos_alerta_lista = sorted(
+        [c for c in todos_cavalos if _cavalo_em_alerta(c)],
+        key=_score_criticidade,
+        reverse=True
+    )
+
+    # Enriquece cada cavalo com detalhes do atraso para o template
+    for c in cavalos_alerta_lista:
+        c.alerta_detalhes = []
+        if c.status_saude != 'Saudável':
+            c.alerta_detalhes.append(f"Status: {c.status_saude}")
+        if _dias_atraso(c.ultima_vacina) > prazo_vacina:
+            d = _dias_atraso(c.ultima_vacina) - prazo_vacina
+            c.alerta_detalhes.append(f"Vacina {d}d atrasada")
+        if _dias_atraso(c.ultimo_vermifugo) > prazo_vermifugo:
+            d = _dias_atraso(c.ultimo_vermifugo) - prazo_vermifugo
+            c.alerta_detalhes.append(f"Vermifugo {d}d atrasado")
+        # Ferrado: alerta de ferrageamento (casqueamento incluso)
+        if c.usa_ferradura == 'SIM':
+            if _dias_atraso(c.ultimo_ferrageamento) > prazo_ferrageamento:
+                d = _dias_atraso(c.ultimo_ferrageamento) - prazo_ferrageamento
+                c.alerta_detalhes.append(f"Ferrageamento {d}d atrasado")
+        else:
+            # Descalco: alerta so de casqueamento
+            if _dias_atraso(c.ultimo_casqueamento) > prazo_casqueamento:
+                d = _dias_atraso(c.ultimo_casqueamento) - prazo_casqueamento
+                c.alerta_detalhes.append(f"Casqueamento {d}d atrasado")
+
     # 3) KPIs
-    total_baias          = Baia.objects.filter(empresa=empresa).count()
-    baias_ocupadas       = Baia.objects.filter(empresa=empresa, status='Ocupada').count()
+    total_baias = Baia.objects.filter(empresa=empresa).count()
+    baias_ocupadas = Baia.objects.filter(empresa=empresa, status='Ocupada').count()
     porcentagem_ocupacao = int((baias_ocupadas / total_baias * 100)) if total_baias else 0
 
     stats = {
@@ -103,7 +249,7 @@ def dashboard(request):
         "baias_livres":         total_baias - baias_ocupadas,
         "total_baias":          total_baias,
         "porcentagem_ocupacao": porcentagem_ocupacao,
-        "cavalos_alerta":       Cavalo.objects.filter(empresa=empresa).exclude(status_saude='Saudável').count(),
+        "cavalos_alerta": len(cavalos_alerta_lista),
         "total_cavalos":        Cavalo.objects.filter(empresa=empresa).count(),
         "vacinados":            Cavalo.objects.filter(
             empresa=empresa,
@@ -111,7 +257,7 @@ def dashboard(request):
         ).count(),
     }
 
-    # 4) Faturamento — Subquery corrigida (evita inflate de JOIN)
+    # 4) Faturamento por aluno (hotelaria + aulas do mês)
     hotelaria_sq = (
         Cavalo.objects
         .filter(proprietario=OuterRef('pk'), empresa=empresa)
@@ -165,14 +311,14 @@ def dashboard(request):
     }
     mes_atual_str = f"{meses_pt[hoje.month]}/{hoje.year}"
 
-    relatorio              = []
+    relatorio = []
     receita_total_prevista = Decimal('0.00')
 
     for aluno in alunos_com_faturamento:
         total_aluno = aluno.total or Decimal('0.00')
         receita_total_prevista += total_aluno
 
-        tel     = ''.join(filter(str.isdigit, str(aluno.telefone or '')))
+        tel = ''.join(filter(str.isdigit, str(aluno.telefone or '')))
         link_wa = "#"
         if tel:
             if not tel.startswith('55'):
@@ -191,7 +337,7 @@ def dashboard(request):
             "whatsapp": link_wa,
         })
 
-    # 5) Financeiro para gráfico
+    # 5) Financeiro mensal para gráfico
     financeiro_mensal = (
         MovimentacaoFinanceira.objects
         .filter(empresa=empresa)
@@ -211,11 +357,11 @@ def dashboard(request):
             chave = dt.date().replace(day=1) if hasattr(dt, 'date') else dt.replace(day=1)
             dados_mapeados[chave] = (float(item['receita']), float(item['despesa']))
 
-    eixo_meses    = _iter_ultimos_meses(hoje, 6)
-    labels_meses  = []
+    eixo_meses = _iter_ultimos_meses(hoje, 6)
+    labels_meses = []
     dados_receita = []
     dados_despesa = []
-    dados_lucro   = []
+    dados_lucro = []
 
     for m in eixo_meses:
         labels_meses.append(f"{meses_pt[m.month]}/{str(m.year)[2:]}")
@@ -224,20 +370,18 @@ def dashboard(request):
         dados_despesa.append(desp)
         dados_lucro.append(rec - desp)
 
-    # 6) Ranking de treinos por cavalo — período escolhido pelo usuário
-    LIMITE_TREINOS_MES = 20  # ajuste conforme sua hípica
-
-    periodo = request.GET.get('periodo', 'mes')  # mes | 30 | 90
+    # 6) Ranking de treinos por cavalo
+    periodo = request.GET.get('periodo', 'mes')
 
     if periodo == '30':
-        data_inicio  = hoje - timedelta(days=30)
+        data_inicio = hoje - timedelta(days=30)
         periodo_label = 'Últimos 30 dias'
     elif periodo == '90':
-        data_inicio  = hoje - timedelta(days=90)
+        data_inicio = hoje - timedelta(days=90)
         periodo_label = 'Últimos 3 meses'
-    else:  # padrão: mês atual
-        periodo      = 'mes'
-        data_inicio  = hoje.replace(day=1)
+    else:
+        periodo = 'mes'
+        data_inicio = hoje.replace(day=1)
         periodo_label = f"{meses_pt[hoje.month]}/{hoje.year}"
 
     ranking_cavalos = (
@@ -256,42 +400,69 @@ def dashboard(request):
         .order_by('-treinos_periodo', 'nome')
     )
 
-    com_treino     = [c for c in ranking_cavalos if c.treinos_periodo > 0]
-    sem_treino     = [c.nome for c in ranking_cavalos if c.treinos_periodo == 0]
+    com_treino = [c for c in ranking_cavalos if c.treinos_periodo > 0]
+    sem_treino = [c.nome for c in ranking_cavalos if c.treinos_periodo == 0]
     ranking_labels = [c.nome for c in com_treino]
-    ranking_dados  = [c.treinos_periodo for c in com_treino]
+    ranking_dados = [c.treinos_periodo for c in com_treino]
 
-    # Limite proporcional ao período
-    limite = LIMITE_TREINOS_MES if periodo == 'mes' else (
-        LIMITE_TREINOS_MES if periodo == '30' else LIMITE_TREINOS_MES * 3
-    )
+    LIMITE_TREINOS_MES = 20
+    limite = LIMITE_TREINOS_MES if periodo in ('mes', '30') else LIMITE_TREINOS_MES * 3
 
+    # 7) Relatório completo de inadimplência (todas faturas abertas)
+    faturas_abertas = Fatura.objects.filter(
+        empresa=empresa, 
+        status__in=['PENDENTE', 'ATRASADO']
+    ).select_related('aluno').order_by('data_vencimento')
+
+    relatorio_financeiro = []
+    for fatura in faturas_abertas:
+        tel = ''.join(filter(str.isdigit, str(fatura.aluno.telefone or '')))
+        link_wa = "#"
+        if tel:
+            if not tel.startswith('55'):
+                tel = f"55{tel}"
+            msg = (
+                f"Olá *{fatura.aluno.nome}*, notamos que a fatura de "
+                f"R$ {fatura.valor} com vencimento em {fatura.data_vencimento.strftime('%d/%m')} "
+                f"ainda está em aberto. Podemos ajudar?"
+            )
+            link_wa = f"https://wa.me/{tel}?text={quote(msg)}"
+        
+        relatorio_financeiro.append({
+            "fatura": fatura,
+            "whatsapp": link_wa,
+            "atrasada": fatura.data_vencimento < hoje
+        })
+
+    # 8) Contexto final
     context = {
-        "brand_name":               BRAND_NAME,
-        "empresa":                  empresa,
-        "hoje":                     hoje,
-        "proximas_aulas":           proximas_aulas,
-        "estoque_baixo_count":      estoque_baixo_count,
-        "estoque_critico":          estoque_critico,
-        "docs_vencendo":            docs_vencendo,
-        "cavalos_alerta_lista":     cavalos_alerta_lista,
-        "stats":                    stats,
-        "relatorio":                relatorio,
-        "receita_total_prevista":   float(receita_total_prevista),
-        "labels_meses":             json.dumps(labels_meses),
-        "dados_receita":            json.dumps(dados_receita),
-        "dados_despesa":            json.dumps(dados_despesa),
-        "dados_lucro":              json.dumps(dados_lucro),
-        "top_alunos_labels":        json.dumps([r["aluno"].nome for r in relatorio[:10]], ensure_ascii=False),
-        "top_alunos_valores":       json.dumps([r["valor"] for r in relatorio[:10]]),
-        # Ranking cavalos
-        "ranking_cavalos_labels":   json.dumps(ranking_labels, ensure_ascii=False),
-        "ranking_cavalos_dados":    json.dumps(ranking_dados),
-        "cavalos_sem_treino":       sem_treino,
-        "limite_treinos_mes":       limite,
-        "periodo_label":            periodo_label,
-        "periodo_atual":            periodo,
+        "brand_name":             BRAND_NAME,
+        "empresa":                empresa,
+        "hoje":                   hoje,
+        "proximas_aulas":         proximas_aulas,
+        "listagem_cobranca":      listagem_cobranca,
+        "relatorio_financeiro":   relatorio_financeiro,
+        "estoque_baixo_count":    estoque_baixo_count,
+        "estoque_critico":        estoque_critico,
+        "docs_vencendo":          docs_vencendo,
+        "cavalos_alerta_lista":   cavalos_alerta_lista,
+        "stats":                  stats,
+        "relatorio":              relatorio,
+        "receita_total_prevista": float(receita_total_prevista),
+        "labels_meses":           json.dumps(labels_meses),
+        "dados_receita":          json.dumps(dados_receita),
+        "dados_despesa":          json.dumps(dados_despesa),
+        "dados_lucro":            json.dumps(dados_lucro),
+        "top_alunos_labels":      json.dumps([r["aluno"].nome for r in relatorio[:10]], ensure_ascii=False),
+        "top_alunos_valores":     json.dumps([r["valor"] for r in relatorio[:10]]),
+        "ranking_cavalos_labels": json.dumps(ranking_labels, ensure_ascii=False),
+        "ranking_cavalos_dados":  json.dumps(ranking_dados),
+        "cavalos_sem_treino":     sem_treino,
+        "limite_treinos_mes":     limite,
+        "periodo_label":          periodo_label,
+        "periodo_atual":          periodo,
     }
+    
     return render(request, "gateagora/dashboard.html", context)
 
 
@@ -767,23 +938,238 @@ def encilhamento_pdf(request):
 @login_required
 def manejo_em_massa(request):
     empresa = getattr(request, "empresa", request.user.perfil.empresa)
+    hoje = timezone.localdate()
+
+    # Prazos configuráveis
+    try:
+        from .models import ConfigPrazoManejo
+        cfg = ConfigPrazoManejo.objects.get(empresa=empresa)
+        prazo_vacina        = cfg.prazo_vacina
+        prazo_vermifugo     = cfg.prazo_vermifugo
+        prazo_ferrageamento = cfg.prazo_ferrageamento
+        prazo_casqueamento  = cfg.prazo_casqueamento
+    except Exception:
+        prazo_vacina        = 365
+        prazo_vermifugo     = 90
+        prazo_ferrageamento = 60
+        prazo_casqueamento  = 60
+
     if request.method == "POST":
         procedimento   = request.POST.get("procedimento")
         data_aplicacao = request.POST.get("data")
         ids_cavalos    = request.POST.getlist("cavalos_selecionados")
-        cavalos_alvos  = Cavalo.objects.filter(id__in=ids_cavalos, empresa=empresa)
 
-        campos_manejo = {
-            "Vacinacao":     "ultima_vacina",
-            "Vermifugacao":  "ultimo_vermifugo",
-            "Ferrageamento": "ultimo_ferrageamento",
-            "Casqueamento":  "ultimo_casqueamento",
-        }
-        nome_campo = campos_manejo.get(procedimento)
-        if nome_campo and data_aplicacao:
-            cavalos_alvos.update(**{nome_campo: data_aplicacao})
-            messages.success(request, f"{procedimento} aplicado a {cavalos_alvos.count()} animais.")
+        from .models import Cavalo
+        cavalos_alvos = Cavalo.objects.filter(id__in=ids_cavalos, empresa=empresa)
+
+        if not data_aplicacao or not cavalos_alvos.exists():
+            messages.warning(request, "Selecione ao menos um cavalo, procedimento e data.")
+            return redirect("dashboard")
+
+        if procedimento == "Vacinacao":
+            cavalos_alvos.update(ultima_vacina=data_aplicacao)
+            messages.success(request, f"Vacinacao registrada em {cavalos_alvos.count()} animal(is).")
+
+        elif procedimento == "Vermifugacao":
+            cavalos_alvos.update(ultimo_vermifugo=data_aplicacao)
+            messages.success(request, f"Vermifugacao registrada em {cavalos_alvos.count()} animal(is).")
+
+        elif procedimento == "Ferrageamento":
+            # Ferrageamento sempre inclui casqueamento
+            cavalos_alvos.update(
+                ultimo_ferrageamento=data_aplicacao,
+                ultimo_casqueamento=data_aplicacao,
+            )
+            messages.success(
+                request,
+                f"Ferrageamento (+ Casqueamento) registrado em {cavalos_alvos.count()} animal(is)."
+            )
+
+        elif procedimento == "Casqueamento":
+            cavalos_alvos.update(ultimo_casqueamento=data_aplicacao)
+            messages.success(request, f"Casqueamento registrado em {cavalos_alvos.count()} animal(is).")
+
+        else:
+            messages.warning(request, "Procedimento invalido.")
+
         return redirect("dashboard")
 
-    cavalos_lista = Cavalo.objects.filter(empresa=empresa).select_related('baia')
-    return render(request, "gateagora/manejo_massa.html", {"cavalos": cavalos_lista})
+    # GET — monta lista
+    from .models import Cavalo
+
+    def _dias_atraso(data_campo):
+        if not data_campo:
+            return 9999
+        return (hoje - data_campo).days
+
+    def _score_criticidade(c):
+        atraso_casco = (
+            max(0, _dias_atraso(c.ultimo_ferrageamento) - prazo_ferrageamento)
+            if c.usa_ferradura == 'SIM'
+            else max(0, _dias_atraso(c.ultimo_casqueamento) - prazo_casqueamento)
+        )
+        atrasos = [
+            max(0, _dias_atraso(c.ultima_vacina)    - prazo_vacina),
+            max(0, _dias_atraso(c.ultimo_vermifugo) - prazo_vermifugo),
+            atraso_casco,
+        ]
+        bonus_status = 10000 if c.status_saude != 'Saudável' else 0
+        return sum(atrasos) + bonus_status
+
+    def _cavalo_em_alerta(c):
+        if c.status_saude != 'Saudável':
+            return True
+        if _dias_atraso(c.ultima_vacina)    > prazo_vacina:    return True
+        if _dias_atraso(c.ultimo_vermifugo) > prazo_vermifugo: return True
+        if c.usa_ferradura == 'SIM':
+            if _dias_atraso(c.ultimo_ferrageamento) > prazo_ferrageamento: return True
+        else:
+            if _dias_atraso(c.ultimo_casqueamento) > prazo_casqueamento: return True
+        return False
+
+    todos = list(
+        Cavalo.objects
+        .filter(empresa=empresa)
+        .select_related('proprietario', 'baia')
+        .order_by('nome')
+    )
+
+    em_alerta    = sorted([c for c in todos if _cavalo_em_alerta(c)],  key=_score_criticidade, reverse=True)
+    em_dia       = sorted([c for c in todos if not _cavalo_em_alerta(c)], key=lambda c: c.nome)
+
+    # Etiquetas de atraso por cavalo
+    def _etiquetas(c):
+        tags = []
+        if c.status_saude != 'Saudável':
+            tags.append({'label': f'Status: {c.status_saude}', 'cor': 'red'})
+        d = _dias_atraso(c.ultima_vacina) - prazo_vacina
+        if d > 0: tags.append({'label': f'Vacina +{d}d', 'cor': 'red' if d > 30 else 'amber'})
+        d = _dias_atraso(c.ultimo_vermifugo) - prazo_vermifugo
+        if d > 0: tags.append({'label': f'Vermifugo +{d}d', 'cor': 'red' if d > 30 else 'amber'})
+        # Ferrado: etiqueta de ferrageamento; descalco: etiqueta de casqueamento
+        if c.usa_ferradura == 'SIM':
+            d = _dias_atraso(c.ultimo_ferrageamento) - prazo_ferrageamento
+            if d > 0: tags.append({'label': f'Ferrageamento +{d}d', 'cor': 'red' if d > 30 else 'amber'})
+        else:
+            d = _dias_atraso(c.ultimo_casqueamento) - prazo_casqueamento
+            if d > 0: tags.append({'label': f'Casqueamento +{d}d', 'cor': 'red' if d > 30 else 'amber'})
+        return tags
+
+    for c in em_alerta + em_dia:
+        c.etiquetas_manejo = _etiquetas(c)
+
+    context = {
+        "brand_name":        "Gate 4",
+        "empresa":           empresa,
+        "hoje":              hoje,
+        "cavalos_alerta":    em_alerta,
+        "cavalos_em_dia":    em_dia,
+        "prazo_vacina":      prazo_vacina,
+        "prazo_vermifugo":   prazo_vermifugo,
+        "prazo_ferrageamento": prazo_ferrageamento,
+        "prazo_casqueamento":  prazo_casqueamento,
+    }
+    return render(request, "gateagora/manejo_em_massa.html", context)
+
+
+# ── Baixa de Fatura ───────────────────────────────────────────────────────────
+
+@login_required
+def dar_baixa_fatura(request, fatura_id):
+    # Pega a empresa do usuário logado
+    empresa = getattr(request, "empresa", request.user.perfil.empresa)
+    fatura = get_object_or_404(Fatura, id=fatura_id, empresa=empresa)
+    
+    fatura.status = 'PAGO'
+    fatura.data_pagamento = timezone.now().date()
+    fatura.save()
+    
+    messages.success(request, f"Recebimento de {fatura.aluno.nome} registrado com sucesso!")
+    return redirect('dashboard')
+
+# ── Marcar como sadáve ───────────────────────────────────────────────────────────
+# Este endpoint é para marcar um cavalo como saudável, removendo alertas de saúde.
+@login_required
+def marcar_saudavel(request, cavalo_id):
+    empresa = getattr(request, "empresa", request.user.perfil.empresa)
+    cavalo = get_object_or_404(Cavalo, id=cavalo_id, empresa=empresa)
+    cavalo.status_saude = 'Saudável'
+    cavalo.save()
+    messages.success(request, f"{cavalo.nome} marcado como Saudável.")
+    return redirect('dashboard')    
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Configuração de prazos
+# ══════════════════════════════════════════════════════════════════════════════
+@login_required
+def config_prazos_manejo(request):
+    from .models import ConfigPrazoManejo
+    empresa = getattr(request, "empresa", request.user.perfil.empresa)
+    cfg, _ = ConfigPrazoManejo.objects.get_or_create(empresa=empresa)
+
+    if request.method == "POST":
+        cfg.prazo_vacina        = int(request.POST.get("prazo_vacina",        365))
+        cfg.prazo_vermifugo     = int(request.POST.get("prazo_vermifugo",      90))
+        cfg.prazo_ferrageamento = int(request.POST.get("prazo_ferrageamento",  60))
+        cfg.prazo_casqueamento  = int(request.POST.get("prazo_casqueamento",   60))
+        cfg.save()
+        messages.success(request, "Prazos de manejo atualizados com sucesso!")
+        return redirect("dashboard")
+
+    context = {
+        "brand_name": "Gate 4",
+        "empresa":    empresa,
+        "cfg":        cfg,
+    }
+    return render(request, "gateagora/config_prazos_manejo.html", context)
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Marcar cavalo como saudável (só libera se tudo em dia)
+# ══════════════════════════════════════════════════════════════════════════════
+@login_required
+def marcar_saudavel(request, cavalo_id):
+    from .models import Cavalo, ConfigPrazoManejo
+    empresa = getattr(request, "empresa", request.user.perfil.empresa)
+    cavalo  = get_object_or_404(Cavalo, id=cavalo_id, empresa=empresa)
+    hoje    = timezone.localdate()
+
+    try:
+        cfg = ConfigPrazoManejo.objects.get(empresa=empresa)
+        prazo_vacina        = cfg.prazo_vacina
+        prazo_vermifugo     = cfg.prazo_vermifugo
+        prazo_ferrageamento = cfg.prazo_ferrageamento
+        prazo_casqueamento  = cfg.prazo_casqueamento
+    except ConfigPrazoManejo.DoesNotExist:
+        prazo_vacina        = 365
+        prazo_vermifugo     = 90
+        prazo_ferrageamento = 60
+        prazo_casqueamento  = 60
+
+    def _atraso(data_campo, prazo):
+        if not data_campo:
+            return True
+        return (hoje - data_campo).days > prazo
+
+    pendencias = []
+    if _atraso(cavalo.ultima_vacina,    prazo_vacina):    pendencias.append("Vacinacao")
+    if _atraso(cavalo.ultimo_vermifugo, prazo_vermifugo): pendencias.append("Vermifugacao")
+    # Ferrado: checa ferrageamento; descalco: checa so casqueamento
+    if cavalo.usa_ferradura == 'SIM':
+        if _atraso(cavalo.ultimo_ferrageamento, prazo_ferrageamento):
+            pendencias.append("Ferrageamento")
+    else:
+        if _atraso(cavalo.ultimo_casqueamento, prazo_casqueamento):
+            pendencias.append("Casqueamento")
+
+    if pendencias:
+        messages.warning(
+            request,
+            f"{cavalo.nome} ainda tem pendências: {', '.join(pendencias)}. "
+            f"Registre os procedimentos em Manejo em Massa antes de marcar como Saudável."
+        )
+    else:
+        cavalo.status_saude = 'Saudável'
+        cavalo.save(update_fields=['status_saude'])
+        messages.success(request, f"{cavalo.nome} marcado como Saudável! Todos os procedimentos estão em dia.")
+
+    return redirect("dashboard")

@@ -1,110 +1,785 @@
+{% load static %}
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
-  <meta charset="utf-8" />
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1, maximum-scale=1"
-  />
-  <title>{% block title %}Gate 4 Enterprise{% endblock %}</title>
-
+  <link rel="icon" type="image/png" sizes="32x32" href="{% static 'img/favicon-32x32.png' %}">
+  <link rel="icon" type="image/png" sizes="16x16" href="{% static 'img/favicon-16x16.png' %}"> 
+  <link rel="apple-touch-icon" sizes="180x180" href="{% static 'img/apple-touch-icon.png' %}">
+  <link rel="manifest" href="{% static 'img/site.webmanifest' %}">
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{{ brand_name|default:"Gate 4" }} - {{ empresa.nome|default:"Enterprise" }}</title>
   <script src="https://cdn.tailwindcss.com"></script>
-
-  <link
-    rel="stylesheet"
-    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
-    integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg=="
-    crossorigin="anonymous"
-    referrerpolicy="no-referrer"
-  />
-
-  {% block head %}{% endblock %}
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"/>
+  <link rel="stylesheet" href="{% static 'css/themes.css' %}">
   <style>
-    /* Estilos Customizados */
-    .card { @apply bg-white border border-slate-100 rounded-3xl shadow-xl shadow-slate-200; }
-    .btn { @apply inline-flex items-center justify-center px-4 py-2 rounded-xl font-bold transition duration-200; }
-    .btn-primary { @apply bg-indigo-600 text-white hover:bg-indigo-700 shadow-lg shadow-indigo-200; }
-    .btn-ghost { @apply bg-white/10 text-white hover:bg-white/20; }
-    .chip { @apply inline-flex items-center gap-2 text-xs font-bold px-3 py-1 rounded-full; }
-    .chip-ok { @apply bg-emerald-100 text-emerald-700; }
-    .chip-warn { @apply bg-amber-100 text-amber-700; }
-    .chip-bad { @apply bg-rose-100 text-rose-700; }
-    .hprs-gradient { background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 35%, #0ea5e9 100%); }
-    
-    body { font-family: 'Inter', sans-serif; }
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
+
+      body { 
+          font-family: 'Inter', sans-serif; 
+          background-color: var(--bg-main); 
+          color: var(--text-main); 
+          transition: background-color 0.3s ease, color 0.3s ease;
+      }
+
+      .card { 
+          background-color: var(--card-bg); 
+          border: 1px solid var(--border); 
+          border-radius: 1.5rem; 
+          transition: 0.2s ease; 
+      }
+
+      .card:hover { 
+          transform: translateY(-2px); 
+          border-color: var(--primary);
+      }
+
+      .card-static { 
+          background-color: var(--card-bg); 
+          border: 1px solid var(--border); 
+          border-radius: 1.5rem; 
+      }
+
+      .glass { 
+          background-color: var(--card-bg); 
+          border-bottom: 1px solid var(--border); 
+          backdrop-filter: blur(10px); 
+      }
+
+      .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+      .custom-scrollbar::-webkit-scrollbar-track { background: var(--bg-main); }
+      .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+
+      .pulse-red { animation: pulse-red 2s infinite; }
+      @keyframes pulse-red {
+        0%   { box-shadow: 0 0 0 0 rgba(239,68,68,0.4); }
+        70%  { box-shadow: 0 0 0 10px rgba(239,68,68,0); }
+        100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); }
+      }
+      .alerta-painel { max-height: 0; overflow: hidden; transition: max-height 0.4s ease; }
+      .alerta-painel.aberto { max-height: 320px; overflow-y: auto; }
+      .btn-finalizar { transition: all 0.2s ease; }
+      .btn-finalizar:hover { transform: scale(1.05); }
+
+      /* ── Alertas: bg e border via variáveis ── */
+      .alerta-card {
+          background-color: var(--card-bg);
+          border-radius: 1rem;
+          overflow: hidden;
+      }
+      .alerta-card-vencimentos { border-left: 4px solid #f59e0b; }
+      .alerta-card-saude       { border-left: 4px solid #ef4444; }
+      .alerta-card-estoque     { border-left: 4px solid #10b981; }
+
+      .alerta-item {
+          border-radius: 0.75rem;
+          padding: 0.5rem 0.75rem;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+      }
+      .alerta-item-vencimentos {
+          background-color: var(--amber-soft);
+          border: 1px solid rgba(245,158,11,0.15);
+      }
+      .alerta-item-saude {
+          background-color: var(--red-soft);
+          border: 1px solid rgba(239,68,68,0.15);
+      }
+      .alerta-item-estoque {
+          background-color: var(--emerald-soft);
+          border: 1px solid rgba(16,185,129,0.15);
+      }
+
+      /* ── KPI Cards fixos ── */
+      .kpi-faturamento {
+          background: linear-gradient(135deg, var(--card-bg) 0%, var(--card-bg-alt) 100%);
+      }
+      .kpi-ocupacao {
+          background-color: var(--card-bg);
+      }
+
+      /* ── Atividades internas ── */
+      .aula-card {
+          background-color: var(--card-bg-alt);
+          border: 1px solid var(--border);
+          border-radius: 1rem;
+          padding: 1rem;
+          transition: border-color 0.2s;
+      }
+      .aula-card:hover { border-color: rgba(99,102,241,0.5); }
+
+      .aula-separador {
+          border-top: 1px solid var(--border);
+          margin-top: 0.75rem;
+          padding-top: 0.75rem;
+      }
+
+      /* ── Atalhos operacionais ── */
+      .atalhos-panel {
+          background: var(--card-bg);
+          border: 1px solid var(--border);
+          border-radius: 3rem;
+          padding: 2rem;
+      }
+      .btn-atalho {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          width: 100%;
+          padding: 1rem;
+          border-radius: 1rem;
+          font-size: 0.6875rem;
+          font-weight: 900;
+          text-transform: uppercase;
+          transition: all 0.2s ease;
+          margin-bottom: 0.75rem;
+      }
+      .btn-atalho:last-child { margin-bottom: 0; }
+      .btn-atalho i { transition: transform 0.2s; font-size: 1.125rem; }
+      .btn-atalho:hover i { transform: scale(1.25); }
+
+      .btn-atalho-emerald {
+          background-color: var(--emerald-soft);
+          color: var(--emerald-text);
+          border: 1px solid rgba(16,185,129,0.2);
+      }
+      .btn-atalho-emerald:hover {
+          background-color: #059669;
+          color: #ffffff;
+          border-color: #059669;
+      }
+      .btn-atalho-amber {
+          background-color: var(--amber-soft);
+          color: var(--amber-text);
+          border: 1px solid rgba(245,158,11,0.2);
+      }
+      .btn-atalho-amber:hover {
+          background-color: #d97706;
+          color: #ffffff;
+          border-color: #d97706;
+      }
+      .btn-atalho-indigo {
+          background-color: var(--indigo-soft);
+          color: var(--indigo-text);
+          border: 1px solid rgba(99,102,241,0.2);
+      }
+      .btn-atalho-indigo:hover {
+          background-color: #4f46e5;
+          color: #ffffff;
+          border-color: #4f46e5;
+      }
+      .btn-atalho-neutral {
+          background-color: var(--white-soft);
+          color: var(--text-main);
+          border: 1px solid var(--border);
+      }
+      .btn-atalho-neutral:hover {
+          background-color: var(--text-strong);
+          color: var(--bg-main);
+      }
+
+      /* ── Pendências financeiras ── */
+      .pendencia-item {
+          background-color: var(--white-soft);
+          border: 1px solid transparent;
+          border-radius: 1rem;
+          padding: 0.75rem;
+          transition: border-color 0.2s;
+      }
+      .pendencia-item:hover { border-color: rgba(16,185,129,0.3); }
+      .pendencia-separador {
+          border-top: 1px solid var(--border);
+          padding-top: 0.5rem;
+          margin-top: 0.5rem;
+      }
+
+      /* ── Seletor de período ── */
+      .periodo-selector {
+          display: flex;
+          border-radius: 0.75rem;
+          overflow: hidden;
+          border: 1px solid var(--border);
+          font-size: 0.625rem;
+          font-weight: 900;
+          text-transform: uppercase;
+      }
+      .periodo-selector a {
+          padding: 0.375rem 0.75rem;
+          color: var(--text-muted) !important;
+          transition: background-color 0.2s;
+          text-decoration: none;
+      }
+      .periodo-selector a:not(.ativo):hover {
+          background-color: var(--white-soft);
+      }
+      .periodo-selector a.ativo {
+          background-color: #4f46e5;
+          color: #ffffff !important;
+      }
+      .periodo-selector a + a {
+          border-left: 1px solid var(--border);
+      }
+
+      /* ── Tags sem treino ── */
+      .tag-sem-treino {
+          background-color: var(--card-bg-alt);
+          color: var(--text-muted);
+          border: 1px solid var(--border);
+          border-radius: 9999px;
+          font-size: 0.5625rem;
+          font-weight: 700;
+          padding: 0.25rem 0.5rem;
+      }
+
+      /* ── Badge período ── */
+      .badge-periodo {
+          background-color: var(--card-bg-alt);
+          color: var(--text-muted);
+          font-size: 0.625rem;
+          font-weight: 700;
+          text-transform: uppercase;
+          padding: 0.375rem 0.75rem;
+          border-radius: 0.75rem;
+      }
+
+      /* ── Footer ── */
+      footer { border-top: 1px solid var(--border) !important; }
   </style>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 </head>
+<body>
 
-<body class="bg-[#f8fafc] min-h-screen">
-  <header class="hprs-gradient text-white shadow-2xl">
-    <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+<!-- NAVBAR -->
+<nav class="glass sticky top-0 z-50 px-6 py-3">
+  <div class="container mx-auto flex justify-between items-center">
+    <a href="{% url 'dashboard' %}" class="flex items-center gap-3 group">
+      <div class="bg-indigo-600 p-2 rounded-xl shadow-lg group-hover:bg-indigo-700 transition">
+        <i class="fa-solid fa-chess-knight text-white text-xl"></i>
+      </div>
+      <div>
+        <h1 class="text-xl font-extrabold tracking-tight" style="color:var(--text-strong)">{{ brand_name|default:"Gate 4" }}</h1>
+        <p class="text-[10px] font-bold uppercase tracking-widest" style="color:var(--text-muted)">{{ empresa.nome }}</p>
+      </div>
+    </a>
+    <div class="flex items-center gap-6">
+      <a href="/admin/" class="text-sm font-bold uppercase transition" style="color:var(--text-muted)">
+        <i class="fa-solid fa-gears mr-1"></i> Admin
+      </a>
+
+      <button onclick="toggleHorseTheme()" 
+              style="background-color:var(--card-bg);border:1px solid var(--border);color:var(--text-main);padding:0.4rem 0.85rem;border-radius:9999px;display:flex;align-items:center;gap:0.4rem;font-size:0.75rem;font-weight:700;cursor:pointer;">
+          <span id="theme-icon">🌙</span>
+          <span id="theme-name">Zaino</span>
+      </button>
+
+      <script>
+      function toggleHorseTheme() {
+          const html = document.documentElement;
+          const current = html.getAttribute("data-theme");
+          const isTordilho = current === "tordilho";
+          html.setAttribute("data-theme", isTordilho ? "" : "tordilho");
+          localStorage.setItem("gate-theme", isTordilho ? "zaino" : "tordilho");
+          updateButton(isTordilho ? "zaino" : "tordilho");
+          updateChartColors();
+      }
+
+      function updateButton(theme) {
+          document.getElementById("theme-icon").innerText = theme === "tordilho" ? "☀️" : "🌙";
+          document.getElementById("theme-name").innerText = theme === "tordilho" ? "Tordilho" : "Zaino";
+      }
+
+      const savedTheme = localStorage.getItem("gate-theme") || "zaino";
+      if (savedTheme === "tordilho") document.documentElement.setAttribute("data-theme", "tordilho");
+      updateButton(savedTheme);
+      </script>
+
+      <div class="w-[1px] h-8 hidden md:block" style="background-color:var(--border)"></div>
       <div class="flex items-center gap-3">
-        <div class="bg-white/20 rounded-2xl p-3 backdrop-blur-md">
-          <i class="fa-solid fa-chess-knight text-2xl"></i>
+        <div class="hidden md:block text-right">
+          <span class="text-[11px] font-black uppercase leading-none" style="color:var(--slate-200)">{{ user.get_full_name|default:user.username }}</span>
+          <p class="text-[9px] font-bold uppercase tracking-tighter" style="color:var(--indigo-text)">{{ user.perfil.get_cargo_display|default:"Gestor" }}</p>
         </div>
-        <div>
-          <div class="text-xl font-black tracking-tight leading-none">
-            Gate 4 <span class="font-light opacity-80">Enterprise</span>
-          </div>
-          <div class="text-[10px] uppercase tracking-widest font-bold opacity-70 mt-1">
-            HPRS • High Performance
-          </div>
-        </div>
+        <form action="{% url 'logout' %}" method="post">
+          {% csrf_token %}
+          <button type="submit" class="h-10 w-10 rounded-xl flex items-center justify-center transition group"
+                  style="background-color:rgba(239,68,68,0.15);color:#f87171;">
+            <i class="fa-solid fa-power-off group-hover:rotate-90 transition duration-300"></i>
+          </button>
+        </form>
       </div>
-
-      <nav class="flex items-center gap-2">
-        {% if user.is_authenticated %}
-          <a href="{% url 'dashboard' %}" class="btn btn-ghost">
-            <i class="fa-solid fa-gauge mr-2 text-sm"></i> Dashboard
-          </a>
-
-          <a href="/admin/" class="btn btn-ghost">
-            <i class="fa-solid fa-shield-halved mr-2 text-sm"></i> Painel Admin
-          </a>
-
-          <form action="{% url 'logout' %}" method="post" class="inline-block ml-1">
-            {% csrf_token %}
-            <button type="submit" class="btn bg-rose-500/20 text-rose-100 hover:bg-rose-500/40">
-              <i class="fa-solid fa-power-off mr-2 text-sm"></i> Sair
-            </button>
-          </form>
-        {% else %}
-          <a href="{% url 'login' %}" class="btn btn-primary">
-            <i class="fa-solid fa-right-to-bracket mr-2"></i> Entrar no Sistema
-          </a>
-        {% endif %}
-      </nav>
     </div>
-  </header>
+  </div>
+</nav>
 
-  <div class="max-w-7xl mx-auto px-4 mt-6">
-    {% if messages %}
-      <div class="space-y-3">
-        {% for message in messages %}
-          <div class="rounded-2xl px-6 py-4 text-sm font-bold shadow-sm border
-                      {% if message.tags == 'success' %} bg-emerald-50 text-emerald-700 border-emerald-100
-                      {% elif message.tags == 'warning' %} bg-amber-50 text-amber-700 border-amber-100
-                      {% elif message.tags == 'error' %} bg-rose-50 text-rose-700 border-rose-100
-                      {% else %} bg-slate-50 text-slate-700 border-slate-100 {% endif %}">
-            <i class="fa-solid {% if message.tags == 'success' %}fa-circle-check{% else %}fa-circle-exclamation{% endif %} mr-2"></i>
-            {{ message }}
+<div class="container mx-auto px-4 py-8">
+
+  <!-- ALERTAS EXPANSÍVEIS -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
+
+    <!-- Vencimentos -->
+    <div class="alerta-card alerta-card-vencimentos">
+      <button onclick="toggleAlerta('vencimentos')" class="w-full p-4 flex items-center justify-between transition" style="background:transparent;">
+        <div class="flex items-center gap-3">
+          <div style="background-color:var(--amber-soft);padding:0.5rem;border-radius:0.5rem;">
+            <i class="fa-solid fa-file-circle-exclamation text-xl" style="color:var(--amber-text)"></i>
           </div>
-        {% endfor %}
+          <div class="text-left">
+            <p class="text-xs font-bold uppercase" style="color:var(--amber-text)">Vencimentos</p>
+            <p class="text-[10px]" style="color:var(--text-main)">{{ docs_vencendo|length }} documentos próximos.</p>
+          </div>
+        </div>
+        <i id="icon-vencimentos" class="fa-solid fa-chevron-down text-xs transition-transform duration-300" style="color:var(--text-muted)"></i>
+      </button>
+      <div id="painel-vencimentos" class="alerta-painel custom-scrollbar">
+        <div class="px-4 pb-4 space-y-2">
+          {% for doc in docs_vencendo %}
+          <div class="alerta-item alerta-item-vencimentos">
+            <div>
+              <p class="text-[11px] font-bold" style="color:var(--amber-text)">{{ doc.cavalo.nome }} — {{ doc.titulo }}</p>
+              <p class="text-[9px] font-bold uppercase" style="color:var(--text-muted)">{{ doc.get_tipo_display }}</p>
+            </div>
+            <div class="text-right">
+              <p class="text-[10px] font-black" style="color:var(--amber-text)">{{ doc.data_validade|date:"d/m/Y" }}</p>
+            </div>
+          </div>
+          {% empty %}
+          <p class="text-[10px] text-center py-2 font-bold uppercase" style="color:var(--text-muted)">Nenhum vencimento próximo.</p>
+          {% endfor %}
+        </div>
       </div>
-    {% endif %}
+    </div>
+
+    <!-- Saúde & Vet -->
+    <div class="alerta-card alerta-card-saude {% if stats.cavalos_alerta > 0 %}pulse-red{% endif %}">
+      <button onclick="toggleAlerta('saude')" class="w-full p-4 flex items-center justify-between transition" style="background:transparent;">
+        <div class="flex items-center gap-3">
+          <div style="background-color:var(--red-soft);padding:0.5rem;border-radius:0.5rem;">
+            <i class="fa-solid fa-stethoscope text-xl" style="color:var(--red-text)"></i>
+          </div>
+          <div class="text-left">
+            <p class="text-xs font-bold uppercase" style="color:var(--red-text)">Saúde & Vet</p>
+            <p class="text-[10px]" style="color:var(--text-main)">{{ stats.cavalos_alerta }} animais em atenção.</p>
+          </div>
+        </div>
+        <i id="icon-saude" class="fa-solid fa-chevron-down text-xs transition-transform duration-300" style="color:var(--text-muted)"></i>
+      </button>
+      <div id="painel-saude" class="alerta-painel custom-scrollbar">
+        <div class="px-4 pb-4 space-y-2">
+          {% for cavalo in cavalos_alerta_lista %}
+          <div class="alerta-item alerta-item-saude">
+            <div>
+              <p class="text-[11px] font-bold" style="color:var(--red-text)">{{ cavalo.nome }}</p>
+              <p class="text-[9px] font-bold uppercase" style="color:var(--text-muted)">{{ cavalo.proprietario.nome }}</p>
+            </div>
+            <span class="text-[9px] font-black px-2 py-1 rounded-full"
+              style="
+                {% if cavalo.status_saude == 'Doente' %}background-color:rgba(239,68,68,0.15);color:var(--red-text);
+                {% elif cavalo.status_saude == 'Tratamento' %}background-color:rgba(245,158,11,0.15);color:var(--amber-text);
+                {% else %}background-color:rgba(249,115,22,0.15);color:#ea580c;{% endif %}
+              ">
+              {{ cavalo.status_saude }}
+            </span>
+          </div>
+          {% empty %}
+          <p class="text-[10px] text-center py-2 font-bold uppercase" style="color:var(--text-muted)">Todos os animais saudáveis! 🐎</p>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Estoque -->
+    <div class="alerta-card alerta-card-estoque">
+      <button onclick="toggleAlerta('estoque')" class="w-full p-4 flex items-center justify-between transition" style="background:transparent;">
+        <div class="flex items-center gap-3">
+          <div style="background-color:var(--emerald-soft);padding:0.5rem;border-radius:0.5rem;">
+            <i class="fa-solid fa-boxes-stacked text-xl" style="color:var(--emerald-text)"></i>
+          </div>
+          <div class="text-left">
+            <p class="text-xs font-bold uppercase" style="color:var(--emerald-text)">Estoque</p>
+            <p class="text-[10px]" style="color:var(--text-main)">{{ estoque_baixo_count }} itens em nível crítico.</p>
+          </div>
+        </div>
+        {% if estoque_baixo_count == 0 %}
+        <span class="text-[8px] px-2 py-0.5 rounded font-black" style="background-color:var(--emerald-soft);color:var(--emerald-text)">OK</span>
+        {% else %}
+        <i id="icon-estoque" class="fa-solid fa-chevron-down text-xs transition-transform duration-300" style="color:var(--text-muted)"></i>
+        {% endif %}
+      </button>
+      <div id="painel-estoque" class="alerta-painel custom-scrollbar">
+        <div class="px-4 pb-4 space-y-2">
+          {% for item in estoque_critico %}
+          <div class="alerta-item alerta-item-estoque">
+            <div>
+              <p class="text-[11px] font-bold" style="color:var(--emerald-text)">{{ item.nome }}</p>
+              <p class="text-[9px] font-bold uppercase" style="color:var(--text-muted)">Mínimo: {{ item.alerta_minimo }} {{ item.unidade }}</p>
+            </div>
+            <div class="text-right">
+              <p class="text-[11px] font-black" style="color:var(--red-text)">{{ item.quantidade_atual }} {{ item.unidade }}</p>
+              <p class="text-[9px] font-bold uppercase" style="color:var(--red-text)">crítico</p>
+            </div>
+          </div>
+          {% empty %}
+          <p class="text-[10px] text-center py-2 font-bold uppercase" style="color:var(--text-muted)">Estoque normalizado.</p>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
   </div>
 
-  <main class="max-w-7xl mx-auto px-4 py-8">
-    {% block content %}{% endblock %}
-  </main>
+  <!-- KPIs -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
 
-  <footer class="py-12 text-center">
-    <div class="text-slate-400 text-[10px] uppercase tracking-[0.2em] font-bold">
-      © 2026 Gate 4 Management Systems — Business Intelligence v3.0
+    <!-- Faturamento -->
+    <div class="kpi-faturamento card p-6">
+      <p class="text-[10px] uppercase mb-1 font-bold" style="color:var(--text-muted)">Faturamento Estimado</p>
+      <h2 class="text-3xl font-black" style="color:var(--emerald-text)">R$ {{ receita_total_prevista|floatformat:2 }}</h2>
+      <div class="mt-2 flex items-center gap-1 text-[9px]" style="color:var(--text-muted)">
+        <i class="fa-solid fa-chart-line" style="color:var(--emerald-text)"></i> Projeção baseada em mensalidades
+      </div>
     </div>
-  </footer>
 
-  {% block scripts %}{% endblock %}
+    <!-- Agenda — mantém indigo vibrante nos dois temas -->
+    <div class="p-6 rounded-[2rem] shadow-2xl relative overflow-hidden group" style="background:#4f46e5;">
+      <i class="fa-solid fa-calendar-day absolute -right-4 -bottom-4 text-8xl group-hover:scale-110 transition duration-500" style="color:rgba(99,102,241,0.3)"></i>
+      <div class="relative z-10">
+        <p class="text-[10px] uppercase mb-1 font-bold" style="color:rgba(255,255,255,0.7)">Agenda</p>
+        <h2 class="text-3xl font-black text-white">{{ proximas_aulas|length }} <span class="text-sm font-light opacity-80">Aulas Hoje</span></h2>
+        <p class="text-[10px] mt-2 inline-block px-2 py-1 rounded-lg uppercase font-bold" style="background:rgba(255,255,255,0.2);color:#fff">{{ hoje|date:"d/m/Y" }}</p>
+      </div>
+    </div>
+
+    <!-- Ocupação Baias -->
+    <div class="card p-6">
+      <p class="text-[10px] uppercase mb-1 font-bold" style="color:var(--text-muted)">Ocupação Baias</p>
+      <div class="flex items-end gap-2">
+        <h2 class="text-3xl font-black" style="color:var(--text-strong)">{{ stats.baias_ocupadas }}</h2>
+        <span class="text-xs mb-1.5" style="color:var(--text-muted)">/ {{ stats.total_baias }}</span>
+      </div>
+      <p class="text-[10px] mt-2 italic font-medium" style="color:var(--text-muted)">Capacidade total da unidade</p>
+    </div>
+
+    <!-- Saúde Crítica -->
+    <div class="card p-6" style="border-bottom: 4px solid rgba(239,68,68,0.35)">
+      <p class="text-[10px] uppercase mb-1 font-bold" style="color:var(--text-muted)">Saúde Crítica</p>
+      <div class="flex justify-between items-center">
+        <h2 class="text-3xl font-black" style="color:var(--red-text)">{{ stats.cavalos_alerta }}</h2>
+        <a href="/admin/gateagora/cavalo/?status_saude=Doente" 
+           class="text-[9px] px-2 py-1 rounded uppercase transition"
+           style="background-color:var(--white-soft);color:var(--text-main)">Ver Animais</a>
+      </div>
+      <p class="text-[10px] mt-2 font-bold uppercase tracking-tight" style="color:var(--text-muted)">Requer acompanhamento vet</p>
+    </div>
+  </div>
+
+  <!-- CONTEÚDO PRINCIPAL -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+    <div class="lg:col-span-8 space-y-8">
+
+      <!-- Atividades de Hoje -->
+      <div class="card-static p-8">
+        <div class="flex justify-between items-center mb-6">
+          <h3 class="text-lg font-black uppercase italic" style="color:var(--text-strong)">Atividades de Hoje</h3>
+          <a href="/admin/gateagora/aula/?concluida=False" 
+             class="text-[10px] font-bold tracking-widest uppercase transition"
+             style="color:var(--indigo-text)">
+            <i class="fa-solid fa-list mr-1"></i> Próximos Treinos
+          </a>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 custom-scrollbar pr-2 max-h-[520px] overflow-y-auto">
+          {% for aula in proximas_aulas %}
+          <div class="aula-card">
+            <div class="flex justify-between mb-3 text-[10px]">
+              <span class="font-bold px-2 py-0.5 rounded shadow-lg" style="background:#4f46e5;color:#fff">{{ aula.data_hora|date:"H:i" }}</span>
+              <span class="font-bold uppercase flex items-center gap-1" style="color:var(--text-muted)">
+                <i class="fa-solid fa-circle-dot text-[8px]"></i> {{ aula.tipo }}
+              </span>
+            </div>
+            <div class="mb-2">
+              <p class="font-black text-sm uppercase" style="color:var(--text-strong)">{{ aula.aluno.nome }}</p>
+              <p class="text-[11px] flex items-center gap-1 mt-0.5" style="color:var(--indigo-text)">
+                <i class="fa-solid fa-horse text-[10px]"></i> {{ aula.cavalo.nome }}
+              </p>
+            </div>
+            <div class="aula-separador flex justify-between items-center">
+              <div class="text-[9px] font-bold uppercase space-y-0.5" style="color:var(--text-muted)">
+                {% if aula.cavalo.tipo_sela %}<p>Sela: <span style="color:var(--text-main)">{{ aula.cavalo.tipo_sela }}</span></p>{% endif %}
+                {% if aula.cavalo.material_proprio %}
+                <p style="color:var(--amber-text)">Material Próprio</p>
+                {% else %}
+                <p>Material Escola</p>
+                {% endif %}
+              </div>
+              <form action="{% url 'concluir_aula' aula.id %}" method="post">
+                {% csrf_token %}
+                <button type="submit" class="btn-finalizar text-[9px] font-black uppercase px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition"
+                        style="background-color:var(--emerald-soft);color:var(--emerald-text);border:1px solid rgba(16,185,129,0.25);"
+                        onmouseover="this.style.backgroundColor='#059669';this.style.color='#fff';"
+                        onmouseout="this.style.backgroundColor='var(--emerald-soft)';this.style.color='var(--emerald-text)';">
+                  <i class="fa-solid fa-check"></i> Finalizada
+                </button>
+              </form>
+            </div>
+          </div>
+          {% empty %}
+          <div class="col-span-2 flex flex-col items-center justify-center py-16" style="color:var(--text-muted)">
+            <i class="fa-solid fa-calendar-xmark text-5xl mb-4 opacity-20"></i>
+            <p class="font-bold uppercase text-xs">Sem atividades para hoje.</p>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Fluxo Financeiro -->
+      <div class="card p-8">
+        <h3 class="text-lg font-black uppercase italic mb-6" style="color:var(--text-strong)">Fluxo Financeiro (6 Meses)</h3>
+        <div class="h-[320px] w-full"><canvas id="chartFinanceiro6Meses"></canvas></div>
+      </div>
+
+      <!-- Ranking de Treinos dos Cavalos -->
+      <div class="card p-8">
+        <div class="flex flex-wrap justify-between items-start gap-4 mb-2">
+          <div>
+            <h3 class="text-lg font-black uppercase italic" style="color:var(--text-strong)">
+              <i class="fa-solid fa-horse mr-2" style="color:var(--indigo-text)"></i>Treinos por Cavalo
+            </h3>
+            <p class="text-[10px] mt-1" style="color:var(--text-muted)">Aulas concluídas — vermelho indica sobrecarga</p>
+          </div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <div class="periodo-selector">
+              <a href="?periodo=mes" class="{% if periodo_atual == 'mes' %}ativo{% endif %}">Mês atual</a>
+              <a href="?periodo=30"  class="{% if periodo_atual == '30' %}ativo{% endif %}">30 dias</a>
+              <a href="?periodo=90"  class="{% if periodo_atual == '90' %}ativo{% endif %}">3 meses</a>
+            </div>
+            <span class="badge-periodo">{{ periodo_label }}</span>
+            <span class="flex items-center gap-1 text-[9px] font-black px-2 py-1.5 rounded-xl"
+                  style="background-color:var(--red-soft);color:var(--red-text);border:1px solid rgba(239,68,68,0.2)">
+              <i class="fa-solid fa-triangle-exclamation text-[8px]"></i> Limite: {{ limite_treinos_mes }} treinos
+            </span>
+          </div>
+        </div>
+
+        <div class="h-[380px] w-full mt-4">
+          <canvas id="chartTreinosCavalos"></canvas>
+        </div>
+
+        {% if cavalos_sem_treino %}
+        <div class="mt-5 pt-4" style="border-top:1px solid var(--border)">
+          <p class="text-[9px] font-bold uppercase mb-2" style="color:var(--text-muted)">
+            <i class="fa-solid fa-circle-minus mr-1"></i> Sem treinos no período:
+          </p>
+          <div class="flex flex-wrap gap-2">
+            {% for nome in cavalos_sem_treino %}
+            <span class="tag-sem-treino">{{ nome }}</span>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+      </div>
+
+    </div>
+
+    <!-- COLUNA LATERAL -->
+    <div class="lg:col-span-4 space-y-8">
+
+      <!-- Atalhos -->
+      <div class="atalhos-panel">
+        <h3 class="text-xs uppercase mb-6 tracking-widest font-black text-center italic" style="color:var(--text-muted)">Atalhos Operacionais</h3>
+        <a href="/admin/gateagora/movimentacaofinanceira/add/" class="btn-atalho btn-atalho-emerald">
+          <span>Registrar Receita/Despesa</span><i class="fa-solid fa-dollar-sign"></i>
+        </a>
+        <a href="{% url 'encilhamento' %}" class="btn-atalho btn-atalho-amber">
+          <span>Guia de Encilhamento</span><i class="fa-solid fa-horse-head"></i>
+        </a>
+        <a href="/admin/gateagora/registroocorrencia/add/" class="btn-atalho btn-atalho-indigo">
+          <span>Ocorrência de Saúde</span><i class="fa-solid fa-notes-medical"></i>
+        </a>
+        <a href="{% url 'gerar_ficha_trato_pdf' %}" class="btn-atalho btn-atalho-neutral">
+          <span>Gerar PDF de Trato</span><i class="fa-solid fa-file-pdf"></i>
+        </a>
+      </div>
+
+      <!-- Ocupação de Baias -->
+      <div class="card p-8 text-center">
+        <h3 class="text-xs uppercase mb-4 tracking-widest font-bold" style="color:var(--text-muted)">Ocupação de Baias</h3>
+        <div class="h-[180px] mb-6 relative">
+          <canvas id="chartOcupacao"></canvas>
+          <div class="absolute inset-0 flex items-center justify-center flex-col pointer-events-none">
+            <span class="text-2xl font-black" style="color:var(--text-strong)">{{ stats.porcentagem_ocupacao|floatformat:0 }}%</span>
+            <span class="text-[8px] font-bold uppercase" style="color:var(--text-muted)">Ocupadas</span>
+          </div>
+        </div>
+        <div class="flex justify-around text-xs font-black">
+          <div class="text-center">
+            <p class="text-lg" style="color:var(--text-muted)">{{ stats.baias_livres }}</p>
+            <p class="text-[9px] uppercase" style="color:var(--text-muted)">Livres</p>
+          </div>
+          <div class="w-[1px]" style="background-color:var(--border)"></div>
+          <div class="text-center">
+            <p class="text-lg" style="color:var(--indigo-text)">{{ stats.baias_ocupadas }}</p>
+            <p class="text-[9px] uppercase" style="color:var(--text-muted)">Ocupadas</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pendências Financeiras -->
+      <div class="card-static p-6 h-[440px] flex flex-col">
+        <h3 class="text-sm font-black uppercase tracking-tighter pb-3 mb-4" style="color:var(--text-strong);border-bottom:1px solid var(--border)">Pendências Financeiras</h3>
+        <div class="overflow-y-auto custom-scrollbar pr-1 space-y-3 flex-1">
+          {% for item in relatorio %}{% if item.valor > 0 %}
+          <div class="pendencia-item">
+            <div class="flex justify-between items-start mb-2">
+              <div>
+                <p class="text-[10px] font-black uppercase tracking-tight" style="color:var(--text-main)">{{ item.aluno.nome }}</p>
+                <p class="text-[13px] font-black mt-0.5" style="color:var(--emerald-text)">R$ {{ item.valor|floatformat:2 }}</p>
+              </div>
+              <div class="flex gap-2">
+                <a href="{{ item.whatsapp }}" target="_blank" title="Enviar WhatsApp"
+                   class="h-8 w-8 rounded-lg flex items-center justify-center transition"
+                   style="background-color:var(--emerald-soft);color:var(--emerald-text);">
+                  <i class="fa-brands fa-whatsapp"></i>
+                </a>
+                <a href="{% url 'gerar_relatorio_pdf' item.aluno.id %}" title="Ver Fatura"
+                   class="h-8 w-8 rounded-lg flex items-center justify-center transition"
+                   style="background-color:var(--indigo-soft);color:var(--indigo-text);">
+                  <i class="fa-solid fa-file-invoice-dollar"></i>
+                </a>
+              </div>
+            </div>
+            <div class="pendencia-separador text-[9px] space-y-0.5">
+              <div class="flex justify-between" style="color:var(--text-muted)">
+                <span>Hotelaria</span>
+                <span class="font-bold" style="color:var(--text-main)">R$ {{ item.aluno.valor_hotelaria|floatformat:2 }}</span>
+              </div>
+              <div class="flex justify-between" style="color:var(--text-muted)">
+                <span>Aulas ({{ item.aluno.aulas_mes|default:0 }})</span>
+                <span class="font-bold" style="color:var(--text-main)">R$ {{ item.aluno.valor_aulas|floatformat:2 }}</span>
+              </div>
+            </div>
+          </div>
+          {% endif %}{% empty %}
+          <div class="flex flex-col items-center justify-center h-full" style="color:var(--text-muted)">
+            <i class="fa-solid fa-check-double text-2xl mb-2"></i>
+            <p class="text-[10px] font-bold uppercase">Tudo em dia!</p>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<footer class="mt-12 py-8 text-center">
+  <p class="text-[10px] font-bold uppercase tracking-[0.3em]" style="color:var(--text-muted)">Gate 4 Management System &bull; Version 3.0 &bull; 2026</p>
+</footer>
+
+<script>
+  function toggleAlerta(id) {
+    const painel = document.getElementById('painel-' + id);
+    const icon   = document.getElementById('icon-' + id);
+    if (!painel) return;
+    const aberto = painel.classList.toggle('aberto');
+    if (icon) icon.style.transform = aberto ? 'rotate(180deg)' : 'rotate(0deg)';
+  }
+
+  /* ── Helpers para pegar CSS vars ── */
+  function cssVar(name) {
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  }
+
+  function buildCharts() {
+    const gridColor   = cssVar('--border')    || '#30363d';
+    const textColor   = cssVar('--text-muted') || '#8b949e';
+    const emeraldText = cssVar('--emerald-text') || '#10b981';
+    const cardBgAlt   = cssVar('--card-bg-alt') || '#1c2128';
+
+    Chart.defaults.color      = textColor;
+    Chart.defaults.font.family = "'Inter', sans-serif";
+
+    /* Fluxo Financeiro */
+    const ctxFin = document.getElementById('chartFinanceiro6Meses');
+    if (ctxFin._chartInstance) ctxFin._chartInstance.destroy();
+    ctxFin._chartInstance = new Chart(ctxFin.getContext('2d'), {
+      type: 'bar',
+      data: {
+        labels: {{ labels_meses|safe }},
+        datasets: [
+          { label: 'Receitas',      data: {{ dados_receita }}, backgroundColor: '#6366f1', borderRadius: 8, barThickness: 15 },
+          { label: 'Despesas',      data: {{ dados_despesa }}, backgroundColor: gridColor,  borderRadius: 8, barThickness: 15 },
+          { label: 'Saldo Líquido', type: 'line', data: {{ dados_lucro }}, borderColor: emeraldText, borderWidth: 3, pointBackgroundColor: emeraldText, tension: 0.4, fill: false }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position: 'top', align: 'end', labels: { boxWidth: 10, font: { size: 10 }, color: textColor } } },
+        scales: {
+          y: { grid: { color: gridColor }, border: { display: false }, ticks: { color: textColor } },
+          x: { grid: { display: false }, ticks: { color: textColor } }
+        }
+      }
+    });
+
+    /* Ocupação de Baias */
+    const ctxOc = document.getElementById('chartOcupacao');
+    if (ctxOc._chartInstance) ctxOc._chartInstance.destroy();
+    ctxOc._chartInstance = new Chart(ctxOc.getContext('2d'), {
+      type: 'doughnut',
+      data: {
+        labels: ['Ocupadas', 'Livres'],
+        datasets: [{ data: [{{ stats.baias_ocupadas }}, {{ stats.baias_livres }}], backgroundColor: ['#6366f1', gridColor], borderWidth: 0, hoverOffset: 10 }]
+      },
+      options: { responsive: true, maintainAspectRatio: false, cutout: '85%', plugins: { legend: { display: false } } }
+    });
+
+    /* Treinos por Cavalo */
+    const limite     = {{ limite_treinos_mes }};
+    const nomesCav   = {{ ranking_cavalos_labels|safe }};
+    const treinosCav = {{ ranking_cavalos_dados|safe }};
+    const indigo     = cssVar('--indigo-text') || '#6366f1';
+    const red        = cssVar('--red-text')    || '#ef4444';
+
+    const coresBarra = treinosCav.map(v =>
+      v === 0 ? gridColor : v >= limite ? red : '#6366f1'
+    );
+
+    const ctxTr = document.getElementById('chartTreinosCavalos');
+    if (ctxTr._chartInstance) ctxTr._chartInstance.destroy();
+    ctxTr._chartInstance = new Chart(ctxTr.getContext('2d'), {
+      type: 'bar',
+      data: {
+        labels: nomesCav,
+        datasets: [
+          { label: 'Treinos', data: treinosCav, backgroundColor: coresBarra, borderRadius: 6, barThickness: 18 },
+          { label: `Limite (${limite})`, type: 'line', data: Array(nomesCav.length).fill(limite),
+            borderColor: red + '70', borderWidth: 2, borderDash: [6,4], pointRadius: 0, fill: false }
+        ]
+      },
+      options: {
+        indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: true, position: 'top', align: 'end', labels: { boxWidth: 10, font: { size: 10 }, color: textColor } },
+          tooltip: { callbacks: {
+            label: ctx => ctx.dataset.type === 'line'
+              ? ` Limite: ${limite} treinos/mês`
+              : ` ${ctx.raw} treino(s) concluído(s)`
+          }}
+        },
+        scales: {
+          x: { grid: { color: gridColor }, border: { display: false }, ticks: { stepSize: 1, color: textColor } },
+          y: { grid: { display: false }, ticks: { font: { size: 11, weight: '700' }, color: textColor } }
+        }
+      }
+    });
+  }
+
+  /* Reconstrói os gráficos ao trocar o tema */
+  function updateChartColors() {
+    setTimeout(buildCharts, 80); /* aguarda a transição CSS */
+  }
+
+  /* Init */
+  buildCharts();
+</script>
 </body>
 </html>

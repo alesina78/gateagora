@@ -5,7 +5,8 @@ from unfold.decorators import display
 from .models import (
     Empresa, Perfil, Aluno, Baia, Piquete, Cavalo,
     Aula, ItemEstoque, MovimentacaoFinanceira,
-    DocumentoCavalo, RegistroOcorrencia
+    DocumentoCavalo, RegistroOcorrencia,
+    Plano, Fatura, EventoAgendaCavalo
 )
 
 
@@ -177,3 +178,26 @@ class MovimentacaoFinanceiraAdmin(BaseMultiEmpresaAdmin):
     def tipo_formatado(self, obj):
         color = "success" if obj.tipo == "Receita" else "danger"
         return obj.tipo, color
+
+@admin.register(Plano)
+class PlanoAdmin(BaseMultiEmpresaAdmin):
+    list_display = ["nome", "valor_mensal"]
+
+@admin.register(Fatura)
+class FaturaAdmin(BaseMultiEmpresaAdmin):
+    list_display = ["aluno", "data_vencimento", "valor", "status_custom"]
+    list_filter = ["status", "data_vencimento"]
+    search_fields = ["aluno__nome"]
+    
+    @display(description="Status", label={
+        "PAGO": "success",
+        "PENDENTE": "warning",
+        "ATRASADO": "danger",
+    })
+    def status_custom(self, obj):
+        return obj.status
+
+@admin.register(EventoAgendaCavalo)
+class EventoAgendaAdmin(ModelAdmin):
+    list_display = ["cavalo", "tipo", "data_inicio"]
+    list_filter = ["tipo", "cavalo"]

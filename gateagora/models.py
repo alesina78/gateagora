@@ -77,6 +77,7 @@ class Aluno(models.Model):
     foto = models.ImageField(upload_to='alunos/', null=True, blank=True)
     ativo = models.BooleanField(default=True)
     valor_aula = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('150.00'))
+    plano = models.ForeignKey('Plano', on_delete=models.SET_NULL, null=True, blank=True)
 
     class Meta:
         ordering = ['nome']
@@ -84,6 +85,14 @@ class Aluno(models.Model):
 
     def __str__(self):
         return f"{self.nome} ({self.empresa.nome})"
+    
+    plano = models.ForeignKey(
+        'Plano', 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        verbose_name="Plano Contratado"
+    )
 
 
 class Baia(models.Model):
@@ -153,6 +162,11 @@ class Cavalo(models.Model):
         ('0.025', 'Moderada (Escola/Aulas)'),
         ('0.035', 'Intensa (Salto/Competição)'),
     ]
+    USA_FERRADURA_CHOICES = [
+        ('SIM', 'Ferrado (Usa Ferradura)'),
+        ('NAO', 'Descalço (Apenas Casqueamento)'),
+    ]
+    
 
     empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE)
     nome = models.CharField(max_length=100)
@@ -188,9 +202,14 @@ class Cavalo(models.Model):
     # SAÚDE
     ultima_vacina = models.DateField(null=True, blank=True)
     ultimo_ferrageamento = models.DateField(null=True, blank=True)
-    # Novos campos
     ultimo_vermifugo = models.DateField(null=True, blank=True)
     ultimo_casqueamento = models.DateField(null=True, blank=True)
+    usa_ferradura = models.CharField(
+        max_length=3,
+        choices=USA_FERRADURA_CHOICES,
+        default='NAO',
+        verbose_name="Usa Ferradura?"
+    )
 
     # PLANO ALIMENTAR
     racao_tipo = models.CharField(max_length=100, blank=True, help_text="Ex: Guabi Equi-S")
@@ -341,6 +360,49 @@ class MovimentacaoFinanceira(models.Model):
     def __str__(self):
         return f"{self.tipo}: {self.descricao} ({self.empresa.nome})"
 
+class Plano(models.Model):
+    """Define as regras de cobrança (Ex: 2x semana, Mensal Livre)"""
+    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE)
+    nome = models.CharField(max_length=100) # Ex: "2x por Semana"
+    valor_mensal = models.DecimalField(max_digits=10, decimal_places=2)
+    descricao = models.TextField(blank=True)
+
+    def __str__(self):
+        return f"{self.nome} - R$ {self.valor_mensal}"
+
+class Fatura(models.Model):
+    """Controle de Contas a Receber (Inadimplência)"""
+    STATUS_CHOICES = [
+        ('PAGO', 'Pago'),
+        ('PENDENTE', 'Pendente'),
+        ('ATRASADO', 'Atrasado'),
+    ]
+    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE)
+    aluno = models.ForeignKey('Aluno', on_delete=models.CASCADE, related_name='faturas')
+    data_vencimento = models.DateField()
+    valor = models.DecimalField(max_digits=10, decimal_places=2)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='PENDENTE')
+    data_pagamento = models.DateField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.aluno.nome} - {self.data_vencimento} ({self.status})"
+
+class EventoAgendaCavalo(models.Model):
+    """Agenda Inteligente do Cavalo (Vet, Ferrageamento, Descanso)"""
+    TIPO_CHOICES = [
+        ('AULA', 'Aula'),
+        ('VETERINARIO', 'Veterinário'),
+        ('FERRAGEAMENTO', 'Ferrageamento'),
+        ('DESCANSO', 'Descanso'),
+    ]
+    cavalo = models.ForeignKey('Cavalo', on_delete=models.CASCADE, related_name='eventos')
+    tipo = models.CharField(max_length=20, choices=TIPO_CHOICES)
+    data_inicio = models.DateTimeField()
+    data_fim = models.DateTimeField()
+    observacoes = models.TextField(blank=True)
+
+    def __str__(self):
+        return f"{self.tipo} - {self.cavalo.nome}"
 
 # --- 5. SINCRONIZAÇÃO DE BAIA (status) ---
 
@@ -363,3 +425,17 @@ def ocupar_baia_nova(sender, instance: Cavalo, **kwargs):
     if instance.baia:
         instance.baia.status = 'Ocupada'
         instance.baia.save(update_fields=['status'])
+
+class ConfigPrazoManejo(models.Model):
+    empresa             = models.OneToOneField(Empresa, on_delete=models.CASCADE, related_name='config_prazo_manejo')
+    prazo_vacina        = models.PositiveIntegerField(default=365, help_text="Dias entre vacinações")
+    prazo_vermifugo     = models.PositiveIntegerField(default=90,  help_text="Dias entre vermifugações")
+    prazo_ferrageamento = models.PositiveIntegerField(default=60,  help_text="Dias entre ferrageamentos")
+    prazo_casqueamento  = models.PositiveIntegerField(default=60,  help_text="Dias entre casqueamentos")
+
+    class Meta:
+        verbose_name        = "Configuração de Prazos de Manejo"
+        verbose_name_plural = "Configurações de Prazos de Manejo"
+
+    def __str__(self):
+        return f"Prazos de Manejo — {self.empresa.nome}"
