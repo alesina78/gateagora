@@ -90,7 +90,7 @@ class PerfilAdmin(ModelAdmin):
 
 
 @admin.register(Aluno)
-class AlunoAdmin(BaseMultiEmpresaAdmin):
+class AlunoAdmin(BaseEmpresaAdmin):
     list_display = ["nome", "telefone", "ativo", "valor_aula_formatado"]
     list_editable = ["ativo"]
     list_filter = ["ativo", "empresa"]
@@ -102,20 +102,20 @@ class AlunoAdmin(BaseMultiEmpresaAdmin):
 
 
 @admin.register(Baia)
-class BaiaAdmin(BaseMultiEmpresaAdmin):
+class BaiaAdmin(BaseEmpresaAdmin):
     list_display = ["numero", "status", "empresa"]
     list_filter = ["status", "empresa"]
     search_fields = ["numero"]
 
 
 @admin.register(Piquete)
-class PiqueteAdmin(BaseMultiEmpresaAdmin):
+class PiqueteAdmin(BaseEmpresaAdmin):
     list_display = ["nome", "status", "empresa"]
     list_filter = ["status", "empresa"]
 
 
 @admin.register(Cavalo)
-class CavaloAdmin(BaseMultiEmpresaAdmin):
+class CavaloAdmin(BaseEmpresaAdmin):
     list_display = ["nome", "proprietario", "baia", "status_saude_colorido"]
     list_filter = ["status_saude", "categoria", "empresa"]
     search_fields = ["nome", "proprietario__nome"]
@@ -153,7 +153,7 @@ class RegistroOcorrenciaAdmin(BaseCavaloAdmin):
 
 
 @admin.register(Aula)
-class AulaAdmin(BaseMultiEmpresaAdmin):
+class AulaAdmin(BaseEmpresaAdmin):
     list_display = ["data_hora", "aluno", "cavalo", "tipo", "concluida"]
     list_filter = ["concluida", "tipo", "data_hora"]
     list_editable = ["concluida"]
@@ -167,7 +167,7 @@ class AulaAdmin(BaseMultiEmpresaAdmin):
 
 
 @admin.register(ItemEstoque)
-class ItemEstoqueAdmin(BaseMultiEmpresaAdmin):
+class ItemEstoqueAdmin(BaseEmpresaAdmin):
     list_display = ["nome", "quantidade_atual", "alerta_minimo", "unidade", "status_estoque"]
     list_filter = ["empresa"]
     search_fields = ["nome"]
@@ -178,7 +178,7 @@ class ItemEstoqueAdmin(BaseMultiEmpresaAdmin):
 
 
 @admin.register(MovimentacaoFinanceira)
-class MovimentacaoFinanceiraAdmin(BaseMultiEmpresaAdmin):
+class MovimentacaoFinanceiraAdmin(BaseEmpresaAdmin):
     list_display = ["data", "descricao", "tipo_formatado", "valor"]
     list_filter = ["tipo", "data"]
     search_fields = ["descricao"]
@@ -190,12 +190,12 @@ class MovimentacaoFinanceiraAdmin(BaseMultiEmpresaAdmin):
 
 
 @admin.register(Plano)
-class PlanoAdmin(BaseMultiEmpresaAdmin):
+class PlanoAdmin(BaseEmpresaAdmin):
     list_display = ["nome", "valor_mensal"]
 
 
 @admin.register(Fatura)
-class FaturaAdmin(BaseMultiEmpresaAdmin):
+class FaturaAdmin(BaseEmpresaAdmin):
     list_display = ["aluno", "data_vencimento", "valor", "status_custom"]
     list_filter = ["status", "data_vencimento"]
     search_fields = ["aluno__nome"]
@@ -213,6 +213,6 @@ class EventoAgendaAdmin(BaseCavaloAdmin):          # ← AGORA CORRIGIDO
 
 
 @admin.register(ConfigPrazoManejo)
-class ConfigPrazoManejoAdmin(BaseMultiEmpresaAdmin):
+class ConfigPrazoManejoAdmin(BaseEmpresaAdmin):
     list_display = ["empresa", "prazo_vacina", "prazo_vermifugo", "prazo_ferrageamento", "prazo_casqueamento"]
     list_filter = ["empresa"]
