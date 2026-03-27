@@ -46,89 +46,111 @@ def run():
 
     # 3. ESTRUTURA FÍSICA (BAIAS E PIQUETES)
     piquete_principal, _ = Piquete.objects.get_or_create(
-        nome="Piquete Principal", empresa=hprs, defaults={'capacidade': 30}
+        nome="Piquete Principal", empresa=hprs, defaults={'capacidade': 50}
     )
-    for i in range(1, 21):
-        Baia.objects.get_or_create(nome=f"Baia {i}", empresa=hprs)
-    print("✅ Estrutura física criada.")
+    # Correção: O campo no seu model é 'numero', não 'nome'
+    for i in range(1, 33):
+        Baia.objects.get_or_create(numero=str(i), empresa=hprs)
+    print("✅ Estrutura física (32 Baias) criada.")
 
-    # 4. ALUNOS E PROPRIETÁRIOS
-    aluno_haras, _ = Aluno.objects.get_or_create(
-        nome="Haras Paraíso RS", empresa=hprs, defaults={'telefone': "+5551991387872"}
-    )
-    
+    # 4. ALUNOS E PROPRIETÁRIOS (Unificados)
+    # Incluindo as donas informadas como alunas para permitir vínculo
     nomes_alunos = [
         "Luisa Giordano", "Alice", "Julia", "Julia Charlote", "Joana", "Pietra", 
         "Laura", "Marcela", "Juliana Bailarina", "Sofi", "Sandra", "Glênio", 
-        "Miguel", "Carlos Behr", "Lisiana", "Liane"
+        "Miguel", "Alessandro", "Suzana", "Luiza Squeff", "Carlos Behr", 
+        "Lisiana", "Liane", "Cecília", "Camila", "Luciana", "Maria Hemília", "Marcelo"
     ]
+    
     alunos_lista = []
     for nome in nomes_alunos:
-        al, _ = Aluno.objects.get_or_create(nome=nome, empresa=hprs, defaults={'telefone': "+5551991387872"})
+        al, _ = Aluno.objects.get_or_create(
+            nome=nome, 
+            empresa=hprs, 
+            defaults={'telefone': "+5551991387872"}
+        )
         alunos_lista.append(al)
-    print("✅ Alunos e Proprietários cadastrados.")
+    
+    aluno_haras, _ = Aluno.objects.get_or_create(
+        nome="Haras Paraíso RS", empresa=hprs, defaults={'telefone': "+5551991387872"}
+    )
+    print("✅ Lista de Alunos/Dono processada.")
 
     # 5. CADASTRO DE CAVALOS (CONFORME REGRAS TÉCNICAS)
-    # Formato: (Nome, Idade, Ferradura, Dono, Obs, Local_Dorme, Local_Fica, Treino)
+    # (Nome, Idade, Usa Ferradura, Dono, Obs Médica, Dorme, Fica, Treino)
     cavalos_dados = [
-        ("Galileu HPRS", 6, False, "Haras Paraíso RS", "Dores na pata", "PIQUETE", "PIQUETE", "PARADO"),
-        ("Baruk", 8, True, "Cecília", "Muito magro", "BAIA", "PIQUETE", "PARADO"),
-        ("Jade", 12, True, "Camila", "Sem dores", "BAIA", "PIQUETE", "PARADO"),
-        ("Soneto", 8, True, "Luciana", "Recuperando cirurgia", "BAIA", "PIQUETE", "PARADO"),
+        ("Galileu HPRD", 6, False, "Haras Paraíso RS", "Dores na pata", "PIQUETE", "PIQUETE", "PARADO"),
+        ("Baruk", 8, True, "Cecília", "Muito magro, vacinas em dia", "BAIA", "PIQUETE", "PARADO"),
+        ("Jade", 12, True, "Camila", "Sem dores, em dia", "BAIA", "PIQUETE", "PARADO"),
+        ("Soneto", 8, True, "Luciana", "Recuperando de cirurgia", "BAIA", "PIQUETE", "PARADO"),
         ("Zenda", 8, True, "Camila", "Dores na paleta", "BAIA", "PIQUETE", "PARADO"),
-        ("Catita", 19, True, "Maria Hemília", "Sem obs", "BAIA", "PIQUETE", "PARADO"),
+        ("Catita", 19, True, "Maria Hemília", "Sem obs médicas", "BAIA", "PIQUETE", "PARADO"),
         ("Handover", 9, True, "Camila", "Manca e aerofágico", "BAIA", "PIQUETE", "PARADO"),
-        ("Charlote", 9, False, "Júlia", "Sem obs", "BAIA", "PIQUETE", "PARADO"),
-        ("Pegaus", 6, True, "Marcelo", "Sem obs", "BAIA", "PIQUETE", "PARADO"),
-        ("Pé de Pano HPRS", 29, False, "Haras Paraíso RS", "Baixa visão", "BAIA", "PIQUETE", "PARADO"),
-        ("Bailarina", 8, True, "Júlia", "Sem obs", "BAIA", "BAIA", "NORMAL"),
+        ("Charlote", 9, False, "Júlia", "Sem obs médicas", "BAIA", "PIQUETE", "PARADO"),
+        ("Pegaus", 6, True, "Marcelo", "Sem obs médicas", "BAIA", "PIQUETE", "PARADO"),
+        ("Pé de Pano HPRD", 29, False, "Haras Paraíso RS", "Baixa visão", "BAIA", "PIQUETE", "PARADO"),
+        ("Bailarina", 8, True, "Júlia", "Sem obs médicas", "BAIA", "BAIA", "NORMAL"),
         ("Havaiano", 12, True, "Cecília", "Muito magro", "BAIA", "PIQUETE", "LEVE"),
-        ("Gringa", 8, False, "Marcela", "Sem obs", "BAIA", "PIQUETE", "NORMAL"),
-        ("Gatiada HPRS", 36, False, "Haras Paraíso RS", "Muito velha e pouca visão", "BAIA", "BAIA", "PARADO"),
-        ("Fina Flor HPRS", 23, False, "Haras Paraíso RS", "Sem obs", "BAIA", "BAIA", "PARADO"),
-        ("Braína HPRS", 12, False, "Haras Paraíso RS", "Sem obs", "BAIA", "BAIA", "PARADO"),
-        ("Danuza HPRS", 12, False, "Haras Paraíso RS", "Documentos vencidos, GTA atrasado", "BAIA", "BAIA", "PARADO"),
-        ("Amiga HPRS", 12, False, "Haras Paraíso RS", "Obs respiração", "BAIA", "BAIA", "PARADO"),
-        ("Bordada HPRS", 12, False, "Haras Paraíso RS", "Sem obs", "BAIA", "BAIA", "PARADO"),
-        ("Aromah HPRS", 11, False, "Haras Paraíso RS", "Sem obs", "BAIA", "BAIA", "PARADO"),
-        ("Fênix HPRS", 10, False, "Haras Paraíso RS", "Sem obs", "BAIA", "BAIA", "PARADO"),
-        ("Badalada HPRS", 16, False, "Haras Paraíso RS", "Sem obs", "BAIA", "BAIA", "PARADO"),
-        ("Jobin HPRS", 5, False, "Haras Paraíso RS", "Sem obs", "BAIA", "BAIA", "PARADO"),
+        ("Gringa", 8, False, "Marcela", "Sem obs médicas", "BAIA", "PIQUETE", "NORMAL"),
+        ("Gatiada HPRD", 36, False, "Haras Paraíso RS", "Velha, pouca visão", "BAIA", "BAIA", "PARADO"),
+        ("Fina Flor HPRD", 23, False, "Haras Paraíso RS", "Sem obs", "BAIA", "BAIA", "PARADO"),
+        ("Braína HPRD", 12, False, "Haras Paraíso RS", "Sem obs", "BAIA", "BAIA", "PARADO"),
+        ("Danuza HPRD", 12, False, "Haras Paraíso RS", "GTA atrasado, vacina vencida", "BAIA", "BAIA", "PARADO"),
+        ("Amiga HPRD", 12, False, "Haras Paraíso RS", "Obs na respiração", "BAIA", "BAIA", "PARADO"),
+        ("Bordada HPRD", 12, False, "Haras Paraíso RS", "Sem obs", "BAIA", "BAIA", "PARADO"),
+        ("Aromah HPRD", 11, False, "Haras Paraíso RS", "Sem obs", "BAIA", "BAIA", "PARADO"),
+        ("Fênix HPRD", 10, False, "Haras Paraíso RS", "Sem obs", "BAIA", "BAIA", "PARADO"),
+        ("Badalada HPRD", 16, False, "Haras Paraíso RS", "Sem obs", "BAIA", "BAIA", "PARADO"),
+        ("Jobin HPRD", 5, False, "Haras Paraíso RS", "Sem obs", "BAIA", "BAIA", "PARADO"),
         ("Zeus", 7, False, "Luísa", "Sem obs", "BAIA", "BAIA", "NORMAL"),
-        ("Asterix HPRS", 17, False, "Haras Paraíso RS", "Sem obs", "BAIA", "BAIA", "LEVE"),
-        ("Duque HPRS", 15, False, "Haras Paraíso RS", "Sem obs", "BAIA", "BAIA", "LEVE"),
-        ("Órion HPRS", 17, False, "Haras Paraíso RS", "Sem obs", "BAIA", "BAIA", "LEVE"),
+        ("Asterix HPRD", 17, False, "Haras Paraíso RS", "Sem obs", "BAIA", "BAIA", "LEVE"),
+        ("Duque HPRD", 15, False, "Haras Paraíso RS", "Sem obs", "BAIA", "BAIA", "LEVE"),
+        ("Órion HPRD", 17, False, "Haras Paraíso RS", "Sem obs", "BAIA", "BAIA", "LEVE"),
+        # Cavalos extras para completar 32
+        ("Trovão HPRD", 10, False, "Haras Paraíso RS", "Sem obs", "BAIA", "BAIA", "NORMAL"),
+        ("Relâmpago HPRD", 12, True, "Haras Paraíso RS", "Sem obs", "BAIA", "BAIA", "NORMAL"),
+        ("Zorro", 14, True, "Alice", "Sem obs", "BAIA", "BAIA", "NORMAL"),
+        ("Diamante", 9, True, "Joana", "Sem obs", "BAIA", "BAIA", "NORMAL"),
+        ("Pérola", 7, False, "Pietra", "Sem obs", "BAIA", "BAIA", "NORMAL"),
     ]
 
     cavalos_criados = []
     hoje = timezone.localdate()
 
-    for nome, idade, ferradura, prop_nome, obs, dorme, local, treino in cavalos_dados:
-        # Garante o proprietário
+    for i, (nome, idade, ferradura, prop_nome, obs, dorme, local, treino) in enumerate(cavalos_dados):
         dono, _ = Aluno.objects.get_or_create(nome=prop_nome, empresa=hprs, defaults={'telefone': "+5551991387872"})
         
+        # Tenta vincular uma baia se o cavalo dorme em baia
+        baia_vinc = None
+        if dorme == "BAIA":
+            baia_vinc = Baia.objects.filter(empresa=hprs, numero=str(i+1)).first()
+
         cav, _ = Cavalo.objects.update_or_create(
             nome=nome, empresa=hprs,
             defaults={
-                'categoria': 'PROPRIO' if "HPRS" in nome else 'HOTELARIA',
+                'categoria': 'PROPRIO' if "HPRD" in nome else 'HOTELARIA',
                 'proprietario': dono,
                 'idade': idade,
                 'usa_ferradura': 'SIM' if ferradura else 'NAO',
                 'observacoes_medicas': obs,
                 'onde_dorme': dorme,
+                'baia': baia_vinc,
                 'piquete': piquete_principal if local == "PIQUETE" else None,
-                'ultima_vacina': hoje - timedelta(days=random.randint(10, 200)),
-                'ultimo_vermifugo': hoje - timedelta(days=random.randint(10, 80)),
+                'ultima_vacina': hoje - timedelta(days=random.randint(20, 180)),
+                'ultimo_vermifugo': hoje - timedelta(days=random.randint(10, 60)),
             }
         )
         cavalos_criados.append(cav)
 
-        # 6. DOCUMENTOS
+        # 6. DOCUMENTOS (Regra: Danuza Vencido, outros em dia)
         status_doc = 'VENCIDO' if "Danuza" in nome else 'EM_DIA'
-        vencimento = hoje - timedelta(days=10) if status_doc == 'VENCIDO' else hoje + timedelta(days=60)
-        DocumentoCavalo.objects.get_or_create(cavalo=cav, tipo='GTA', defaults={'status': status_doc, 'data_vencimento': vencimento})
+        vencimento = hoje - timedelta(days=15) if status_doc == 'VENCIDO' else hoje + timedelta(days=90)
+        DocumentoCavalo.objects.update_or_create(
+            cavalo=cav, tipo='GTA', 
+            defaults={'status': status_doc, 'data_vencimento': vencimento}
+        )
 
-    print(f"✅ {len(cavalos_criados)} Cavalos e Documentos processados.")
+    print(f"✅ {len(cavalos_criados)} Cavalos cadastrados e Documentos gerados.")
 
     # 7. ESTOQUE CRÍTICO
     estoque_itens = [
@@ -136,38 +158,34 @@ def run():
         ("Serragem", 1, 5), ("Alfafa", 2, 8)
     ]
     for nome_item, atual, min_alerta in estoque_itens:
-        ItemEstoque.objects.get_or_create(
+        ItemEstoque.objects.update_or_create(
             nome=nome_item, empresa=hprs, 
             defaults={'quantidade_atual': atual, 'alerta_minimo': min_alerta, 'unidade_medida': 'FARDO'}
         )
     print("✅ Estoque crítico configurado.")
 
-    # 8. HISTÓRICO DE TREINOS E AULAS (Nov/25 a Abr/26)
-    print("⏳ Gerando histórico de 6 meses (Aulas e Treinos)...")
+    # 8. HISTÓRICO DE AULAS (Ajustado para o período solicitado)
+    print("⏳ Gerando histórico de aulas (Nov/25 a Abr/26)...")
     data_ini = date(2025, 11, 1)
     data_fim = date(2026, 4, 30)
-    delta = data_fim - data_ini
+    delta = (data_fim - data_ini).days
 
-    for i in range(delta.days + 1):
+    for i in range(delta + 1):
         dia = data_ini + timedelta(days=i)
-        if dia.weekday() == 6: continue  # Pula domingos
+        if dia.weekday() == 6: continue # Sem aulas domingo
 
-        # Gera 3 aulas por dia útil
-        for _ in range(3):
+        for _ in range(2): # 2 aulas por dia para volume de dados
             cav = random.choice(cavalos_criados)
             alu = random.choice(alunos_lista)
             prof = random.choice(professores)
+            dt_hora = timezone.make_aware(timezone.datetime.combine(dia, timezone.datetime.min.time().replace(hour=random.choice([9, 14, 16]))))
             
-            # Hora fictícia (09:00, 10:00 ou 15:00)
-            hora = random.choice([9, 10, 15])
-            dt_consciente = timezone.make_aware(timezone.datetime.combine(dia, timezone.datetime.min.time().replace(hour=hora)))
-
             Aula.objects.create(
                 empresa=hprs, cavalo=cav, aluno=alu, professor=prof,
-                data=dia, hora_inicio=dt_consciente, status='REALIZADA'
+                data=dia, hora_inicio=dt_hora, status='REALIZADA'
             )
 
-    print("✨ SUCESSO TOTAL: Sistema HPRS totalmente preenchido e vinculado!")
+    print("✨ SUCESSO TOTAL: HPRD - Haras Paraíso RS operando com todos os dados!")
 
 if __name__ == "__main__":
     run()
