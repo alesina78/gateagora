@@ -62,14 +62,19 @@ def _iter_ultimos_meses(base: date, n: int = 6):
 
 @login_required
 def dashboard(request):
-    # 1. Identifica a empresa
-    empresa = getattr(request, "empresa", None)
-    if not empresa:
-        if hasattr(request.user, "perfil"):
-            empresa = request.user.perfil.empresa
-        else:
+    # 1. Identifica a empresa (vinda do middleware)
+    empresa = request.empresa
+    
+    # 2. Verificação de Segurança
+    if not empresa and not request.user.is_superuser:
+        # Se o usuário não tem perfil/empresa, tentamos mandar para criar o perfil
+        try:
             return redirect('/admin/gateagora/perfil/add/')
+        except:
+            # Caso o link acima falhe, manda para o admin geral
+            return redirect('/admin/')
 
+    # 3. Fluxo normal do sistema
     hoje = timezone.localdate()
 
     # Import local (boa prática quando não está no topo)
@@ -79,18 +84,18 @@ def dashboard(request):
     # 1.1 LOGICA DE COBRANÇA (Faturas críticas: vencidas ou vencendo hoje)
     hoje = timezone.localdate()
     faturas_criticas = Fatura.objects.filter(
-        empresa=empresa,
+        empresa=request.empresa, # <--- Garantia SaaS
         status__in=['PENDENTE', 'ATRASADO'],
         data_vencimento__lte=hoje
     ).select_related('aluno').order_by('data_vencimento')
 
     listagem_cobranca = []
     for fatura in faturas_criticas:
-        cavalos_aluno = Cavalo.objects.filter(proprietario=fatura.aluno, empresa=empresa)
+        cavalos_aluno = Cavalo.objects.filter(proprietario=fatura.aluno, empresa=request.empresa)
         valor_hotelaria = sum(c.mensalidade_baia for c in cavalos_aluno)
         
         aulas_aluno = Aula.objects.filter(
-            aluno=fatura.aluno, empresa=empresa, concluida=True,
+            aluno=fatura.aluno, empresa=request.empresa, concluida=True,
             data_hora__month=fatura.data_vencimento.month,
             data_hora__year=fatura.data_vencimento.year
         ).count()
@@ -148,7 +153,7 @@ def dashboard(request):
 
     # 2) Alertas
     estoque_critico = ItemEstoque.objects.filter(
-        empresa=empresa, quantidade_atual__lte=F('alerta_minimo')
+        empresa=request.empresa, quantidade_atual__lte=F('alerta_minimo')
     )
     estoque_baixo_count = estoque_critico.count()
 
@@ -162,7 +167,7 @@ def dashboard(request):
 
     # Prazos configuráveis por empresa (usa defaults se não cadastrado)
     try:
-        cfg = ConfigPrazoManejo.objects.get(empresa=empresa)
+        cfg = ConfigPrazoManejo.objects.get(empresa=request.empresa)
         prazo_vacina        = cfg.prazo_vacina
         prazo_vermifugo     = cfg.prazo_vermifugo
         prazo_ferrageamento = cfg.prazo_ferrageamento
@@ -250,7 +255,7 @@ def dashboard(request):
         "total_baias":          total_baias,
         "porcentagem_ocupacao": porcentagem_ocupacao,
         "cavalos_alerta": len(cavalos_alerta_lista),
-        "total_cavalos":        Cavalo.objects.filter(empresa=empresa).count(),
+        "total_cavalos":        Cavalo.objects.filter(empresa=request.empresa).count(),
         "vacinados":            Cavalo.objects.filter(
             empresa=empresa,
             ultima_vacina__gte=hoje - timedelta(days=365)
@@ -410,7 +415,7 @@ def dashboard(request):
 
     # 7) Relatório completo de inadimplência (todas faturas abertas)
     faturas_abertas = Fatura.objects.filter(
-        empresa=empresa, 
+        empresa=request.empresa, 
         status__in=['PENDENTE', 'ATRASADO']
     ).select_related('aluno').order_by('data_vencimento')
 
@@ -471,7 +476,7 @@ def dashboard(request):
 @login_required
 def concluir_aula(request, aula_id):
     empresa = getattr(request, "empresa", request.user.perfil.empresa)
-    aula    = get_object_or_404(Aula, id=aula_id, empresa=empresa)
+    aula    = cavalo = get_object_or_404(Cavalo, id=cavalo_id, empresa=empresa)
     aula.concluida = True
     aula.save(update_fields=['concluida'])
     messages.success(request, f"Aula de {aula.aluno.nome} marcada como finalizada!")
@@ -493,7 +498,7 @@ def gerar_relatorio_pdf(request, aluno_id):
     }
     mes_str = f"{meses_pt[hoje.month]}/{hoje.year}"
 
-    cavalos_aluno   = Cavalo.objects.filter(proprietario=aluno, empresa=empresa)
+    cavalos_aluno   = Cavalo.objects.filter(proprietario=aluno, empresa=request.empresa)
     valor_hotelaria = sum(c.mensalidade_baia for c in cavalos_aluno)
     aulas_mes       = Aula.objects.filter(
         empresa=empresa, aluno=aluno, concluida=True,
@@ -716,10 +721,14 @@ def _get_aulas_encilhamento(empresa, data_str):
 
 
 @login_required
-def encilhamento(request):
-    empresa  = getattr(request, "empresa", request.user.perfil.empresa)
-    data_str = request.GET.get('data', '')
-    aulas, data_selecionada = _get_aulas_encilhamento(empresa, data_str)
+def encilhamento(request, aula_id=None):
+    empresa = request.empresa
+    hoje = timezone.localdate()
+    
+    aula_focada = None
+    if aula_id:
+        # Adicionamos o filtro de empresa aqui também
+        aula_focada = get_object_or_404(Aula, id=aula_id, empresa=empresa)
 
     return render(request, "gateagora/encilhamento.html", {
         "empresa":          empresa,
@@ -943,7 +952,7 @@ def manejo_em_massa(request):
     # Prazos configuráveis
     try:
         from .models import ConfigPrazoManejo
-        cfg = ConfigPrazoManejo.objects.get(empresa=empresa)
+        cfg = ConfigPrazoManejo.objects.get(empresa=request.empresa)
         prazo_vacina        = cfg.prazo_vacina
         prazo_vermifugo     = cfg.prazo_vermifugo
         prazo_ferrageamento = cfg.prazo_ferrageamento
@@ -1078,7 +1087,7 @@ def manejo_em_massa(request):
 def dar_baixa_fatura(request, fatura_id):
     # Pega a empresa do usuário logado
     empresa = getattr(request, "empresa", request.user.perfil.empresa)
-    fatura = get_object_or_404(Fatura, id=fatura_id, empresa=empresa)
+    fatura = get_object_or_404(Fatura, id=fatura_id, empresa=request.empresa)
     
     fatura.status = 'PAGO'
     fatura.data_pagamento = timezone.now().date()
@@ -1087,16 +1096,17 @@ def dar_baixa_fatura(request, fatura_id):
     messages.success(request, f"Recebimento de {fatura.aluno.nome} registrado com sucesso!")
     return redirect('dashboard')
 
-# ── Marcar como sadáve ───────────────────────────────────────────────────────────
+# ── Marcar como saudável ───────────────────────────────────────────────────────────
 # Este endpoint é para marcar um cavalo como saudável, removendo alertas de saúde.
 @login_required
 def marcar_saudavel(request, cavalo_id):
-    empresa = getattr(request, "empresa", request.user.perfil.empresa)
+    empresa = request.empresa
+    # Adicionamos 'empresa=empresa' na busca para isolar o acesso
     cavalo = get_object_or_404(Cavalo, id=cavalo_id, empresa=empresa)
     cavalo.status_saude = 'Saudável'
     cavalo.save()
     messages.success(request, f"{cavalo.nome} marcado como Saudável.")
-    return redirect('dashboard')    
+    return redirect('dashboard')
 
 # ══════════════════════════════════════════════════════════════════════════════
 # Configuração de prazos
@@ -1104,8 +1114,12 @@ def marcar_saudavel(request, cavalo_id):
 @login_required
 def config_prazos_manejo(request):
     from .models import ConfigPrazoManejo
-    empresa = getattr(request, "empresa", request.user.perfil.empresa)
-    cfg, _ = ConfigPrazoManejo.objects.get_or_create(empresa=empresa)
+    
+    # 1. SEGURANÇA: Usa a empresa vinda do middleware
+    empresa = request.empresa
+    if not empresa and not request.user.is_superuser:
+        return redirect('/admin/')
+    cfg, _ = ConfigPrazoManejo.objects.get_or_create(empresa=request.empresa,)
 
     if request.method == "POST":
         cfg.prazo_vacina        = int(request.POST.get("prazo_vacina",        365))
@@ -1134,7 +1148,7 @@ def marcar_saudavel(request, cavalo_id):
     hoje    = timezone.localdate()
 
     try:
-        cfg = ConfigPrazoManejo.objects.get(empresa=empresa)
+        cfg = ConfigPrazoManejo.objects.get(empresa=request.empresa)
         prazo_vacina        = cfg.prazo_vacina
         prazo_vermifugo     = cfg.prazo_vermifugo
         prazo_ferrageamento = cfg.prazo_ferrageamento

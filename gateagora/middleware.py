@@ -10,18 +10,21 @@ class EmpresaMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        # Inicializa como None para evitar erros de AttributeError
+        # 1. Inicializa como None para evitar erros de AttributeError
         request.empresa = None
 
+        # 2. O bloco IF abaixo deve estar EXATAMENTE com 8 espaços de recuo
         if request.user.is_authenticated:
-            try:
-                # Otimizamos a busca usando select_related para evitar múltiplas consultas
-                # ao banco de dados em cada carregamento de página (problema N+1)
-                perfil = request.user.perfil
-                request.empresa = perfil.empresa
-            except (AttributeError, Exception):
-                # Caso o usuário seja um Superuser sem Perfil criado
+            if request.user.is_superuser:
+                # Superuser não é filtrado por empresa (vê tudo no admin)
                 request.empresa = None
+            else:
+                try:
+                    # Garantimos que usuários comuns SEMPRE tenham uma empresa vinculada
+                    perfil = request.user.perfil
+                    request.empresa = perfil.empresa
+                except (AttributeError, Exception):
+                    request.empresa = None
 
         response = self.get_response(request)
         return response
