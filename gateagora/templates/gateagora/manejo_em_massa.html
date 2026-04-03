@@ -38,6 +38,16 @@
     .legenda-item { display: flex; align-items: center; gap: 0.3rem; font-size: 0.6rem; color: var(--text-muted); }
   </style>
 </head>
+<script>
+(function () {
+  const saved = localStorage.getItem("gate-theme") || "zaino";
+  if (saved === "tordilho") {
+    document.documentElement.setAttribute("data-theme", "tordilho");
+  } else {
+    document.documentElement.removeAttribute("data-theme");
+  }
+})();
+</script>
 <body>
 
 <nav class="glass sticky top-0 z-50 px-5 py-3">

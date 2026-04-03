@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """
 Django settings — GATE 4
-Stack de produção: Fly.io + Supabase (PostgreSQL) + Cloudinary (mídia)
 """
 
 from pathlib import Path
@@ -58,21 +57,28 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
+
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
+
+    # Autenticação
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+
+    # Multi-Tenant / Multi-Empresa
     'gateagora.middleware.EmpresaMiddleware',
+
+    # Outros
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'core.urls'
-
 
 # ------------------------------------------------------------------------------
-# TEMPLATES
+# URLs e Templates
 # ------------------------------------------------------------------------------
+
+ROOT_URLCONF = 'core.urls'          # ← ESSA LINHA ESTAVA FALTANDO!
 
 TEMPLATES = [
     {
@@ -96,8 +102,6 @@ WSGI_APPLICATION = 'core.wsgi.application'
 
 # ------------------------------------------------------------------------------
 # BANCO DE DADOS
-# DEV local  → SQLite automático
-# Produção   → Supabase PostgreSQL via DATABASE_URL
 # ------------------------------------------------------------------------------
 
 DATABASE_URL = os.getenv('DATABASE_URL')
@@ -132,7 +136,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 
 # ------------------------------------------------------------------------------
-# BRASIL
+# LOCALIZAÇÃO
 # ------------------------------------------------------------------------------
 
 LANGUAGE_CODE = 'pt-br'
@@ -142,7 +146,7 @@ USE_TZ        = True
 
 
 # ------------------------------------------------------------------------------
-# ARQUIVOS ESTÁTICOS — CSS, JS, fontes do admin
+# ARQUIVOS ESTÁTICOS
 # ------------------------------------------------------------------------------
 
 STATIC_URL        = '/static/'
@@ -152,9 +156,7 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 
 # ------------------------------------------------------------------------------
-# ARQUIVOS DE MÍDIA — fotos de cavalos, alunos, logos, documentos
-# DEV local  → pasta /media/ no seu PC
-# Produção   → Cloudinary (25 GB grátis, CDN global)
+# ARQUIVOS DE MÍDIA
 # ------------------------------------------------------------------------------
 
 CLOUDINARY_URL = os.getenv('CLOUDINARY_URL')
@@ -169,7 +171,7 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 
 # ------------------------------------------------------------------------------
-# UNFOLD — tema do painel admin
+# UNFOLD — Tema do Admin
 # ------------------------------------------------------------------------------
 
 UNFOLD = {
@@ -227,7 +229,7 @@ LOGIN_URL           = '/login/'
 
 
 # ------------------------------------------------------------------------------
-# SEGURANÇA EXTRA — ativa apenas em produção (DEBUG=False)
+# SEGURANÇA EXTRA (Produção)
 # ------------------------------------------------------------------------------
 
 if not DEBUG:

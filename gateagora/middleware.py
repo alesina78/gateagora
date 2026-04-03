@@ -1,30 +1,60 @@
 # -*- coding: utf-8 -*-
-from django.contrib.auth.models import User
+from django.utils.deprecation import MiddlewareMixin
 
-class EmpresaMiddleware:
-    """
-    Middleware para injetar a instância da Empresa diretamente no objeto request.
-    Isso permite acessar request.empresa em qualquer View ou Template.
-    """
-    def __init__(self, get_response):
-        self.get_response = get_response
+from django.contrib.auth import get_user_model
 
-    def __call__(self, request):
-        # 1. Inicializa como None para evitar erros de AttributeError
+User = get_user_model()
+import threading
+
+# Thread-local storage para maior segurança em ambientes multi-thread
+_thread_locals = threading.local()
+
+
+class EmpresaMiddleware(MiddlewareMixin):
+    """
+    Middleware para multi-tenant (multi-empresa).
+    Injeta request.empresa de forma segura e eficiente.
+    """
+
+    def process_request(self, request):
+        # Limpa o valor anterior
         request.empresa = None
+        
+        if not request.user.is_authenticated:
+            return
 
-        # 2. O bloco IF abaixo deve estar EXATAMENTE com 8 espaços de recuo
-        if request.user.is_authenticated:
-            if request.user.is_superuser:
-                # Superuser não é filtrado por empresa (vê tudo no admin)
-                request.empresa = None
-            else:
+        # Superuser vê tudo (comum em admin)
+        if request.user.is_superuser:
+            request.empresa = None
+            _thread_locals.empresa = None
+            return
+
+        # Usuário normal → deve ter perfil e empresa
+        try:
+            # Usamos select_related para evitar query extra
+            if request.user.is_authenticated:
                 try:
-                    # Garantimos que usuários comuns SEMPRE tenham uma empresa vinculada
                     perfil = request.user.perfil
                     request.empresa = perfil.empresa
-                except (AttributeError, Exception):
+                except:
                     request.empresa = None
+            else:
+                request.empresa = None
+            empresa = perfil.empresa
 
-        response = self.get_response(request)
+            request.empresa = empresa
+            _thread_locals.empresa = empresa   # útil para models/managers
+
+        except (AttributeError, User.perfil.RelatedObjectDoesNotExist, Exception) as e:
+            # Logar o erro em desenvolvimento
+            if settings.DEBUG:
+                print(f"[EmpresaMiddleware] Usuário sem perfil ou empresa: {request.user.username} - Erro: {e}")
+            
+            request.empresa = None
+            _thread_locals.empresa = None
+
+    def process_response(self, request, response):
+        # Limpeza opcional
+        if hasattr(_thread_locals, 'empresa'):
+            delattr(_thread_locals, 'empresa')
         return response

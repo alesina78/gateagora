@@ -7,201 +7,216 @@
   <title>Encilhamento — {{ empresa.nome }}</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"/>
+  <link rel="stylesheet" href="{% static 'css/themes.css' %}">
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
-    body { font-family: 'Inter', sans-serif; background-color: #0d1117; color: #c9d1d9; }
-    .card  { background-color: #161b22; border: 1px solid #30363d; border-radius: 1.25rem; }
-    .glass { background-color: rgba(22,27,34,0.85); border-bottom: 1px solid #30363d; backdrop-filter: blur(10px); }
-    .custom-scrollbar::-webkit-scrollbar       { width: 4px; }
-    .custom-scrollbar::-webkit-scrollbar-thumb { background: #30363d; border-radius: 10px; }
-    .aula-card { transition: border-color 0.2s, transform 0.2s; }
-    .aula-card:hover { border-color: #6366f1; transform: translateY(-1px); }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg-main);
+      color: var(--text-main);
+    }
+
+    .card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 1rem;
+    }
+
+    .glass {
+      background-color: var(--card-bg);
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(10px);
+    }
+    .aula-card { 
+        transition: all 0.2s ease; 
+        border-left: 4px solid #6366f1; 
+    }
+    .aula-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+    
+    /* Ajuste para o Select no modo Light */
+    select {
+        appearance: none;
+        background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+        background-repeat: no-repeat;
+        background-position: right 1rem center;
+        background-size: 1em;
+    }
   </style>
 </head>
-<body>
-
-<nav class="glass sticky top-0 z-50 px-5 py-3">
+<script>
+  (function () {
+    const saved = localStorage.getItem("gate-theme") || "zaino";
+    if (saved === "tordilho") {
+      document.documentElement.setAttribute("data-theme", "tordilho");
+    } else {
+      document.documentElement.removeAttribute("data-theme");
+    }
+  })();
+  </script>
+<body class="pb-12">
+<nav class="glass sticky top-0 z-50 px-5 py-3 mb-6">
   <div class="max-w-4xl mx-auto flex justify-between items-center">
     <div class="flex items-center gap-3">
-      <a href="{% url 'dashboard' %}" class="bg-indigo-600 hover:bg-indigo-500 p-2 rounded-xl transition">
+      <a href="{% url 'dashboard' %}" class="bg-indigo-600 hover:bg-indigo-700 p-2 rounded-xl transition shadow-md shadow-indigo-100">
         <i class="fa-solid fa-arrow-left text-white text-sm"></i>
       </a>
       <div>
-        <h1 class="text-base font-black text-white uppercase tracking-tight">
-          <i class="fa-solid fa-horse-head text-indigo-400 mr-1"></i> Guia de Encilhamento
-        </h1>
-        <p class="text-[10px] text-slate-500 font-bold uppercase">{{ empresa.nome }}</p>
+        <h1 class="text-base font-black text-slate-900 uppercase tracking-tight">Guia de Encilhamento</h1>
+        <p class="text-[10px] text-indigo-600 font-bold uppercase tracking-widest">{{ empresa.nome }}</p>
       </div>
     </div>
+    
     <form method="get" class="flex items-center gap-2">
       <input type="date" name="data" value="{{ data_selecionada|date:'Y-m-d' }}"
-             class="bg-[#1c2128] border border-slate-700 text-slate-200 text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-indigo-500 transition"/>
-      <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-3 py-2 rounded-xl transition">
+             class="bg-white border border-slate-200 text-slate-900 text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-indigo-500 shadow-sm font-bold"/>
+      <button type="submit" class="bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold px-3 py-2 rounded-xl transition">
         <i class="fa-solid fa-magnifying-glass"></i>
       </button>
     </form>
   </div>
 </nav>
 
-<div class="max-w-4xl mx-auto px-4 py-8">
+<div class="max-w-4xl mx-auto px-4">
 
-  <!-- Cabeçalho do dia -->
-  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+  <div class="flex flex-col sm:flex-row justify-between items-end gap-4 mb-8">
     <div>
-      <p class="text-[10px] text-slate-500 uppercase font-bold tracking-widest mb-1">Programação do dia</p>
-      <h2 class="text-2xl font-black text-white">{{ data_selecionada|date:"l, d \d\e F \d\e Y"|capfirst }}</h2>
-      <p class="text-sm text-indigo-400 font-bold mt-1">{{ total_aulas }} aula{{ total_aulas|pluralize }} programada{{ total_aulas|pluralize }}</p>
+      <p class="text-[10px] text-slate-400 uppercase font-black tracking-widest mb-1">Programação selecionada</p>
+      <h2 class="text-2xl font-black text-slate-900 tracking-tight">{{ data_selecionada|date:"l, d \d\e F"|capfirst }}</h2>
+      <div class="flex items-center gap-2 mt-1">
+          <span class="w-2 h-2 bg-indigo-500 rounded-full animate-pulse"></span>
+          <p class="text-xs text-indigo-600 font-bold uppercase tracking-tighter">{{ total_aulas }} aula{{ total_aulas|pluralize }} hoje</p>
+      </div>
     </div>
-    <div class="flex flex-wrap gap-3">
-      <a href="{% url 'encilhamento_whatsapp' %}?data={{ data_selecionada|date:'Y-m-d' }}&telefone=" id="btn-whatsapp"
-         class="flex items-center gap-2 bg-emerald-600/10 hover:bg-emerald-600 text-emerald-400 hover:text-white border border-emerald-500/30 px-4 py-2.5 rounded-2xl text-xs font-black uppercase transition">
-        <i class="fa-brands fa-whatsapp text-base"></i> Enviar WhatsApp
+    <div class="flex gap-2">
+      <a href="{% url 'encilhamento_pdf' %}?data={{ data_selecionada|date:'Y-m-d' }}" target="_blank"
+         class="flex items-center gap-2 bg-white text-slate-700 border border-slate-200 px-4 py-2.5 rounded-2xl text-[10px] font-black uppercase transition hover:bg-slate-50">
+        <i class="fa-solid fa-file-pdf text-rose-500"></i> Baixar PDF
       </a>
-      <a href="{% url 'encilhamento_pdf' %}?data={{ data_selecionada|date:'Y-m-d' }}"
-         class="flex items-center gap-2 bg-indigo-600/10 hover:bg-indigo-600 text-indigo-400 hover:text-white border border-indigo-500/30 px-4 py-2.5 rounded-2xl text-xs font-black uppercase transition">
-        <i class="fa-solid fa-file-pdf text-base"></i> Baixar PDF
+      <a href="#"
+        onclick="
+          const select = document.getElementById('input-tel');
+          const tel = select.value.replace(/\D/g, '');
+          if (!tel) {
+            alert('Por favor, selecione um contato da lista.');
+            return false;
+          }
+          window.location.href = '{% url 'encilhamento_whatsapp' %}?data={{ data_selecionada|date:'Y-m-d' }}&telefone=' + tel;
+          return false;
+        "
+        class="flex items-center gap-2 bg-emerald-500 text-white px-5 py-2.5 rounded-2xl text-[10px] font-black uppercase transition hover:bg-emerald-600 shadow-lg shadow-emerald-100">
+        <i class="fa-brands fa-whatsapp text-sm"></i> Enviar WhatsApp
       </a>
     </div>
   </div>
 
-  <!-- Campo telefone cavalariço -->
-  <div class="card p-4 mb-6 flex flex-col sm:flex-row items-start sm:items-center gap-3">
-    <div class="flex items-center gap-2 text-slate-400">
-      <i class="fa-solid fa-user-tie text-indigo-400"></i>
-      <span class="text-xs font-bold uppercase">WhatsApp do Cavalariço:</span>
-    </div>
-    <div class="flex gap-2 flex-1">
-      <input type="text" id="input-tel" placeholder="5551999999999 (só números)"
-             class="bg-[#0d1117] border border-slate-700 text-slate-200 text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-emerald-500 transition flex-1"/>
-      <button onclick="atualizarLinkWpp()"
-              class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-4 py-2 rounded-xl transition">
-        Aplicar
-      </button>
+  <div class="card p-6 mb-8 border-indigo-100 bg-indigo-50/30">
+    <div class="flex flex-col md:flex-row md:items-center gap-4">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 bg-white rounded-full flex items-center justify-center border border-indigo-100 shadow-sm">
+            <i class="fa-solid fa-user-tie text-indigo-500"></i>
+        </div>
+        <div>
+            <p class="text-[10px] text-slate-400 font-black uppercase leading-none">Destinatário</p>
+            <p class="text-xs font-bold text-slate-700">Selecione quem receberá a guia</p>
+        </div>
+      </div>
+      
+      <div class="flex-1">
+        <select id="input-tel" 
+                class="bg-white border border-slate-200 text-slate-900 text-xs font-bold rounded-xl px-4 py-3 w-full focus:outline-none focus:border-indigo-500 shadow-sm transition">
+          <option value="">-- Escolha um contato da lista --</option>
+          
+          <optgroup label="Funcionários / Cavalariços">
+            {% for c in contatos_funcionarios %}
+              <option value="{{ c.telefone }}">{{ c.nome }}</option>
+            {% endfor %}
+          </optgroup>
+
+          <optgroup label="Clientes / Proprietários">
+            {% for c in contatos_clientes %}
+              <option value="{{ c.telefone }}">{{ c.nome }}</option>
+            {% endfor %}
+          </optgroup>
+        </select>
+      </div>
     </div>
   </div>
 
   {% if aulas %}
-  <div class="space-y-4">
+  <div class="grid grid-cols-1 gap-4">
     {% for aula in aulas %}
-    <div class="aula-card card p-5 flex gap-5 border {% if aula.concluida %}border-emerald-800/40 opacity-60{% else %}border-slate-700{% endif %}">
-
-      <!-- Horário -->
-      <div class="flex flex-col items-center justify-start pt-1">
-        <span class="text-center bg-indigo-600 text-white text-sm font-black px-3 py-1 rounded-xl shadow-lg" style="min-width:56px">
+    <div class="aula-card card p-5 flex gap-5 {% if aula.concluida %}opacity-60 grayscale{% endif %}">
+      
+      <div class="flex flex-col items-center">
+        <span class="bg-indigo-600 text-white text-sm font-black px-3 py-1 rounded-lg shadow-lg shadow-indigo-100">
           {{ aula.data_hora|date:"H:i" }}
         </span>
-        {% if aula.concluida %}<span class="mt-2 text-[8px] text-emerald-500 font-black uppercase">Concluída</span>{% endif %}
       </div>
 
-      <!-- Conteúdo -->
-      <div class="flex-1 min-w-0">
-        <div class="flex flex-wrap justify-between items-start gap-2 mb-3">
+      <div class="flex-1">
+        <div class="flex justify-between items-start mb-3">
           <div>
-            <p class="font-black text-white text-base uppercase leading-tight">{{ aula.aluno.nome }}</p>
-            <p class="text-[10px] text-slate-500 font-bold uppercase mt-0.5">
-              {{ aula.get_tipo_display }}
-              {% if aula.instrutor %} · Prof. {{ aula.instrutor.user.get_full_name|default:aula.instrutor.user.username }}{% endif %}
+            <h3 class="font-black text-slate-900 text-base uppercase leading-tight">{{ aula.aluno.nome }}</h3>
+            <p class="text-[10px] text-slate-500 font-bold uppercase">
+                {{ aula.get_tipo_display }} {% if aula.instrutor %}· Prof. {{ aula.instrutor.user.first_name }}{% endif %}
             </p>
           </div>
-          <span class="text-[10px] font-bold px-3 py-1 rounded-full uppercase
-            {% if aula.local == 'picadeiro_1' %}bg-blue-500/10 text-blue-400 border border-blue-500/20
-            {% elif aula.local == 'picadeiro_2' %}bg-purple-500/10 text-purple-400 border border-purple-500/20
-            {% else %}bg-amber-500/10 text-amber-400 border border-amber-500/20{% endif %}">
+          <span class="text-[9px] font-black px-3 py-1 rounded-full uppercase bg-slate-100 text-slate-500">
             {{ aula.get_local_display }}
           </span>
         </div>
 
-        <!-- Cavalo -->
-        <div class="bg-[#0d1117] rounded-xl p-3 mb-3 flex items-center gap-3 flex-wrap">
-          <div class="flex items-center gap-2">
-            <i class="fa-solid fa-horse text-indigo-400 text-sm"></i>
-            <span class="font-black text-indigo-300 text-sm uppercase">{{ aula.cavalo.nome }}</span>
-          </div>
-          <span class="text-slate-600">|</span>
-          <span class="text-xs text-slate-400 font-bold flex items-center gap-1">
-            <i class="fa-solid fa-location-dot text-slate-500 text-[10px]"></i>
-            {% if aula.cavalo.baia %}Baia {{ aula.cavalo.baia.numero }}
-            {% elif aula.cavalo.piquete %}Piquete: {{ aula.cavalo.piquete.nome }}
-            {% else %}Local não definido{% endif %}
-          </span>
-          <span class="text-slate-600">|</span>
-          <span class="text-[10px] font-bold px-2 py-0.5 rounded-full
-            {% if aula.cavalo.categoria == 'HOTELARIA' %}bg-purple-500/10 text-purple-400
-            {% else %}bg-emerald-500/10 text-emerald-400{% endif %}">
-            {{ aula.cavalo.get_categoria_display }}
-          </span>
-        </div>
-
-        <!-- Materiais -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          <div class="flex items-start gap-2">
-            <div class="bg-amber-500/10 p-1.5 rounded-lg mt-0.5"><i class="fa-solid fa-chair text-amber-400 text-xs"></i></div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
+            <i class="fa-solid fa-horse text-indigo-500"></i>
             <div>
-              <p class="text-[9px] text-slate-500 uppercase font-black">Sela</p>
-              <p class="text-xs text-slate-200 font-bold">{{ aula.cavalo.tipo_sela|default:"Sela Escola (padrão)" }}</p>
+                <p class="text-[9px] text-slate-400 font-black uppercase leading-none">Cavalo</p>
+                <p class="text-xs font-bold text-slate-900 uppercase">{{ aula.cavalo.nome }}</p>
             </div>
           </div>
-          <div class="flex items-start gap-2">
-            <div class="bg-blue-500/10 p-1.5 rounded-lg mt-0.5"><i class="fa-solid fa-circle-nodes text-blue-400 text-xs"></i></div>
+          <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
+            <i class="fa-solid fa-location-dot text-rose-500"></i>
             <div>
-              <p class="text-[9px] text-slate-500 uppercase font-black">Cabeçada / Freio</p>
-              <p class="text-xs text-slate-200 font-bold">{{ aula.cavalo.tipo_cabecada|default:"Cabeçada Escola (padrão)" }}</p>
+                <p class="text-[9px] text-slate-400 font-black uppercase leading-none">Localização</p>
+                <p class="text-xs font-bold text-slate-900 uppercase">
+                    {% if aula.cavalo.baia %}Baia {{ aula.cavalo.baia.numero }}
+                    {% elif aula.cavalo.piquete %}Piquete: {{ aula.cavalo.piquete.nome }}
+                    {% else %}N/D{% endif %}
+                </p>
             </div>
           </div>
         </div>
 
-        <!-- Badge material -->
-        <div class="mt-3">
-          {% if aula.cavalo.material_proprio %}
-          <span class="inline-flex items-center gap-1.5 text-[10px] font-black uppercase bg-amber-500/10 text-amber-400 border border-amber-500/20 px-3 py-1 rounded-full">
-            <i class="fa-solid fa-lock text-[9px]"></i> Material Exclusivo do Proprietário
-          </span>
-          {% else %}
-          <span class="inline-flex items-center gap-1.5 text-[10px] font-black uppercase bg-slate-500/10 text-slate-400 border border-slate-500/20 px-3 py-1 rounded-full">
-            <i class="fa-solid fa-school text-[9px]"></i> Material da Escola
-          </span>
-          {% endif %}
+        <div class="mt-3 flex items-center gap-2">
+            {% if aula.cavalo.material_proprio %}
+                <span class="text-[9px] font-black uppercase bg-amber-50 text-amber-600 border border-amber-200 px-2 py-1 rounded-md">
+                    <i class="fa-solid fa-lock mr-1"></i> Material Próprio
+                </span>
+            {% else %}
+                <span class="text-[9px] font-black uppercase bg-slate-100 text-slate-500 px-2 py-1 rounded-md">
+                    Material Escola
+                </span>
+            {% endif %}
         </div>
-
-        {% if aula.relatorio_treino %}
-        <div class="mt-3 bg-indigo-500/5 border border-indigo-500/10 rounded-xl px-3 py-2">
-          <p class="text-[9px] text-indigo-400 font-black uppercase mb-1">Observações</p>
-          <p class="text-xs text-slate-300">{{ aula.relatorio_treino }}</p>
-        </div>
-        {% endif %}
       </div>
     </div>
     {% endfor %}
   </div>
-
   {% else %}
   <div class="card p-16 text-center">
-    <i class="fa-solid fa-calendar-xmark text-5xl text-slate-700 mb-4"></i>
-    <p class="text-slate-500 font-bold uppercase text-sm">Nenhuma aula programada para este dia.</p>
-    <a href="/admin/gateagora/aula/add/" class="inline-block mt-4 text-indigo-400 hover:text-indigo-300 text-xs font-bold uppercase transition">
-      <i class="fa-solid fa-plus mr-1"></i> Cadastrar aula
-    </a>
+    <i class="fa-solid fa-calendar-xmark text-5xl text-slate-200 mb-4"></i>
+    <p class="text-slate-400 font-bold uppercase text-sm">Nenhuma aula programada.</p>
   </div>
   {% endif %}
 
 </div>
 
-<footer class="mt-12 py-8 border-t border-slate-800 text-center">
-  <p class="text-[10px] text-slate-700 font-bold uppercase tracking-widest">
-    Gate 4 Management · Guia de Encilhamento · {{ data_selecionada|date:"d/m/Y" }}
-  </p>
+<footer class="mt-12 py-8 text-center">
+    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+        Gate 4 Management · Gerado em {{ data_selecionada|date:"d/m/Y" }}
+    </p>
 </footer>
 
-<script>
-  function atualizarLinkWpp() {
-    const tel  = document.getElementById('input-tel').value.replace(/\D/g, '');
-    if (!tel) { alert('Digite o número do WhatsApp do cavalariço.'); return; }
-    const data = "{{ data_selecionada|date:'Y-m-d' }}";
-    const btn  = document.getElementById('btn-whatsapp');
-    btn.href   = `/encilhamento/whatsapp/?data=${data}&telefone=${tel}`;
-    btn.classList.add('ring-2', 'ring-emerald-500');
-    setTimeout(() => btn.classList.remove('ring-2', 'ring-emerald-500'), 1500);
-  }
-</script>
 </body>
 </html>

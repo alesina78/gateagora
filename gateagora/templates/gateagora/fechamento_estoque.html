@@ -1,0 +1,449 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{{ brand_name|default:"Gate 4" }} — Fechamento do Dia</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"/>
+  <link rel="stylesheet" href="{% static 'css/themes.css' %}">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    .card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 1.5rem;
+      transition: 0.2s ease;
+    }
+
+    .card-static {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 1.5rem;
+    }
+
+    .glass {
+      background-color: var(--card-bg);
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(10px);
+    }
+
+    .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: var(--bg-main); }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+
+    /* ── Item de estoque no fechamento ── */
+    .item-fechamento {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 1rem;
+      padding: 1rem 1.25rem;
+      transition: border-color 0.2s;
+    }
+    .item-fechamento:hover { border-color: rgba(99,102,241,0.4); }
+    .item-fechamento.ajustado { border-color: rgba(16,185,129,0.5); }
+    .item-fechamento.sem-consumo { opacity: 0.6; }
+
+    /* ── Input de quantidade ── */
+    input[type="number"] {
+      border: 1.5px solid var(--border) !important;
+      background-color: var(--card-bg) !important;
+      color: var(--text-main) !important;
+      border-radius: 0.5rem;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      text-align: center;
+    }
+    input[type="number"]:focus {
+      border-color: #6366f1 !important;
+      box-shadow: 0 0 0 3px rgba(99,102,241,0.18) !important;
+      outline: none !important;
+    }
+    input[type="text"] {
+      border: 1.5px solid var(--border) !important;
+      background-color: var(--card-bg) !important;
+      color: var(--text-main) !important;
+      border-radius: 0.5rem;
+      transition: border-color 0.2s;
+    }
+    input[type="text"]:focus {
+      border-color: #6366f1 !important;
+      box-shadow: 0 0 0 3px rgba(99,102,241,0.18) !important;
+      outline: none !important;
+    }
+
+    /* ── Badge de dias restantes ── */
+    .badge-dias {
+      font-size: 0.6rem;
+      font-weight: 900;
+      padding: 0.2rem 0.5rem;
+      border-radius: 9999px;
+      text-transform: uppercase;
+    }
+    .badge-dias-critico  { background-color: rgba(239,68,68,0.15);  color: var(--red-text); }
+    .badge-dias-atencao  { background-color: rgba(245,158,11,0.15); color: var(--amber-text); }
+    .badge-dias-ok       { background-color: rgba(16,185,129,0.15); color: var(--emerald-text); }
+    .badge-dias-none     { background-color: var(--card-bg-alt);    color: var(--text-muted); border: 1px solid var(--border); }
+
+    /* ── Controles +/- ── */
+    .btn-ajuste {
+      width: 2rem;
+      height: 2rem;
+      border-radius: 0.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      font-weight: 900;
+      cursor: pointer;
+      transition: all 0.15s;
+      border: 1px solid var(--border);
+      background-color: var(--card-bg-alt);
+      color: var(--text-main);
+    }
+    .btn-ajuste:hover { transform: scale(1.1); }
+    .btn-ajuste.menos:hover { background-color: rgba(239,68,68,0.2); color: var(--red-text); border-color: rgba(239,68,68,0.3); }
+    .btn-ajuste.mais:hover  { background-color: rgba(16,185,129,0.2); color: var(--emerald-text); border-color: rgba(16,185,129,0.3); }
+
+    footer { border-top: 1px solid var(--border) !important; }
+  </style>
+
+  <script>
+    (function() {
+      var saved = localStorage.getItem("gate-theme") || "zaino";
+      if (saved === "tordilho") {
+        document.documentElement.setAttribute("data-theme", "tordilho");
+      } else {
+        document.documentElement.removeAttribute("data-theme");
+      }
+    })();
+  </script>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="glass sticky top-0 z-50 px-6 py-3">
+  <div class="container mx-auto flex justify-between items-center">
+    <a href="{% url 'dashboard' %}" class="flex items-center gap-3 group">
+      <div class="bg-indigo-600 p-2 rounded-xl shadow-lg group-hover:bg-indigo-700 transition">
+        <i class="fa-solid fa-chess-knight text-white text-xl"></i>
+      </div>
+      <div>
+        <h1 class="text-xl font-extrabold tracking-tight" style="color:var(--text-strong)">{{ brand_name|default:"Gate 4" }}</h1>
+        <p class="text-[10px] font-bold uppercase tracking-widest" style="color:var(--text-muted)">{{ empresa.nome }}</p>
+      </div>
+    </a>
+    <div class="flex items-center gap-4">
+      <a href="{% url 'dashboard' %}"
+         class="text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5 px-3 py-2 rounded-xl transition"
+         style="background-color:var(--card-bg-alt);color:var(--text-muted);border:1px solid var(--border);">
+        <i class="fa-solid fa-arrow-left text-xs"></i> Voltar
+      </a>
+      <button onclick="toggleHorseTheme()"
+              style="background-color:var(--card-bg);border:1px solid var(--border);color:var(--text-main);padding:0.4rem 0.85rem;border-radius:9999px;display:flex;align-items:center;gap:0.4rem;font-size:0.75rem;font-weight:700;cursor:pointer;">
+        <span id="theme-icon">🌙</span>
+        <span id="theme-name">Zaino</span>
+      </button>
+      <script>
+        function toggleHorseTheme() {
+          const html    = document.documentElement;
+          const current = html.getAttribute("data-theme");
+          const novoTema = current === "tordilho" ? "zaino" : "tordilho";
+          if (novoTema === "tordilho") { html.setAttribute("data-theme", "tordilho"); }
+          else { html.removeAttribute("data-theme"); }
+          localStorage.setItem("gate-theme", novoTema);
+          updateButton(novoTema);
+        }
+        function updateButton(theme) {
+          var icon = document.getElementById("theme-icon");
+          var name = document.getElementById("theme-name");
+          if (icon) icon.innerText = theme === "tordilho" ? "☀️" : "🌙";
+          if (name) name.innerText = theme === "tordilho" ? "Tordilho" : "Zaino";
+        }
+        (function() { updateButton(localStorage.getItem("gate-theme") || "zaino"); })();
+      </script>
+      <form action="{% url 'logout' %}" method="post">
+        {% csrf_token %}
+        <button type="submit" class="h-10 w-10 rounded-xl flex items-center justify-center transition group"
+                style="background-color:rgba(239,68,68,0.15);color:#f87171;">
+          <i class="fa-solid fa-power-off group-hover:rotate-90 transition duration-300"></i>
+        </button>
+      </form>
+    </div>
+  </div>
+</nav>
+
+<div class="container mx-auto px-4 py-8 max-w-4xl">
+
+  <!-- CABEÇALHO DA PÁGINA -->
+  <div class="mb-8 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+    <div>
+      <p class="text-[10px] font-bold uppercase tracking-widest mb-1" style="color:var(--indigo-text)">
+        <i class="fa-solid fa-boxes-stacked mr-1"></i> Gestão de Estoque
+      </p>
+      <h2 class="text-3xl font-black uppercase italic" style="color:var(--text-strong)">Fechamento do Dia</h2>
+      <p class="text-xs mt-1" style="color:var(--text-muted)">
+        Informe as quantidades reais atuais de cada item. O sistema registra automaticamente a diferença.
+      </p>
+    </div>
+    <div class="flex flex-col items-end gap-1">
+      <span class="text-2xl font-black" style="color:var(--text-strong)">{{ hoje|date:"d/m/Y" }}</span>
+      <span class="text-[9px] font-bold uppercase tracking-widest" style="color:var(--text-muted)">{{ hoje|date:"l" }}</span>
+    </div>
+  </div>
+
+  <!-- MENSAGENS DO DJANGO -->
+  {% if messages %}
+  <div class="mb-6 space-y-2">
+    {% for msg in messages %}
+    <div class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold
+      {% if msg.tags == 'success' %}bg-emerald-500/10 text-emerald-400 border border-emerald-500/20
+      {% elif msg.tags == 'error'   %}bg-red-500/10 text-red-400 border border-red-500/20
+      {% elif msg.tags == 'warning' %}bg-amber-500/10 text-amber-400 border border-amber-500/20
+      {% else %}bg-indigo-500/10 text-indigo-400 border border-indigo-500/20{% endif %}">
+      <i class="fa-solid
+        {% if msg.tags == 'success' %}fa-circle-check
+        {% elif msg.tags == 'error'   %}fa-circle-xmark
+        {% elif msg.tags == 'warning' %}fa-triangle-exclamation
+        {% else %}fa-circle-info{% endif %}"></i>
+      {{ msg }}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- FORMULÁRIO DE FECHAMENTO -->
+  <form action="{% url 'salvar_fechamento' %}" method="post">
+    {% csrf_token %}
+
+    <div class="space-y-3 mb-8">
+
+      {% for item in itens %}
+      {% with dias=item.dias_restantes %}
+      <div class="item-fechamento {% if item.ajuste_feito_hoje %}ajustado{% endif %}{% if not item.consumo_diario %} sem-consumo{% endif %}"
+           id="item-row-{{ item.id }}">
+
+        <div class="flex flex-col md:flex-row md:items-center gap-4">
+
+          <!-- INFO DO ITEM -->
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="text-sm font-black uppercase" style="color:var(--text-strong)">{{ item.nome }}</span>
+
+              <!-- Badge dias restantes -->
+              {% if dias is not None %}
+                {% if dias <= 3 %}
+                  <span class="badge-dias badge-dias-critico">
+                    <i class="fa-solid fa-triangle-exclamation mr-0.5"></i> {{ dias }} dia{{ dias|pluralize }} restante{{ dias|pluralize }}
+                  </span>
+                {% elif dias <= 7 %}
+                  <span class="badge-dias badge-dias-atencao">
+                    <i class="fa-solid fa-clock mr-0.5"></i> {{ dias }} dias restantes
+                  </span>
+                {% else %}
+                  <span class="badge-dias badge-dias-ok">
+                    <i class="fa-solid fa-circle-check mr-0.5"></i> {{ dias }} dias restantes
+                  </span>
+                {% endif %}
+              {% else %}
+                <span class="badge-dias badge-dias-none">sem consumo definido</span>
+              {% endif %}
+
+              {% if item.ajuste_feito_hoje %}
+              <span class="badge-dias badge-dias-ok">
+                <i class="fa-solid fa-check mr-0.5"></i> Fechado hoje
+              </span>
+              {% endif %}
+            </div>
+
+            <div class="flex items-center gap-3 mt-1 text-[10px]" style="color:var(--text-muted)">
+              <span>
+                <i class="fa-solid fa-cubes mr-0.5"></i>
+                Atual: <strong style="color:var(--text-main)">{{ item.quantidade_atual }} {{ item.unidade }}</strong>
+              </span>
+              <span>
+                <i class="fa-solid fa-arrow-down mr-0.5"></i>
+                Mínimo: {{ item.alerta_minimo }} {{ item.unidade }}
+              </span>
+              {% if item.consumo_diario %}
+              <span>
+                <i class="fa-solid fa-chart-line mr-0.5"></i>
+                Consumo: {{ item.consumo_diario }}/dia
+              </span>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- CONTROLES DE QUANTIDADE -->
+          <div class="flex items-center gap-3 flex-shrink-0">
+
+            <!-- Botão menos -->
+            <button type="button"
+                    class="btn-ajuste menos"
+                    onclick="ajustarQtd({{ item.id }}, -1)"
+                    title="Reduzir 1">
+              <i class="fa-solid fa-minus text-xs"></i>
+            </button>
+
+            <!-- Input quantidade -->
+            <div class="flex flex-col items-center gap-0.5">
+              <input type="number"
+                     id="qtd-{{ item.id }}"
+                     name="qtd_{{ item.id }}"
+                     value="{{ item.quantidade_atual }}"
+                     min="0"
+                     class="w-20 py-1.5 text-sm font-black"
+                     oninput="marcarAlterado({{ item.id }}, {{ item.quantidade_atual }})"
+                     title="Quantidade atual de {{ item.nome }}">
+              <span class="text-[8px] font-bold uppercase" style="color:var(--text-muted)">{{ item.unidade }}</span>
+            </div>
+
+            <!-- Botão mais -->
+            <button type="button"
+                    class="btn-ajuste mais"
+                    onclick="ajustarQtd({{ item.id }}, 1)"
+                    title="Aumentar 1">
+              <i class="fa-solid fa-plus text-xs"></i>
+            </button>
+
+          </div>
+
+          <!-- CAMPO OBSERVAÇÃO (aparece ao alterar) -->
+          <div class="flex-shrink-0 w-full md:w-48" id="obs-container-{{ item.id }}" style="display:none;">
+            <input type="text"
+                   id="obs-{{ item.id }}"
+                   name="obs_{{ item.id }}"
+                   placeholder="Observação (opcional)"
+                   class="w-full py-1.5 px-2 text-xs">
+          </div>
+
+        </div>
+
+        <!-- Barra de progresso do estoque -->
+        <div class="mt-3" id="progress-container-{{ item.id }}">
+          {% with pct=item.quantidade_atual|floatformat:0 %}
+          {% if item.alerta_minimo > 0 %}
+          <div class="w-full rounded-full overflow-hidden" style="height:3px;background-color:var(--border);">
+            <div id="progress-bar-{{ item.id }}"
+                 class="h-full rounded-full transition-all duration-300"
+                 style="width: {% widthratio item.quantidade_atual item.alerta_minimo 100 %}%;
+                        max-width:100%;
+                        background-color:
+                          {% if item.prioridade == 0 %}#ef4444
+                          {% elif item.prioridade == 1 %}#f59e0b
+                          {% else %}#10b981{% endif %};">
+            </div>
+          </div>
+          {% endif %}
+          {% endwith %}
+        </div>
+
+      </div>
+      {% endwith %}
+      {% empty %}
+      <div class="card-static p-16 flex flex-col items-center justify-center" style="color:var(--text-muted)">
+        <i class="fa-solid fa-box-open text-5xl mb-4 opacity-20"></i>
+        <p class="font-bold uppercase text-sm">Nenhum item de estoque cadastrado.</p>
+        <a href="/admin/gateagora/itemestoque/add/"
+           class="mt-4 text-xs font-bold px-4 py-2 rounded-xl transition"
+           style="background-color:var(--indigo-soft);color:var(--indigo-text);">
+          Cadastrar Item
+        </a>
+      </div>
+      {% endfor %}
+
+    </div>
+
+    <!-- RODAPÉ DO FORMULÁRIO -->
+    {% if itens %}
+    <div class="card-static p-6 flex flex-col md:flex-row items-center justify-between gap-4">
+      <div class="text-xs" style="color:var(--text-muted)">
+        <i class="fa-solid fa-circle-info mr-1"></i>
+        Apenas itens com quantidade diferente da atual serão salvos.
+        Itens sem alteração são ignorados automaticamente.
+      </div>
+      <div class="flex items-center gap-3">
+        <a href="{% url 'dashboard' %}"
+           class="text-xs font-bold px-5 py-2.5 rounded-xl transition"
+           style="background-color:var(--card-bg-alt);color:var(--text-muted);border:1px solid var(--border);">
+          Cancelar
+        </a>
+        <button type="submit"
+                class="flex items-center gap-2 text-sm font-black uppercase px-6 py-2.5 rounded-xl transition"
+                style="background-color:#4f46e5;color:#fff;"
+                onmouseover="this.style.backgroundColor='#4338ca';"
+                onmouseout="this.style.backgroundColor='#4f46e5';">
+          <i class="fa-solid fa-floppy-disk"></i> Salvar Fechamento
+        </button>
+      </div>
+    </div>
+    {% endif %}
+
+  </form>
+
+  <!-- LEGENDA -->
+  <div class="mt-6 flex flex-wrap gap-3 justify-center">
+    <span class="badge-dias badge-dias-critico"><i class="fa-solid fa-triangle-exclamation mr-1"></i> 0–3 dias: crítico</span>
+    <span class="badge-dias badge-dias-atencao"><i class="fa-solid fa-clock mr-1"></i> 4–7 dias: atenção</span>
+    <span class="badge-dias badge-dias-ok"><i class="fa-solid fa-circle-check mr-1"></i> 8+ dias: ok</span>
+    <span class="badge-dias badge-dias-none">sem consumo definido</span>
+  </div>
+
+</div>
+
+<footer class="mt-12 py-8 text-center">
+  <p class="text-[10px] font-bold uppercase tracking-[0.3em]" style="color:var(--text-muted)">Gate 4 Management System &bull; Version 3.0 &bull; 2026</p>
+</footer>
+
+<script>
+  // Ajusta quantidade pelo botão +/-
+  function ajustarQtd(itemId, delta) {
+    const input = document.getElementById('qtd-' + itemId);
+    if (!input) return;
+    const original = parseInt(input.getAttribute('data-original') || input.defaultValue);
+    let novoVal = parseInt(input.value || 0) + delta;
+    if (novoVal < 0) novoVal = 0;
+    input.value = novoVal;
+    marcarAlterado(itemId, original);
+  }
+
+  // Mostra campo de obs e destaca linha quando valor muda
+  function marcarAlterado(itemId, valorOriginal) {
+    const input    = document.getElementById('qtd-' + itemId);
+    const obsBox   = document.getElementById('obs-container-' + itemId);
+    const row      = document.getElementById('item-row-' + itemId);
+    if (!input) return;
+
+    const novoVal = parseInt(input.value);
+    const alterado = novoVal !== parseInt(valorOriginal);
+
+    if (obsBox) obsBox.style.display = alterado ? 'block' : 'none';
+    if (row) {
+      if (alterado) {
+        row.style.borderColor = 'rgba(99,102,241,0.6)';
+        row.style.backgroundColor = 'rgba(99,102,241,0.04)';
+      } else {
+        row.style.borderColor = '';
+        row.style.backgroundColor = '';
+      }
+    }
+  }
+
+  // Inicializa data-original em cada input para comparação
+  document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('input[type="number"]').forEach(function(input) {
+      input.setAttribute('data-original', input.value);
+    });
+  });
+</script>
+
+</body>
+</html>

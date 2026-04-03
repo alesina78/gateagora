@@ -1,7 +1,8 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-    
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gate 4 - Login</title>
@@ -9,29 +10,40 @@
     <script src="https://cdn.tailwindcss.com"></script>
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'css/themes.css' %}">
 
     <style>
-        /* Estilização customizada para bater com o Dashboard Dark */
         body {
-            background-color: #0a0a0a; /* Fundo idêntico ao dashboard */
+            background-color: var(--bg-main);
+            color: var(--text-main);
         }
+
         .glass-card {
-            background: #171717;
-            border: 1px solid #262626;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
         }
+
         .input-dark {
-            background-color: #0f0f0f !important;
-            border: 1px solid #262626 !important;
-            color: #ffffff !important;
+            background-color: var(--card-alt) !important;
+            border: 1px solid var(--border) !important;
+            color: var(--text-main) !important;
         }
+
         .input-dark:focus {
-            border-color: #10b981 !important; /* Verde Esmeralda 500 */
-            ring-color: #10b981 !important;
+            border-color: #10b981 !important;
         }
     </style>
 </head>
 
 <body class="h-screen flex items-center justify-center p-4">
+
+    <!-- Botão de Tema -->
+    <button onclick="toggleHorseTheme()"
+        class="fixed top-4 right-4 z-50 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase flex items-center gap-1.5"
+        style="background:var(--card-bg);border:1px solid var(--border);color:var(--text-main);">
+        <span id="theme-icon">🌙</span>
+        <span id="theme-name">Zaino</span>
+    </button>
 
     <div class="max-w-md w-full">
 
@@ -46,7 +58,7 @@
                 {% endif %}
             </div>
 
-            <h1 class="text-3xl font-black text-white tracking-tight">
+            <h1 class="text-3xl font-black tracking-tight" style="color:var(--text-strong);">
                 Gate 4 <span class="text-emerald-500 font-medium italic">Management</span>
             </h1>
 
@@ -70,9 +82,8 @@
                                 type="text"
                                 name="username"
                                 required
-                                class="input-dark w-full pl-11 pr-4 py-3.5 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition placeholder:text-neutral-700"
-                                placeholder="Digite seu usuário"
-                            >
+                                class="input-dark w-full pl-11 pr-4 py-3.5 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition"
+                                placeholder="Digite seu usuário">
                         </div>
                     </div>
 
@@ -84,9 +95,8 @@
                                 type="password"
                                 name="password"
                                 required
-                                class="input-dark w-full pl-11 pr-4 py-3.5 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition placeholder:text-neutral-700"
-                                placeholder="••••••••"
-                            >
+                                class="input-dark w-full pl-11 pr-4 py-3.5 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition"
+                                placeholder="••••••••">
                         </div>
                     </div>
 
@@ -94,31 +104,51 @@
 
                 {% if form.errors %}
                 <div class="mt-6 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-400 text-xs font-medium flex items-center gap-3">
-                    <i class="fa-solid fa-triangle-exclamation text-base"></i> 
+                    <i class="fa-solid fa-triangle-exclamation text-base"></i>
                     <span>Acesso negado. Credenciais incorretas.</span>
                 </div>
                 {% endif %}
 
-                <button
-                    type="submit"
-                    class="w-full mt-10 bg-emerald-600 hover:bg-emerald-500 text-white font-black py-4 rounded-2xl shadow-lg shadow-emerald-900/20 transition-all transform hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2"
-                >
+                <button type="submit"
+                    class="w-full mt-10 bg-emerald-600 hover:bg-emerald-500 text-white font-black py-4 rounded-2xl shadow-lg transition flex items-center justify-center gap-2">
                     <i class="fa-solid fa-right-to-bracket"></i>
                     ENTRAR NO SISTEMA
                 </button>
 
             </form>
         </div>
-
-        <div class="text-center mt-10 space-y-2">
-            <p class="text-neutral-600 text-[10px] font-medium uppercase tracking-widest">
-                Acesso Restrito
-            </p>
-            <p class="text-neutral-800 text-[9px] font-bold">
-                © 2026 GATE 4 MANAGEMENT - THE BEST BREAK
-            </p>
-        </div>
     </div>
+
+    <!-- Scripts SEMPRE no final -->
+    <script>
+    function toggleHorseTheme() {
+        const html = document.documentElement;
+        const current = html.getAttribute("data-theme");
+        const next = current === "tordilho" ? "zaino" : "tordilho";
+
+        if (next === "tordilho") html.setAttribute("data-theme", "tordilho");
+        else html.removeAttribute("data-theme");
+
+        localStorage.setItem("gate-theme", next);
+        updateThemeButton(next);
+    }
+
+    function updateThemeButton(theme) {
+        const icon = document.getElementById("theme-icon");
+        const name = document.getElementById("theme-name");
+        if (!icon) return;
+        icon.innerText = theme === "tordilho" ? "☀️" : "🌙";
+        if (name) name.innerText = theme === "tordilho" ? "Tordilho" : "Zaino";
+    }
+
+    (function () {
+        const saved = localStorage.getItem("gate-theme") || "zaino";
+        if (saved === "tordilho") {
+            document.documentElement.setAttribute("data-theme", "tordilho");
+        }
+        updateThemeButton(saved);
+    })();
+    </script>
 
 </body>
 </html>

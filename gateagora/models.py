@@ -44,6 +44,10 @@ class Perfil(models.Model):
         choices=Cargo.choices,
         default=Cargo.TRATADOR
     )
+    telefone = models.CharField(
+        max_length=20, 
+        blank=True, null=True, 
+        help_text="WhatsApp com DDD")
 
     def __str__(self):
         return f"{self.user.username} - {self.empresa.nome}"
@@ -77,8 +81,7 @@ class Aluno(models.Model):
     foto = models.ImageField(upload_to='alunos/', null=True, blank=True)
     ativo = models.BooleanField(default=True)
     valor_aula = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('150.00'))
-    plano = models.ForeignKey('Plano', on_delete=models.SET_NULL, null=True, blank=True)
-
+    
     class Meta:
         ordering = ['nome']
         indexes = [models.Index(fields=["empresa", "nome"])]
@@ -334,6 +337,13 @@ class ItemEstoque(models.Model):
     alerta_minimo = models.IntegerField(default=5)
     unidade = models.CharField(max_length=20, default="Unidade", help_text="Ex: KG, Sacos, Fardos")
     fornecedor_contato = models.CharField(max_length=20, blank=True)
+    consumo_diario = models.DecimalField(
+        max_digits=8,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Consumo médio por dia (deixe em branco se não aplicável)"
+    )
 
     class Meta:
         indexes = [
@@ -344,6 +354,15 @@ class ItemEstoque(models.Model):
     def __str__(self):
         return f"{self.nome} - {self.empresa.nome}"
 
+    @property
+    def dias_restantes(self):
+        """Retorna dias até zerar o estoque com base no consumo diário."""
+        if not self.consumo_diario or self.consumo_diario <= 0:
+            return None
+        try:
+            return int(Decimal(str(self.quantidade_atual)) / self.consumo_diario)
+        except Exception:
+            return None
 
 class MovimentacaoFinanceira(models.Model):
     empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE)
@@ -371,21 +390,74 @@ class Plano(models.Model):
         return f"{self.nome} - R$ {self.valor_mensal}"
 
 class Fatura(models.Model):
-    """Controle de Contas a Receber (Inadimplência)"""
+    """Controle de Contas a Receber"""
     STATUS_CHOICES = [
         ('PAGO', 'Pago'),
         ('PENDENTE', 'Pendente'),
         ('ATRASADO', 'Atrasado'),
     ]
+
     empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE)
-    aluno = models.ForeignKey('Aluno', on_delete=models.CASCADE, related_name='faturas')
+    aluno = models.ForeignKey(
+        'Aluno',
+        on_delete=models.CASCADE,
+        related_name='faturas',
+        null=True,      # temporário para evitar erro de integridade
+        blank=True
+    )
     data_vencimento = models.DateField()
-    valor = models.DecimalField(max_digits=10, decimal_places=2)
+    valor = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='PENDENTE')
     data_pagamento = models.DateField(null=True, blank=True)
 
+    @property
+    def total(self):
+        """Total calculado a partir dos itens (ItemFatura)"""
+        from django.db.models import Sum
+        from decimal import Decimal
+        try:
+            result = self.itens.aggregate(total=Sum('valor'))['total']
+            return Decimal(result) if result is not None else Decimal('0.00')
+        except Exception:
+            return Decimal(self.valor or 0)
+
     def __str__(self):
-        return f"{self.aluno.nome} - {self.data_vencimento} ({self.status})"
+        aluno_nome = getattr(self.aluno, 'nome', 'Sem aluno')
+        return f"{aluno_nome} - {self.data_vencimento} ({self.status})"
+
+
+class ItemFatura(models.Model):
+    TIPO_CHOICES = [
+        ('HOTELARIA',     'Hotelaria'),
+        ('AULA',          'Aula'),
+        ('VETERINARIO',   'Veterinário'),
+        ('VERMIFUGO',     'Vermífugo'),
+        ('CASQUEIO',      'Casqueio'),
+        ('FERRAGEAMENTO', 'Ferrageamento'),
+        ('OUTROS',        'Outros'),
+    ]
+
+    fatura = models.ForeignKey(Fatura, on_delete=models.CASCADE, related_name='itens')
+    cavalo = models.ForeignKey(
+        'Cavalo',
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        verbose_name='Cavalo'
+    )
+    tipo = models.CharField(max_length=20, choices=TIPO_CHOICES)
+    descricao = models.CharField(max_length=255, blank=True)
+    valor = models.DecimalField(max_digits=10, decimal_places=2)
+    data = models.DateField()
+    criado_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Item de Fatura'
+        verbose_name_plural = 'Itens de Fatura'
+        ordering = ['tipo', 'data']
+
+    def __str__(self):
+        return f"{self.get_tipo_display()} — R$ {self.valor} ({self.fatura})" 
 
 class EventoAgendaCavalo(models.Model):
     """Agenda Inteligente do Cavalo (Vet, Ferrageamento, Descanso)"""
@@ -439,3 +511,30 @@ class ConfigPrazoManejo(models.Model):
 
     def __str__(self):
         return f"Prazos de Manejo — {self.empresa.nome}"
+
+# --- 6. MOVIMENTAÇÃO DE ESTOQUE ---
+
+class MovimentacaoEstoque(models.Model):
+    """Registro de entradas, saídas e ajustes de estoque por dia."""
+    TIPO_CHOICES = [
+        ('entrada', 'Entrada'),
+        ('saida',   'Saída'),
+        ('ajuste',  'Ajuste (Fechamento do Dia)'),
+    ]
+
+    empresa    = models.ForeignKey(Empresa, on_delete=models.CASCADE)
+    item       = models.ForeignKey(ItemEstoque, on_delete=models.CASCADE, related_name='movimentacoes')
+    data       = models.DateField(default=timezone.localdate)
+    quantidade = models.DecimalField(max_digits=8, decimal_places=2)
+    tipo       = models.CharField(max_length=10, choices=TIPO_CHOICES)
+    observacao = models.TextField(blank=True)
+    criado_em  = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-data', '-criado_em']
+        indexes  = [models.Index(fields=["empresa", "data", "item"])]
+        verbose_name        = "Movimentação de Estoque"
+        verbose_name_plural = "Movimentações de Estoque"
+
+    def __str__(self):
+        return f"{self.get_tipo_display()} — {self.item.nome} ({self.quantidade} {self.item.unidade}) em {self.data}"

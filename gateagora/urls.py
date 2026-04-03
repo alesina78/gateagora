@@ -40,4 +40,9 @@ urlpatterns = [
     
     # Marcar cavalo como saudável (só libera se tudo em dia)
     path('cavalo/<int:cavalo_id>/marcar-saudavel/', views.marcar_saudavel, name='marcar_saudavel'),
+
+    # Estoque — Movimentação e Fechamento do Dia
+    path('estoque/movimentar/',        views.movimentar_estoque, name='movimentar_estoque'),
+    path('estoque/fechamento/',        views.fechamento_dia,     name='fechamento_dia'),
+    path('estoque/fechamento/salvar/', views.salvar_fechamento,  name='salvar_fechamento'),
 ]

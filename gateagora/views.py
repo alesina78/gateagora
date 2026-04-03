@@ -15,18 +15,35 @@ from django.db.models import (
 from django.db.models.functions import Coalesce, TruncMonth
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
-from django.utils import timezone
+from django.db.models import Case, When, IntegerField, Value
 
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
+from reportlab.lib.colors import HexColor, black, grey
+from django.utils import timezone
+from django.utils.timezone import localtime
 
 from .models import (
     Empresa, Perfil, Aluno, Cavalo, Baia, Piquete, Aula,
-    ItemEstoque, MovimentacaoFinanceira, DocumentoCavalo,
-    ConfigPrazoManejo, Fatura
+    ItemEstoque, MovimentacaoFinanceira, MovimentacaoEstoque, DocumentoCavalo,
+    ConfigPrazoManejo, Fatura, ItemFatura
 )
 
 BRAND_NAME = "Gate 4"
+
+# Rodapé padrão para TODAS as mensagens WhatsApp do sistema
+MSG_RODAPE = "\n📲 _Enviado via *Gate 4 — Gestão de Haras e Hípicas*_ 🐎"
+
+# Emojis por tipo de item de fatura — usado em mensagens WhatsApp e PDF
+EMOJIS_TIPO_FATURA = {
+    'HOTELARIA':     '🏨',
+    'AULA':          '🎓',
+    'VETERINARIO':   '🩺',
+    'VERMIFUGO':     '💊',
+    'CASQUEIO':      '🦶',
+    'FERRAGEAMENTO': '🦶',
+    'OUTROS':        '🧪',
+}
 
 
 # ── Login ─────────────────────────────────────────────────────────────────────
@@ -36,9 +53,16 @@ class CustomLoginView(LoginView):
     form_class    = AuthenticationForm
     redirect_authenticated_user = True
 
+def get_pdf_colors(request):
+    # SEMPRE LIGHT PARA ECONOMIZAR TINTA
+    return {
+        "bg": (1, 1, 1),           # branco
+        "text": (0, 0, 0),         # preto
+        "primary": (0.2, 0.2, 0.2) # cinza escuro
+    }
 
 # ── Utilitários ───────────────────────────────────────────────────────────────
-# Função para formatar valores monetários no padrão brasileiro
+
 def formata_real(valor):
     try:
         val = float(valor) if valor else 0.0
@@ -57,6 +81,63 @@ def _iter_ultimos_meses(base: date, n: int = 6):
         out.append(date(y, m, 1))
     return sorted(out)
 
+def _montar_msg_fatura_whatsapp(fatura, empresa):
+    """
+    Monta mensagem WhatsApp detalhada da fatura, incluindo itens e cavalos.
+    """
+    total = fatura.total
+    itens = list(fatura.itens.all().select_related('cavalo'))  # otimizado
+
+    linhas = [
+        f"🐎 *{empresa.nome}* — Lembrete Financeiro",
+        "",
+        f"Olá, *{fatura.aluno.nome}*! Tudo bem?",
+        "",
+        "🧾 *Detalhamento da sua fatura*",
+        "",
+    ]
+
+    if itens:
+        for item in itens:
+            emoji = EMOJIS_TIPO_FATURA.get(item.tipo, '•')
+            tipo_display = item.get_tipo_display()
+
+            # Linha principal do item
+            linha_item = f"  {emoji} {tipo_display}: R$ {item.valor:,.2f}"
+            linhas.append(linha_item)
+
+            # Descrição adicional (se existir)
+            if item.descricao:
+                linhas.append(f"      _{item.descricao}_")
+
+            # Cavalo relacionado (muito importante!)
+            if item.cavalo:
+                linhas.append(f"      🐴 *Cavalo:* {item.cavalo.nome}")
+            
+            # Linha em branco para separar itens
+            linhas.append("")
+
+    else:
+        # Fallback quando não tem itens detalhados
+        linhas.append(f"  💰 Total: R$ {total:,.2f}")
+        linhas.append("")
+
+    # Rodapé da mensagem
+    linhas += [
+        f"💰 *Total a pagar:* R$ {total:,.2f}",
+        f"📅 Vencimento: *{fatura.data_vencimento.strftime('%d/%m/%Y')}*",
+        "",
+        "✅ Caso o pagamento já tenha sido realizado, por favor, envie o comprovante por aqui 😊",
+        "",
+        "Ficamos à disposição para qualquer dúvida.",
+        "",
+        f"Atenciosamente,",
+        f"*{empresa.nome}*",
+        MSG_RODAPE,
+    ]
+
+    return "\n".join(linhas)
+
 
 # ── Dashboard ─────────────────────────────────────────────────────────────────
 
@@ -64,86 +145,63 @@ def _iter_ultimos_meses(base: date, n: int = 6):
 def dashboard(request):
     # 1. Identifica a empresa (vinda do middleware)
     empresa = request.empresa
-    
+    hoje = date.today()
+    mes_selecionado = int(request.GET.get('mes', hoje.month))
+    ano_selecionado = int(request.GET.get('ano', hoje.year))
+
+    print(f"DEBUG: Filtrando para o mês {mes_selecionado} de {ano_selecionado}")
+
     # 2. Verificação de Segurança
     if not empresa and not request.user.is_superuser:
-        # Se o usuário não tem perfil/empresa, tentamos mandar para criar o perfil
         try:
             return redirect('/admin/gateagora/perfil/add/')
         except:
-            # Caso o link acima falhe, manda para o admin geral
             return redirect('/admin/')
 
     # 3. Fluxo normal do sistema
     hoje = timezone.localdate()
 
-    # Import local (boa prática quando não está no topo)
-    from .models import Fatura
-
-    # Faturas críticas (vencidas ou vencendo hoje) - para cobrança rápida
-    # 1.1 LOGICA DE COBRANÇA (Faturas críticas: vencidas ou vencendo hoje)
-    hoje = timezone.localdate()
+        # CONTAS A RECEBER
     faturas_criticas = Fatura.objects.filter(
-        empresa=request.empresa, # <--- Garantia SaaS
+        empresa=empresa,
         status__in=['PENDENTE', 'ATRASADO'],
         data_vencimento__lte=hoje
-    ).select_related('aluno').order_by('data_vencimento')
+    ).prefetch_related('itens').select_related('aluno').order_by('data_vencimento')
 
     listagem_cobranca = []
     for fatura in faturas_criticas:
-        cavalos_aluno = Cavalo.objects.filter(proprietario=fatura.aluno, empresa=request.empresa)
-        valor_hotelaria = sum(c.mensalidade_baia for c in cavalos_aluno)
-        
-        aulas_aluno = Aula.objects.filter(
-            aluno=fatura.aluno, empresa=request.empresa, concluida=True,
-            data_hora__month=fatura.data_vencimento.month,
-            data_hora__year=fatura.data_vencimento.year
-        ).count()
-        
-        # Se der erro no Decimal, use float(aulas_aluno)
-        valor_total_aulas = float(aulas_aluno) * float(fatura.aluno.valor_aula)
+        # Tenta o total via ItemFatura primeiro
+        v_total = fatura.total
 
-        txt_hotelaria = formata_real(valor_hotelaria)
-        txt_aulas = formata_real(valor_total_aulas)
-        txt_total = formata_real(fatura.valor)
+        # Fallback: se nao ha itens, usa o campo valor direto da Fatura
+        if v_total == Decimal("0.00") and getattr(fatura, "valor", None):
+            v_total = Decimal(str(fatura.valor))
 
-        # --- DEFINE SE MOSTRA O RESUMO ---
-        if (float(valor_hotelaria) + float(valor_total_aulas)) == float(fatura.valor):
-            detalhes_servicos = (
-                f"Resumo dos Serviços:\n"
-                f"- Hotelaria: R$ {txt_hotelaria}\n"
-                f"- Aulas ({aulas_aluno} sessões): R$ {txt_aulas}\n\n"
-            )
-        else:
-            detalhes_servicos = ""
+        # Fallback final: hotelaria + aulas concluidas do mes de referencia
+        if v_total == Decimal("0.00"):
+            cavalos_aluno = Cavalo.objects.filter(proprietario=fatura.aluno, empresa=empresa)
+            v_hotel = sum(Decimal(str(c.mensalidade_baia or 0)) for c in cavalos_aluno)
+            n_aulas = Aula.objects.filter(
+                aluno=fatura.aluno, empresa=empresa, concluida=True,
+                data_hora__year=fatura.data_vencimento.year,
+                data_hora__month=fatura.data_vencimento.month,
+            ).count()
+            v_total = v_hotel + Decimal(str(n_aulas)) * Decimal(str(fatura.aluno.valor_aula or 0))
 
-        # --- MONTA A MENSAGEM ---
-        msg_texto = (
-            f"Olá *{fatura.aluno.nome}*, tudo bem?\n\n"
-            f"Passando para lembrar da fatura em aberto no sistema:\n\n"
-            f"{detalhes_servicos}"
-            f"*Total Geral:* R$ {txt_total}\n"
-            f"*Vencimento:* {fatura.data_vencimento.strftime('%d/%m')}\n\n"
-            f"Se você já realizou o pagamento, basta nos enviar o comprovante por aqui.\n\n"
-            f"Atenciosamente,\n"
-            f"Equipe {empresa.nome}\n"
-            f"Gerado por Gate 4 Management"
-    )
+        tel_c = "".join(filter(str.isdigit, str(fatura.aluno.telefone or "")))
+        link_zap = f"https://wa.me/55{tel_c}?text={quote(_montar_msg_fatura_whatsapp(fatura, empresa))}" if tel_c else "#"
 
-        msg_url = quote(msg_texto)
-        fone = "".join(filter(str.isdigit, str(fatura.aluno.telefone or "")))
-        link_zap = f"https://wa.me/55{fone}?text={msg_url}" if fone else "#"
-        
         listagem_cobranca.append({
             "fatura_id":  fatura.id,
             "aluno":      fatura.aluno.nome,
             "vencimento": fatura.data_vencimento,
-            "valor":      formata_real(fatura.valor),
+            "valor":      formata_real(v_total),
             "atrasado":   fatura.data_vencimento < hoje,
-            "link_zap":   link_zap  # MUDAMOS DE link_whatsapp PARA link_zap
+            "link_zap":   link_zap,
         })
 
-    # 1) Próximas aulas de hoje
+
+    # ── 1) Próximas aulas de hoje ──────────────────────────────────────────────
     proximas_aulas = (
         Aula.objects
         .filter(empresa=empresa, concluida=False, data_hora__date=hoje)
@@ -151,12 +209,45 @@ def dashboard(request):
         .order_by('data_hora')
     )
 
-    # 2) Alertas
-    estoque_critico = ItemEstoque.objects.filter(
-        empresa=request.empresa, quantidade_atual__lte=F('alerta_minimo')
+    # ── 2) Alertas e Estoque Unificado ────────────────────────────────────────
+    
+    # 1. Busca TODOS os itens, classificando por prioridade
+    estoque_todos = (
+        ItemEstoque.objects
+        .filter(empresa=empresa)
+        .annotate(
+            prioridade=Case(
+                When(quantidade_atual__lte=F('alerta_minimo'), then=Value(0)),      # CRÍTICO (Vermelho)
+                When(quantidade_atual__lte=F('alerta_minimo') * 2, then=Value(1)),  # ATENÇÃO (Amarelo)
+                default=Value(2),                                                  # OK (Verde)
+                output_field=IntegerField(),
+            )
+        )
+        .order_by('prioridade', 'quantidade_atual')
     )
-    estoque_baixo_count = estoque_critico.count()
 
+    # 2. Contador para o badge de alerta no topo do Dashboard
+    estoque_baixo_count = sum(1 for item in estoque_todos if item.prioridade == 0)
+
+    # 3. Preparação dos dados para o GRÁFICO (Chart.js)
+    # Aqui garantimos que todos os dados vão para o gráfico, não só os críticos
+    estoque_labels = []
+    estoque_valores = []
+    estoque_cores = []
+
+    for item in estoque_todos:
+        estoque_labels.append(item.nome)
+        estoque_valores.append(float(item.quantidade_atual))
+        
+        # Define a cor da barra no gráfico baseada na prioridade calculada
+        if item.prioridade == 0:
+            estoque_cores.append('#ef4444') # Vermelho tailwind
+        elif item.prioridade == 1:
+            estoque_cores.append('#f59e0b') # Amarelo tailwind
+        else:
+            estoque_cores.append('#10b981') # Verde tailwind
+
+    # 4. Documentos vencendo (Manteve-se igual)
     janela_venc = hoje + timedelta(days=30)
     docs_vencendo = (
         DocumentoCavalo.objects
@@ -180,7 +271,7 @@ def dashboard(request):
 
     def _dias_atraso(data_campo):
         if not data_campo:
-            return 9999  # nunca feito = máximo atraso
+            return 9999
         return (hoje - data_campo).days
 
     def _cavalo_em_alerta(c):
@@ -188,8 +279,6 @@ def dashboard(request):
             return True
         if _dias_atraso(c.ultima_vacina)    > prazo_vacina:    return True
         if _dias_atraso(c.ultimo_vermifugo) > prazo_vermifugo: return True
-        # Ferrado: verifica ferrageamento (casqueamento ja esta incluso no processo)
-        # Descalco: verifica so casqueamento
         if c.usa_ferradura == 'SIM':
             if _dias_atraso(c.ultimo_ferrageamento) > prazo_ferrageamento: return True
         else:
@@ -222,7 +311,6 @@ def dashboard(request):
         reverse=True
     )
 
-    # Enriquece cada cavalo com detalhes do atraso para o template
     for c in cavalos_alerta_lista:
         c.alerta_detalhes = []
         if c.status_saude != 'Saudável':
@@ -233,18 +321,16 @@ def dashboard(request):
         if _dias_atraso(c.ultimo_vermifugo) > prazo_vermifugo:
             d = _dias_atraso(c.ultimo_vermifugo) - prazo_vermifugo
             c.alerta_detalhes.append(f"Vermifugo {d}d atrasado")
-        # Ferrado: alerta de ferrageamento (casqueamento incluso)
         if c.usa_ferradura == 'SIM':
             if _dias_atraso(c.ultimo_ferrageamento) > prazo_ferrageamento:
                 d = _dias_atraso(c.ultimo_ferrageamento) - prazo_ferrageamento
                 c.alerta_detalhes.append(f"Ferrageamento {d}d atrasado")
         else:
-            # Descalco: alerta so de casqueamento
             if _dias_atraso(c.ultimo_casqueamento) > prazo_casqueamento:
                 d = _dias_atraso(c.ultimo_casqueamento) - prazo_casqueamento
                 c.alerta_detalhes.append(f"Casqueamento {d}d atrasado")
 
-    # 3) KPIs
+    # ── 3) KPIs ───────────────────────────────────────────────────────────────
     total_baias = Baia.objects.filter(empresa=empresa).count()
     baias_ocupadas = Baia.objects.filter(empresa=empresa, status='Ocupada').count()
     porcentagem_ocupacao = int((baias_ocupadas / total_baias * 100)) if total_baias else 0
@@ -254,7 +340,7 @@ def dashboard(request):
         "baias_livres":         total_baias - baias_ocupadas,
         "total_baias":          total_baias,
         "porcentagem_ocupacao": porcentagem_ocupacao,
-        "cavalos_alerta": len(cavalos_alerta_lista),
+        "cavalos_alerta":       len(cavalos_alerta_lista),
         "total_cavalos":        Cavalo.objects.filter(empresa=request.empresa).count(),
         "vacinados":            Cavalo.objects.filter(
             empresa=empresa,
@@ -262,87 +348,46 @@ def dashboard(request):
         ).count(),
     }
 
-    # 4) Faturamento por aluno (hotelaria + aulas do mês)
-    hotelaria_sq = (
-        Cavalo.objects
-        .filter(proprietario=OuterRef('pk'), empresa=empresa)
-        .values('proprietario')
-        .annotate(total_hotel=Sum('mensalidade_baia'))
-        .values('total_hotel')
-    )
-
-    alunos_com_faturamento = (
-        Aluno.objects
-        .filter(empresa=empresa, ativo=True)
-        .annotate(
-            aulas_mes=Count(
-                'aulas',
-                filter=Q(
-                    aulas__empresa=empresa,
-                    aulas__concluida=True,
-                    aulas__data_hora__year=hoje.year,
-                    aulas__data_hora__month=hoje.month,
-                ),
-                distinct=True
-            ),
-            valor_aulas=ExpressionWrapper(
-                Coalesce(
-                    Count(
-                        'aulas',
-                        filter=Q(
-                            aulas__empresa=empresa,
-                            aulas__concluida=True,
-                            aulas__data_hora__year=hoje.year,
-                            aulas__data_hora__month=hoje.month
-                        ),
-                        distinct=True
-                    ),
-                    Value(0)
-                ) * F('valor_aula'),
-                output_field=DecimalField(max_digits=12, decimal_places=2)
-            ),
-            valor_hotelaria=Coalesce(
-                Subquery(hotelaria_sq, output_field=DecimalField(max_digits=12, decimal_places=2)),
-                Value(0, output_field=DecimalField(max_digits=12, decimal_places=2))
-            )
-        )
-        .annotate(total=F('valor_aulas') + F('valor_hotelaria'))
-        .order_by('-total')
-    )
-
+    # ── 4) Relatório de faturamento do mês (via ItemFatura) ───────────────────
     meses_pt = {
         1: 'Jan', 2: 'Fev', 3: 'Mar', 4: 'Abr', 5: 'Mai', 6: 'Jun',
         7: 'Jul', 8: 'Ago', 9: 'Set', 10: 'Out', 11: 'Nov', 12: 'Dez'
     }
     mes_atual_str = f"{meses_pt[hoje.month]}/{hoje.year}"
 
+    # FATURAMENTO DO MÊS
+    faturas_mes = Fatura.objects.filter(
+        empresa=empresa,
+        data_vencimento__year=ano_selecionado,
+        data_vencimento__month=mes_selecionado,
+    ).prefetch_related('itens').select_related('aluno')
+
     relatorio = []
-    receita_total_prevista = Decimal('0.00')
+    receita_total_prevista = ItemFatura.objects.filter(
+        fatura__empresa=empresa,
+        fatura__data_vencimento__year=ano_selecionado,
+        fatura__data_vencimento__month=mes_selecionado
+    ).aggregate(total=Sum('valor'))['total'] or Decimal('0.00')
 
-    for aluno in alunos_com_faturamento:
-        total_aluno = aluno.total or Decimal('0.00')
-        receita_total_prevista += total_aluno
+    for fatura in faturas_mes:
+        # Pega APENAS a soma real dos itens detalhados desta fatura
+        v_fatura = fatura.total 
 
-        tel = ''.join(filter(str.isdigit, str(aluno.telefone or '')))
-        link_wa = "#"
-        if tel:
-            if not tel.startswith('55'):
-                tel = f"55{tel}"
-            msg = (
-                f"Olá *{aluno.nome}*! Segue o fechamento de *{mes_atual_str}*:\n"
-                f"- Hotelaria: R$ {aluno.valor_hotelaria:,.2f}\n"
-                f"- Aulas ({aluno.aulas_mes or 0}): R$ {aluno.valor_aulas:,.2f}\n"
-                f"*Total a pagar: R$ {total_aluno:,.2f}*"
-            )
-            link_wa = f"https://wa.me/{tel}?text={quote(msg)}"
+        # Montagem do link de WhatsApp
+        tel = "".join(filter(str.isdigit, str(fatura.aluno.telefone or "")))
+        msg = _montar_msg_fatura_whatsapp(fatura, empresa)
+        link_wa = f"https://wa.me/55{tel}?text={quote(msg)}" if tel else "#"
 
         relatorio.append({
-            "aluno":    aluno,
-            "valor":    float(total_aluno),
+            "aluno": fatura.aluno,
+            "valor": float(v_fatura),
             "whatsapp": link_wa,
         })
+    
+    # IMPORTANTE: Note que NÃO existe mais a linha "receita_total_prevista += v_fatura" aqui.
+    # Isso impede que o valor seja somado duas vezes ou que use valores "inventados".
 
-    # 5) Financeiro mensal para gráfico
+    # ── 5) Financeiro mensal para gráfico ─────────────────────────────────────
     financeiro_mensal = (
         MovimentacaoFinanceira.objects
         .filter(empresa=empresa)
@@ -375,7 +420,7 @@ def dashboard(request):
         dados_despesa.append(desp)
         dados_lucro.append(rec - desp)
 
-    # 6) Ranking de treinos por cavalo
+    # ── 6) Ranking de treinos por cavalo ──────────────────────────────────────
     periodo = request.GET.get('periodo', 'mes')
 
     if periodo == '30':
@@ -390,96 +435,173 @@ def dashboard(request):
         periodo_label = f"{meses_pt[hoje.month]}/{hoje.year}"
 
     ranking_cavalos = (
-        Cavalo.objects
-        .filter(empresa=empresa)
-        .annotate(
-            treinos_periodo=Count(
-                'aulas',
-                filter=Q(
-                    aulas__concluida=True,
-                    aulas__data_hora__date__gte=data_inicio,
-                    aulas__data_hora__date__lte=hoje,
-                )
+    Cavalo.objects
+    .filter(empresa=empresa)
+    .annotate(
+        treinos_periodo=Count(
+            'aulas',
+            filter=Q(
+                aulas__concluida=True,
+                aulas__data_hora__date__gte=data_inicio,
+                aulas__data_hora__date__lte=hoje,
             )
-        )
-        .order_by('-treinos_periodo', 'nome')
+        ),
+        receita_periodo=Coalesce(
+            Sum(
+                'itemfatura__valor',
+                filter=Q(
+                    itemfatura__tipo='AULA',
+                    itemfatura__fatura__empresa=empresa,
+                    itemfatura__data__gte=data_inicio,
+                    itemfatura__data__lte=hoje,
+                )
+            ),
+            Value(0, output_field=DecimalField())
+        ),
     )
+    .order_by('-treinos_periodo', 'nome')
+)
 
     com_treino = [c for c in ranking_cavalos if c.treinos_periodo > 0]
     sem_treino = [c.nome for c in ranking_cavalos if c.treinos_periodo == 0]
     ranking_labels = [c.nome for c in com_treino]
     ranking_dados = [c.treinos_periodo for c in com_treino]
+    ranking_receita = [float(c.receita_periodo) for c in com_treino]
 
     LIMITE_TREINOS_MES = 20
     limite = LIMITE_TREINOS_MES if periodo in ('mes', '30') else LIMITE_TREINOS_MES * 3
 
-    # 7) Relatório completo de inadimplência (todas faturas abertas)
-    faturas_abertas = Fatura.objects.filter(
-        empresa=request.empresa, 
-        status__in=['PENDENTE', 'ATRASADO']
-    ).select_related('aluno').order_by('data_vencimento')
+    # ── 7) Relatório completo de inadimplência (todas as faturas abertas) ─────
+    faturas_abertas = (
+        Fatura.objects
+        .filter(empresa=request.empresa, status__in=['PENDENTE', 'ATRASADO'])
+        .select_related('aluno')
+        .prefetch_related('itens__cavalo')
+        .order_by('data_vencimento')
+    )
 
     relatorio_financeiro = []
     for fatura in faturas_abertas:
+        total = fatura.total
         tel = ''.join(filter(str.isdigit, str(fatura.aluno.telefone or '')))
         link_wa = "#"
         if tel:
             if not tel.startswith('55'):
                 tel = f"55{tel}"
-            msg = (
-                f"Olá *{fatura.aluno.nome}*, notamos que a fatura de "
-                f"R$ {fatura.valor} com vencimento em {fatura.data_vencimento.strftime('%d/%m')} "
-                f"ainda está em aberto. Podemos ajudar?"
-            )
+            msg = _montar_msg_fatura_whatsapp(fatura, empresa)
             link_wa = f"https://wa.me/{tel}?text={quote(msg)}"
-        
+
         relatorio_financeiro.append({
-            "fatura": fatura,
+            "fatura":   fatura,
+            "valor":    formata_real(total),
             "whatsapp": link_wa,
-            "atrasada": fatura.data_vencimento < hoje
+            "atrasada": fatura.data_vencimento < hoje,
         })
 
-    # 8) Contexto final
-    context = {
-        "brand_name":             BRAND_NAME,
-        "empresa":                empresa,
-        "hoje":                   hoje,
-        "proximas_aulas":         proximas_aulas,
-        "listagem_cobranca":      listagem_cobranca,
-        "relatorio_financeiro":   relatorio_financeiro,
-        "estoque_baixo_count":    estoque_baixo_count,
-        "estoque_critico":        estoque_critico,
-        "docs_vencendo":          docs_vencendo,
-        "cavalos_alerta_lista":   cavalos_alerta_lista,
-        "stats":                  stats,
-        "relatorio":              relatorio,
-        "receita_total_prevista": float(receita_total_prevista),
-        "labels_meses":           json.dumps(labels_meses),
-        "dados_receita":          json.dumps(dados_receita),
-        "dados_despesa":          json.dumps(dados_despesa),
-        "dados_lucro":            json.dumps(dados_lucro),
-        "top_alunos_labels":      json.dumps([r["aluno"].nome for r in relatorio[:10]], ensure_ascii=False),
-        "top_alunos_valores":     json.dumps([r["valor"] for r in relatorio[:10]]),
-        "ranking_cavalos_labels": json.dumps(ranking_labels, ensure_ascii=False),
-        "ranking_cavalos_dados":  json.dumps(ranking_dados),
-        "cavalos_sem_treino":     sem_treino,
-        "limite_treinos_mes":     limite,
-        "periodo_label":          periodo_label,
-        "periodo_atual":          periodo,
+    # ── 8) Receita por categoria (ItemFatura do mes) ─────────────────────────
+    LABELS_TIPO = {
+        'HOTELARIA':     '🏨 Hotelaria',
+        'AULA':          '🎓 Aulas',
+        'VETERINARIO':   '🩺 Veterinário',
+        'VERMIFUGO':     '💊 Vermífugo',
+        'CASQUEIO':      '🦶 Casqueio',
+        'FERRAGEAMENTO': '🦶 Ferrageamento',
+        'OUTROS':        '🧪 Outros',
     }
-    
-    return render(request, "gateagora/dashboard.html", context)
+    try:
+        receita_cat_qs = (
+            ItemFatura.objects
+            .filter(
+                fatura__empresa=empresa,
+                # AGORA FILTRA PELO MÊS QUE VOCÊ CLICAR NO DASHBOARD:
+                fatura__data_vencimento__year=ano_selecionado, 
+                fatura__data_vencimento__month=mes_selecionado,
+            )
+            .values('tipo')
+            .annotate(total=Sum('valor'))
+            .order_by('-total')
+        )
+        receita_por_tipo_labels  = [LABELS_TIPO.get(r['tipo'], r['tipo']) for r in receita_cat_qs]
+        receita_por_tipo_valores = [float(r['total']) for r in receita_cat_qs]
+    except Exception as e: # Adicionei o 'as e' para o log não dar erro
+        import logging
+        logging.getLogger(__name__).error("Erro no gráfico de receitas: %s", e, exc_info=True)
+        receita_por_tipo_labels  = ["Sem dados no período"]
+        receita_por_tipo_valores = [0]
 
+    # ── 9) Contexto final ─────────────────────────────────────────────────────
+    context = {
+        "brand_name":               BRAND_NAME,
+        "empresa":                  empresa,
+        "hoje":                     hoje,
+        "mes_selecionado":          mes_selecionado,
+        "ano_selecionado":          ano_selecionado,
+        "proximas_aulas":           proximas_aulas,
+        "listagem_cobranca":        listagem_cobranca,
+        "relatorio_financeiro":     relatorio_financeiro,
+        "estoque_baixo_count":      estoque_baixo_count,
+        "estoque_todos":            estoque_todos,
+        "estoque_labels":           json.dumps(estoque_labels, ensure_ascii=False),
+        "estoque_valores":          json.dumps(estoque_valores),
+        "estoque_cores":            json.dumps(estoque_cores),
+        "docs_vencendo":            docs_vencendo,
+        "cavalos_alerta_lista":     cavalos_alerta_lista,
+        "stats":                    stats,
+        "relatorio":                relatorio,
+        "receita_total_prevista":   float(receita_total_prevista),
+        "labels_meses":             json.dumps(labels_meses),
+        "dados_receita":            json.dumps(dados_receita),
+        "dados_despesa":            json.dumps(dados_despesa),
+        "dados_lucro":              json.dumps(dados_lucro),
+        "ranking_cavalos_labels":   json.dumps(ranking_labels, ensure_ascii=False),
+        "ranking_cavalos_dados":    json.dumps(ranking_dados),
+        "ranking_receita":          json.dumps(ranking_receita),
+        "cavalos_sem_treino":       sem_treino,
+        "limite_treinos_mes":       limite,
+        "periodo_label":            periodo_label,
+        "periodo_atual":            periodo,
+        "receita_por_tipo_labels":  json.dumps(receita_por_tipo_labels,  ensure_ascii=False),
+        "receita_por_tipo_valores": json.dumps(receita_por_tipo_valores),
+    }
+
+    return render(request, "gateagora/dashboard.html", context)
 
 # ── Concluir Aula ─────────────────────────────────────────────────────────────
 
 @login_required
 def concluir_aula(request, aula_id):
     empresa = getattr(request, "empresa", request.user.perfil.empresa)
-    aula    = cavalo = get_object_or_404(Cavalo, id=cavalo_id, empresa=empresa)
-    aula.concluida = True
-    aula.save(update_fields=['concluida'])
-    messages.success(request, f"Aula de {aula.aluno.nome} marcada como finalizada!")
+    aula = get_object_or_404(Aula, id=aula_id, empresa=empresa)
+
+    if not aula.concluida:
+        aula.concluida = True
+        aula.save(update_fields=['concluida'])
+
+        # Busca ou cria a fatura do mês do aluno
+        from datetime import date
+        hoje = timezone.localdate()
+        venc = hoje.replace(day=28)  # ou o dia padrão que vocês usam
+
+        fatura, _ = Fatura.objects.get_or_create(
+            empresa=empresa,
+            aluno=aula.aluno,
+            status='PENDENTE',
+            data_vencimento__year=hoje.year,
+            data_vencimento__month=hoje.month,
+            defaults={'data_vencimento': venc},
+        )
+
+        # Cria o item de aula vinculado ao cavalo
+        ItemFatura.objects.create(
+            fatura=fatura,
+            tipo='AULA',
+            cavalo=aula.cavalo,
+            descricao=f"Aula {aula.get_tipo_display()} — {hoje.strftime('%d/%m/%Y')}",
+            valor=aula.aluno.valor_aula,
+            data=hoje,
+        )
+
+    messages.success(request, f"Aula de {aula.aluno.nome} concluída e lançada na fatura!")
     return redirect("dashboard")
 
 
@@ -490,102 +612,143 @@ def gerar_relatorio_pdf(request, aluno_id):
     empresa = getattr(request, "empresa", request.user.perfil.empresa)
     aluno   = get_object_or_404(Aluno, id=aluno_id, empresa=empresa)
 
-    hoje     = timezone.localdate()
+    hoje = timezone.localdate()
     meses_pt = {
-        1: 'Janeiro', 2: 'Fevereiro', 3: 'Março',    4: 'Abril',
-        5: 'Maio',    6: 'Junho',     7: 'Julho',     8: 'Agosto',
-        9: 'Setembro',10: 'Outubro',  11: 'Novembro', 12: 'Dezembro'
+        1: 'Janeiro', 2: 'Fevereiro', 3: 'Março', 4: 'Abril',
+        5: 'Maio', 6: 'Junho', 7: 'Julho', 8: 'Agosto',
+        9: 'Setembro', 10: 'Outubro', 11: 'Novembro', 12: 'Dezembro'
     }
     mes_str = f"{meses_pt[hoje.month]}/{hoje.year}"
 
-    cavalos_aluno   = Cavalo.objects.filter(proprietario=aluno, empresa=request.empresa)
-    valor_hotelaria = sum(c.mensalidade_baia for c in cavalos_aluno)
-    aulas_mes       = Aula.objects.filter(
-        empresa=empresa, aluno=aluno, concluida=True,
-        data_hora__year=hoje.year, data_hora__month=hoje.month
+    # Busca a fatura do mês atual
+    fatura_mes = (
+        Fatura.objects
+        .filter(
+            empresa=empresa,
+            aluno=aluno,
+            data_vencimento__year=hoje.year,
+            data_vencimento__month=hoje.month,
+        )
+        .prefetch_related('itens__cavalo')
+        .first()
     )
-    valor_aulas = len(aulas_mes) * float(aluno.valor_aula)
-    total       = float(valor_hotelaria) + valor_aulas
+
+    itens = list(fatura_mes.itens.all()) if fatura_mes else []
+    total = fatura_mes.total if fatura_mes else Decimal('0.00')
 
     response = HttpResponse(content_type='application/pdf')
     response['Content-Disposition'] = (
-        f'attachment; filename="Fatura_{aluno.nome}_{hoje.month}_{hoje.year}.pdf"'
+        f'attachment; filename="Fatura_{aluno.nome.replace(" ", "_")}_{hoje.month}_{hoje.year}.pdf"'
     )
 
-    p    = canvas.Canvas(response, pagesize=A4)
+    p = canvas.Canvas(response, pagesize=A4)
     W, H = A4
+    y = H - 80
 
-    # Cabeçalho
-    p.setFillColorRGB(0.06, 0.09, 0.14)
-    p.rect(0, H - 80, W, 80, fill=True, stroke=False)
-    p.setFillColorRGB(1, 1, 1)
-    p.setFont("Helvetica-Bold", 18)
-    p.drawString(40, H - 38, empresa.nome.upper())
-    p.setFont("Helvetica", 9)
-    p.setFillColorRGB(0.6, 0.6, 0.7)
-    p.drawString(40, H - 55, f"FATURA DE MENSALIDADE — {mes_str.upper()}")
-    p.drawRightString(W - 40, H - 38, f"Emitido: {hoje.strftime('%d/%m/%Y')}")
+    # ====================== CABEÇALHO ======================
+    # Fundo suave azul claro
+    p.setFillColorRGB(0.95, 0.97, 1.0)   # Azul muito claro
+    p.rect(0, H - 100, W, 100, fill=True, stroke=False)
 
-    # Cliente
-    y = H - 110
-    p.setFillColorRGB(0.13, 0.16, 0.22)
-    p.roundRect(30, y - 12, W - 60, 48, 6, fill=True, stroke=False)
-    p.setFillColorRGB(1, 1, 1)
-    p.setFont("Helvetica-Bold", 12)
-    p.drawString(42, y + 20, f"CLIENTE:  {aluno.nome.upper()}")
-    p.setFont("Helvetica", 9)
-    p.setFillColorRGB(0.6, 0.6, 0.7)
+    p.setFillColorRGB(0.1, 0.1, 0.25)    # Azul escuro elegante
+    p.setFont("Helvetica-Bold", 22)
+    p.drawString(45, H - 45, empresa.nome.upper())
+
+    p.setFont("Helvetica", 10)
+    p.setFillColorRGB(0.4, 0.4, 0.5)
+    p.drawString(45, H - 65, f"FATURA DE MENSALIDADE — {mes_str.upper()}")
+    p.drawRightString(W - 45, H - 45, f"Emitido em: {hoje.strftime('%d/%m/%Y')}")
+
+    # ====================== DADOS DO CLIENTE ======================
+    y = H - 150
+    p.setFillColorRGB(0.95, 0.97, 1.0)
+    p.roundRect(35, y - 25, W - 70, 55, 8, fill=True, stroke=False)
+
+    p.setFillColorRGB(0.12, 0.12, 0.25)
+    p.setFont("Helvetica-Bold", 13)
+    p.drawString(50, y + 18, f"CLIENTE: {aluno.nome.upper()}")
+
+    p.setFont("Helvetica", 10)
+    p.setFillColorRGB(0.35, 0.35, 0.45)
     if aluno.telefone:
-        p.drawString(42, y + 6, f"Telefone: {aluno.telefone}")
+        p.drawString(50, y + 3, f"Telefone: {aluno.telefone}")
 
-    # Cabeçalho tabela
-    y -= 38
-    p.setFillColorRGB(0.24, 0.28, 0.9)
-    p.rect(30, y - 5, W - 60, 24, fill=True, stroke=False)
+    y -= 75
+
+    # ====================== TÍTULO DA TABELA ======================
+    p.setFillColorRGB(0.15, 0.35, 0.65)   # Azul médio suave
+    p.rect(35, y - 5, W - 70, 28, fill=True, stroke=False)
+
     p.setFillColorRGB(1, 1, 1)
-    p.setFont("Helvetica-Bold", 9)
-    p.drawString(42, y + 6, "DESCRIÇÃO")
-    p.drawRightString(W - 40, y + 6, "VALOR")
-    y -= 28
+    p.setFont("Helvetica-Bold", 11)
+    p.drawString(50, y + 10, "DESCRIÇÃO DO SERVIÇO")
+    p.drawRightString(W - 50, y + 10, "VALOR")
 
-    # Hotelaria
-    if valor_hotelaria > 0:
-        p.setFillColorRGB(0.13, 0.16, 0.22)
-        p.rect(30, y - 8, W - 60, 22, fill=True, stroke=False)
-        p.setFillColorRGB(0.55, 0.75, 1.0)
+    y -= 35
+
+    # ====================== ITENS DA FATURA ======================
+    if itens:
+        for item in itens:
+            emoji = EMOJIS_TIPO_FATURA.get(item.tipo, '•')
+            tipo_display = item.get_tipo_display()
+
+            # Fundo claro para cada item
+            p.setFillColorRGB(0.98, 0.98, 0.99)
+            p.rect(35, y - 8, W - 70, 26, fill=True, stroke=False)
+
+            # Emoji + Tipo
+            p.setFillColorRGB(0.1, 0.1, 0.25)
+            p.setFont("Helvetica-Bold", 10.5)
+            p.drawString(50, y + 8, f"{emoji}  {tipo_display}")
+
+            # Valor
+            p.setFont("Helvetica-Bold", 10.5)
+            p.drawRightString(W - 50, y + 8, f"R$ {float(item.valor):,.2f}")
+
+            y -= 26
+
+            # Descrição (se houver)
+            if item.descricao:
+                p.setFillColorRGB(0.4, 0.45, 0.55)
+                p.setFont("Helvetica", 9)
+                p.drawString(65, y + 8, f"   {item.descricao}")
+                y -= 14
+
+            # Cavalo (se houver)
+            if item.cavalo:
+                p.setFillColorRGB(0.35, 0.45, 0.65)
+                p.setFont("Helvetica", 9)
+                p.drawString(65, y + 8, f"   🐴 {item.cavalo.nome}")
+                y -= 14
+
+            y -= 8   # Espaçamento entre itens
+
+    else:
+        # Fallback sem itens
+        p.setFillColorRGB(0.98, 0.98, 0.99)
+        p.rect(35, y - 8, W - 70, 26, fill=True, stroke=False)
+        p.setFillColorRGB(0.1, 0.1, 0.25)
         p.setFont("Helvetica-Bold", 10)
-        p.drawString(42, y + 5, f"Hotelaria ({len(cavalos_aluno)} cavalo(s))")
-        p.drawRightString(W - 40, y + 5, f"R$ {float(valor_hotelaria):,.2f}")
-        y -= 22
-        for c in cavalos_aluno:
-            p.setFillColorRGB(0.4, 0.45, 0.55)
-            p.setFont("Helvetica", 8)
-            p.drawString(55, y, f"• {c.nome}  —  R$ {float(c.mensalidade_baia):,.2f}/mês")
-            y -= 13
-        y -= 4
+        p.drawString(50, y + 8, "Serviços prestados no mês")
+        p.drawRightString(W - 50, y + 8, f"R$ {float(total):,.2f}")
+        y -= 40
 
-    # Aulas
-    p.setFillColorRGB(0.13, 0.16, 0.22)
-    p.rect(30, y - 8, W - 60, 22, fill=True, stroke=False)
-    p.setFillColorRGB(0.55, 0.75, 1.0)
-    p.setFont("Helvetica-Bold", 10)
-    p.drawString(42, y + 5, f"Aulas ({len(aulas_mes)} × R$ {float(aluno.valor_aula):,.2f})")
-    p.drawRightString(W - 40, y + 5, f"R$ {valor_aulas:,.2f}")
-    y -= 22
-    for aula in aulas_mes:
-        p.setFillColorRGB(0.4, 0.45, 0.55)
-        p.setFont("Helvetica", 8)
-        p.drawString(55, y, f"• {aula.data_hora.strftime('%d/%m')}  —  {aula.cavalo.nome}")
-        y -= 13
+    # ====================== TOTAL ======================
+    y -= 20
+    p.setFillColorRGB(0.05, 0.55, 0.35)   # Verde suave elegante
+    p.roundRect(35, y - 12, W - 70, 42, 10, fill=True, stroke=False)
 
-    # Total
-    y -= 18
-    p.setFillColorRGB(0.06, 0.73, 0.51)
-    p.roundRect(30, y - 10, W - 60, 36, 6, fill=True, stroke=False)
     p.setFillColorRGB(1, 1, 1)
-    p.setFont("Helvetica-Bold", 14)
-    p.drawString(42, y + 12, "TOTAL A PAGAR")
-    p.drawRightString(W - 40, y + 12, f"R$ {total:,.2f}")
+    p.setFont("Helvetica-Bold", 15)
+    p.drawString(50, y + 13, "TOTAL A PAGAR")
+
+    p.setFont("Helvetica-Bold", 16)
+    p.drawRightString(W - 50, y + 13, f"R$ {float(total):,.2f}")
+
+    # Rodapé informativo
+    p.setFillColorRGB(0.5, 0.5, 0.55)
+    p.setFont("Helvetica", 8)
+    p.drawCentredString(W/2, 40, "Obrigado por confiar no nosso trabalho • Pagamento via PIX ou dinheiro")
 
     p.showPage()
     p.save()
@@ -596,34 +759,45 @@ def gerar_relatorio_pdf(request, aluno_id):
 
 @login_required
 def gerar_ficha_trato_pdf(request):
-    empresa  = getattr(request, "empresa", request.user.perfil.empresa)
+    empresa = getattr(request, "empresa", request.user.perfil.empresa)
+
     response = HttpResponse(content_type='application/pdf')
-    response['Content-Disposition'] = 'attachment; filename="Guia_Trato.pdf"'
+    response['Content-Disposition'] = f'attachment; filename="Guia_Trato_{date.today().strftime("%d-%m-%Y")}.pdf"'
 
-    p    = canvas.Canvas(response, pagesize=A4)
-    W, H = A4
+    p = canvas.Canvas(response, pagesize=A4)
+    width, height = A4
 
-    COR_RACAO    = (0.24, 0.48, 1.0)
-    COR_VOLUMOSO = (0.13, 0.70, 0.37)
-    COR_SUPL     = (0.80, 0.55, 0.10)
-    COR_FUNDO    = (0.10, 0.13, 0.18)
-    COR_BRANCO   = (1.0,  1.0,  1.0)
-    COR_CINZA    = (0.55, 0.60, 0.70)
+    # Cores para impressão
+    COR_TITULO      = HexColor("#1e40af")
+    COR_CABECALHO   = HexColor("#f8fafc")
+    COR_LINHA       = HexColor("#e2e8f0")
+    COR_RACAO       = HexColor("#166534")
+    COR_VOLUMOSO    = HexColor("#14532d")
+    COR_SUPLEMENTO  = HexColor("#854d0e")
+    COR_TEXTO       = HexColor("#0f172a")
+    COR_CINZA       = HexColor("#475569")
 
     pagina = 1
 
-    def cabecalho(p, pagina):
-        p.setFillColorRGB(0.06, 0.09, 0.14)
-        p.rect(0, H - 65, W, 65, fill=True, stroke=False)
-        p.setFillColorRGB(*COR_BRANCO)
-        p.setFont("Helvetica-Bold", 15)
-        p.drawString(30, H - 32, f"GUIA DE TRATO DIÁRIO — {empresa.nome.upper()}")
-        p.setFont("Helvetica", 8)
-        p.setFillColorRGB(*COR_CINZA)
-        p.drawString(30, H - 50, f"Gerado em: {date.today().strftime('%d/%m/%Y')}   |   Página {pagina}")
-        return H - 82
+    def cabecalho():
+        nonlocal pagina
+        p.setFillColor(COR_CABECALHO)
+        p.rect(0, height - 82, width, 82, fill=True, stroke=False)
 
-    y = cabecalho(p, pagina)
+        p.setFillColor(COR_TITULO)
+        p.setFont("Helvetica-Bold", 17)
+        p.drawString(45, height - 37, f"GUIA DE TRATO DIÁRIO — {empresa.nome.upper()}")
+
+        p.setFont("Helvetica", 9)
+        p.setFillColor(COR_CINZA)
+        p.drawString(45, height - 55, f"Data: {date.today().strftime('%d/%m/%Y')}   •   Página {pagina}")
+
+        p.setStrokeColor(COR_LINHA)
+        p.line(45, height - 68, width - 45, height - 68)
+
+        return height - 98
+
+    y = cabecalho()
 
     cavalos = (
         Cavalo.objects
@@ -633,71 +807,103 @@ def gerar_ficha_trato_pdf(request):
     )
 
     for cavalo in cavalos:
-        altura_card = 82 + (14 if cavalo.complemento_nutricional else 0)
-
-        if y - altura_card < 40:
-            p.showPage()
-            pagina += 1
-            y = cabecalho(p, pagina)
-
-        p.setFillColorRGB(*COR_FUNDO)
-        p.roundRect(25, y - altura_card, W - 50, altura_card, 8, fill=True, stroke=False)
-
-        if cavalo.categoria == 'HOTELARIA':
-            p.setFillColorRGB(0.38, 0.40, 0.95)
-        else:
-            p.setFillColorRGB(*COR_VOLUMOSO)
-        p.rect(25, y - altura_card, 5, altura_card, fill=True, stroke=False)
-
-        p.setFillColorRGB(*COR_BRANCO)
-        p.setFont("Helvetica-Bold", 12)
-        p.drawString(38, y - 18, cavalo.nome.upper())
-
-        local = (
-            f"Baia {cavalo.baia.numero}" if cavalo.baia
-            else (cavalo.piquete.nome if cavalo.piquete else "Solto")
-        )
-        p.setFillColorRGB(*COR_CINZA)
-        p.setFont("Helvetica", 8)
-        p.drawString(38, y - 30, f"{local}  |  {cavalo.proprietario.nome}  |  {cavalo.get_categoria_display()}")
-
-        linha_y = y - 44
+        # === Altura DINÂMICA e compacta ===
+        altura = 58  # altura base reduzida
 
         if cavalo.racao_tipo or cavalo.racao_qtd_manha or cavalo.racao_qtd_noite:
-            p.setFillColorRGB(*COR_RACAO)
-            p.setFont("Helvetica-Bold", 8)
-            p.drawString(38, linha_y, "RAÇÃO:")
-            p.setFont("Helvetica", 8)
-            partes = []
-            if cavalo.racao_tipo:      partes.append(cavalo.racao_tipo)
-            if cavalo.racao_qtd_manha: partes.append(f"Manhã {cavalo.racao_qtd_manha}")
-            if cavalo.racao_qtd_noite: partes.append(f"Noite {cavalo.racao_qtd_noite}")
-            p.drawString(80, linha_y, "  •  ".join(partes))
-            linha_y -= 14
-
+            altura += 16
         if cavalo.feno_tipo or cavalo.feno_qtd:
-            p.setFillColorRGB(*COR_VOLUMOSO)
-            p.setFont("Helvetica-Bold", 8)
-            p.drawString(38, linha_y, "VOLUMOSO:")
-            p.setFont("Helvetica", 8)
-            vol = []
-            if cavalo.feno_tipo: vol.append(cavalo.feno_tipo)
-            if cavalo.feno_qtd:  vol.append(cavalo.feno_qtd)
-            p.drawString(95, linha_y, "  •  ".join(vol))
-            linha_y -= 14
-
+            altura += 16
         if cavalo.complemento_nutricional:
-            p.setFillColorRGB(*COR_SUPL)
-            p.setFont("Helvetica-Bold", 8)
-            p.drawString(38, linha_y, "SUPLEMENTO:")
-            p.setFont("Helvetica", 8)
-            p.drawString(105, linha_y, cavalo.complemento_nutricional[:80])
+            altura += 17
 
-        y -= altura_card + 8
+        if y - altura < 55:
+            p.showPage()
+            pagina += 1
+            y = cabecalho()
+
+        # Card compacto
+        p.setFillColor(HexColor("#ffffff"))
+        p.setStrokeColor(COR_LINHA)
+        p.roundRect(38, y - altura, width - 76, altura, 8, fill=True, stroke=True)
+
+        # Barra lateral
+        cor_barra = HexColor("#1e40af") if getattr(cavalo, 'categoria', None) == 'HOTELARIA' else HexColor("#166534")
+        p.setFillColor(cor_barra)
+        p.rect(38, y - altura, 7, altura, fill=True, stroke=False)
+
+        # Nome do Cavalo + Baia/Piquete na mesma linha
+        p.setFillColor(COR_TEXTO)
+        p.setFont("Helvetica-Bold", 13.5)
+
+        local = f"Baia {cavalo.baia.numero}" if cavalo.baia else \
+                (f"Piquete: {cavalo.piquete.nome}" if cavalo.piquete else "Solto")
+
+        p.drawString(55, y - 23, f"{cavalo.nome.upper()}  —  {local}")
+
+        linha_y = y - 41
+
+        # ====================== RAÇÃO ======================
+        if cavalo.racao_tipo or cavalo.racao_qtd_manha or cavalo.racao_qtd_noite:
+            p.setFillColor(COR_RACAO)
+            p.setFont("Helvetica-Bold", 9)
+            p.drawString(55, linha_y, "RAÇÃO")
+
+            p.setFillColor(COR_TEXTO)
+            p.setFont("Helvetica", 9)
+            partes = []
+            if cavalo.racao_tipo:
+                partes.append(cavalo.racao_tipo)
+            if cavalo.racao_qtd_manha:
+                partes.append(f"Manhã: {cavalo.racao_qtd_manha}")
+            if cavalo.racao_qtd_noite:
+                partes.append(f"Noite: {cavalo.racao_qtd_noite}")
+
+            p.drawString(115, linha_y, " • ".join(partes))
+            linha_y -= 16
+
+        # ====================== VOLUMOSO ======================
+        if cavalo.feno_tipo or cavalo.feno_qtd:
+            p.setFillColor(COR_VOLUMOSO)
+            p.setFont("Helvetica-Bold", 9)
+            p.drawString(55, linha_y, "VOLUMOSO")
+
+            p.setFillColor(COR_TEXTO)
+            p.setFont("Helvetica", 9)
+
+            tipo = (cavalo.feno_tipo or "").upper()
+            qtd = cavalo.feno_qtd or ""
+
+            if "ALFALFA" in tipo or "ALF" in tipo:
+                vol_text = f"Alfafa → {qtd} fatias"
+            elif "FENO" in tipo:
+                vol_text = f"Feno → {qtd} fatias"
+            else:
+                vol_text = f"{cavalo.feno_tipo or 'Volumoso'} → {qtd} fatias"
+
+            p.drawString(115, linha_y, vol_text)
+            linha_y -= 16
+
+        # ====================== SUPLEMENTO ======================
+        if cavalo.complemento_nutricional:
+            p.setFillColor(COR_SUPLEMENTO)
+            p.setFont("Helvetica-Bold", 9)
+            p.drawString(55, linha_y, "SUPLEMENTO")
+
+            p.setFillColor(COR_TEXTO)
+            p.setFont("Helvetica", 9)
+            p.drawString(130, linha_y, str(cavalo.complemento_nutricional)[:110])
+
+        y -= altura + 10   # Espaçamento reduzido entre cards
+
+    # Rodapé
+    p.setFont("Helvetica", 8)
+    p.setFillColor(COR_CINZA)
+    p.drawString(45, 35, "• Fracionar fardos em fatias uniformes • Verificar sobras do dia anterior")
+    p.drawString(45, 25, f"Gate 4 • Gerado em {date.today().strftime('%d/%m/%Y %H:%M')}")
 
     p.save()
     return response
-
 
 # ── Encilhamento ──────────────────────────────────────────────────────────────
 
@@ -721,82 +927,113 @@ def _get_aulas_encilhamento(empresa, data_str):
 
 
 @login_required
-def encilhamento(request, aula_id=None):
-    empresa = request.empresa
-    hoje = timezone.localdate()
-    
-    aula_focada = None
-    if aula_id:
-        # Adicionamos o filtro de empresa aqui também
-        aula_focada = get_object_or_404(Aula, id=aula_id, empresa=empresa)
+def encilhamento(request):
+    empresa  = request.empresa
+    if empresa is None:
+        try:
+            empresa = request.user.perfil.empresa
+        except:
+            empresa = None
 
-    return render(request, "gateagora/encilhamento.html", {
-        "empresa":          empresa,
-        "aulas":            aulas,
-        "data_selecionada": data_selecionada,
-        "total_aulas":      aulas.count(),
-    })
+    data_str = request.GET.get('data', '')
 
+    contatos_funcionarios = []
+    funcionarios = (
+        Perfil.objects
+        .filter(empresa=empresa)
+        .select_related('user')
+        .order_by('user__first_name')
+    )
+    for f in funcionarios:
+        fone_cru = getattr(f, 'telefone', '') or ''
+        telefone = ''.join(filter(str.isdigit, str(fone_cru)))
+        if telefone:
+            nome_completo = f.user.get_full_name() or f.user.username
+            contatos_funcionarios.append({
+                "nome":     f"{nome_completo} (Cavalariço)",
+                "telefone": telefone,
+            })
+
+    contatos_clientes = []
+    alunos = Aluno.objects.filter(empresa=empresa).order_by('nome')
+    for a in alunos:
+        fone_cru = a.telefone or ''
+        telefone = ''.join(filter(str.isdigit, str(fone_cru)))
+        if telefone:
+            contatos_clientes.append({
+                "nome":     a.nome,
+                "telefone": telefone,
+            })
+
+    aulas, data_selecionada = _get_aulas_encilhamento(empresa, data_str)
+
+    context = {
+        "brand_name":            BRAND_NAME,
+        "empresa":               empresa,
+        "aulas":                 aulas,
+        "data_selecionada":      data_selecionada,
+        "contatos_funcionarios": contatos_funcionarios,
+        "contatos_clientes":     contatos_clientes,
+        "force_light_theme":     True,
+    }
+    return render(request, "gateagora/encilhamento.html", context)
+
+
+# ── Encilhamento WhatsApp ─────────────────────────────────────────────────────
 
 @login_required
 def encilhamento_whatsapp(request):
-    empresa  = getattr(request, "empresa", request.user.perfil.empresa)
+    empresa = getattr(request, "empresa", request.user.perfil.empresa)
     data_str = request.GET.get('data', '')
     telefone = request.GET.get('telefone', '').strip()
     aulas, data_selecionada = _get_aulas_encilhamento(empresa, data_str)
 
-    meses_pt = {
-        1: 'Jan', 2: 'Fev', 3: 'Mar', 4: 'Abr', 5: 'Mai', 6: 'Jun',
-        7: 'Jul', 8: 'Ago', 9: 'Set', 10: 'Out', 11: 'Nov', 12: 'Dez'
-    }
-    data_fmt = f"{data_selecionada.day:02d}/{meses_pt[data_selecionada.month]}/{data_selecionada.year}"
-
-    linhas = [
-        f"🐎 *GUIA DE ENCILHAMENTO — {empresa.nome.upper()}*",
-        f"📅 *{data_fmt}*",
-        "─" * 30,
-    ]
-
-    if not aulas:
-        linhas.append("\n_Nenhuma aula programada para este dia._")
-    else:
-        for aula in aulas:
-            c     = aula.cavalo
-            local = (
-                f"Baia {c.baia.numero}" if c.baia
-                else (c.piquete.nome if c.piquete else "Local não definido")
-            )
-            material = "⚠️ Material PRÓPRIO do proprietário" if c.material_proprio else "✅ Material da Escola"
-            linhas += [
-                "",
-                f"🕐 *{aula.data_hora.strftime('%H:%M')}* — {aula.get_local_display()}",
-                f"👤 Aluno: *{aula.aluno.nome}*",
-                f"🐴 Cavalo: *{c.nome}* ({local})",
-                f"🪑 Sela: {c.tipo_sela or 'Padrão escola'}",
-                f"🔗 Cabeçada: {c.tipo_cabecada or 'Padrão escola'}",
-                f"🎒 {material}",
-            ]
-            if aula.relatorio_treino:
-                linhas.append(f"📝 Obs: {aula.relatorio_treino}")
-
-    linhas += ["", "─" * 30, "_Enviado via Gate 4 Management_"]
-
-    texto = "\n".join(linhas)
-    tel   = ''.join(filter(str.isdigit, telefone))
-
-    if not tel:
-        messages.warning(request, "Informe o WhatsApp do cavalariço antes de enviar.")
+    if not telefone:
+        messages.warning(request, "Informe o telefone do cavalariço.")
         return redirect(f"/encilhamento/?data={data_str}")
 
+    data_fmt = data_selecionada.strftime('%d de %B de %Y').capitalize()
+
+    linhas = [
+        f"🐎 *{empresa.nome.upper()}*",
+        f"📋 *Ordem de Encilhamento*",
+        f"📅 {data_fmt}",
+        "━━━━━━━━━━━━━━━━━━━━━━",
+    ]
+
+    for aula in aulas:
+        hora = timezone.localtime(aula.data_hora).strftime('%H:%M')
+        c    = aula.cavalo
+        local    = f"Baia {c.baia.numero}" if c.baia else (c.piquete.nome if c.piquete else "—")
+        material = "⚠️ *Material PRÓPRIO*" if c.material_proprio else "✅ Material da Escola"
+
+        linhas += [
+            f"🕒 *{hora}* — {aula.get_local_display() or 'Picadeiro'}",
+            f"👤 *Aluno:* {aula.aluno.nome}",
+            f"🐴 *Cavalo:* {c.nome} ({local})",
+            f"🪑 *Sela:* {c.tipo_sela or 'Padrão escola'}",
+            f"🔗 *Cabeçada:* {c.tipo_cabecada or 'Padrão escola'}",
+            f"{material}",
+        ]
+        if aula.relatorio_treino:
+            linhas.append(f"📝 Obs: {aula.relatorio_treino}")
+        linhas.append("─" * 25)
+
+    linhas.append(MSG_RODAPE)
+
+    texto = "\n".join(linhas)
+    tel = "".join(filter(str.isdigit, telefone))
     if not tel.startswith('55'):
         tel = f"55{tel}"
 
     return redirect(f"https://wa.me/{tel}?text={quote(texto)}")
 
 
+# ── PDF Encilhamento ──────────────────────────────────────────────────────────
+
 @login_required
 def encilhamento_pdf(request):
-    empresa  = getattr(request, "empresa", request.user.perfil.empresa)
+    empresa = getattr(request, "empresa", request.user.perfil.empresa)
     data_str = request.GET.get('data', '')
     aulas, data_selecionada = _get_aulas_encilhamento(empresa, data_str)
 
@@ -804,139 +1041,94 @@ def encilhamento_pdf(request):
     data_fmt = data_selecionada.strftime('%d-%m-%Y')
     response['Content-Disposition'] = f'attachment; filename="Encilhamento_{data_fmt}.pdf"'
 
-    p    = canvas.Canvas(response, pagesize=A4)
+    p = canvas.Canvas(response, pagesize=A4)
     W, H = A4
 
-    COR_HDR    = (0.06, 0.09, 0.14)
-    COR_BRANCO = (1.0,  1.0,  1.0)
-    COR_CINZA  = (0.55, 0.60, 0.70)
-    COR_INDIGO = (0.38, 0.40, 0.95)
-    COR_AMBER  = (0.80, 0.55, 0.10)
-    COR_VERDE  = (0.13, 0.70, 0.37)
-    COR_CARD   = (0.10, 0.13, 0.18)
-    COR_DARK   = (0.07, 0.09, 0.13)
+    COR_PRIMARIA    = (0.07, 0.45, 0.87)
+    COR_TEXTO       = (0.1,  0.1,  0.1)
+    COR_SUBTITULO   = (0.4,  0.4,  0.4)
+    COR_BORDA_CARD  = (0.85, 0.85, 0.85)
+    COR_FUNDO_CARD  = (0.98, 0.98, 1.0)
 
-    pagina = 1
-
-    def cabecalho(p, pagina):
-        p.setFillColorRGB(*COR_HDR)
-        p.rect(0, H - 70, W, 70, fill=True, stroke=False)
-        p.setFillColorRGB(*COR_BRANCO)
-        p.setFont("Helvetica-Bold", 15)
-        p.drawString(30, H - 32, f"GUIA DE ENCILHAMENTO — {empresa.nome.upper()}")
-        p.setFont("Helvetica", 9)
-        p.setFillColorRGB(*COR_CINZA)
-        dias = ['Segunda','Terça','Quarta','Quinta','Sexta','Sábado','Domingo']
-        ds   = dias[data_selecionada.weekday()]
-        p.drawString(30, H - 50, f"{ds}, {data_selecionada.strftime('%d/%m/%Y')}   |   Página {pagina}")
-        p.drawRightString(W - 30, H - 50, f"Total: {aulas.count()} aula(s)")
+    def desenhar_cabecalho(p, pag):
+        p.setStrokeColorRGB(0.9, 0.9, 0.9)
+        p.line(40, H - 60, W - 40, H - 60)
+        p.setFont("Helvetica-Bold", 18)
+        p.setFillColorRGB(*COR_PRIMARIA)
+        p.drawString(40, H - 45, f"📋 Guia de Encilhamento")
+        p.setFont("Helvetica", 10)
+        p.setFillColorRGB(*COR_SUBTITULO)
+        p.drawRightString(W - 40, H - 35, empresa.nome.upper())
+        p.drawRightString(W - 40, H - 50, f"Data: {data_selecionada.strftime('%d/%m/%Y')} | Pág. {pag}")
         return H - 85
 
-    y = cabecalho(p, pagina)
+    margem_x = 40
+    espacamento_colunas = 20
+    largura_card = (W - (margem_x * 2) - espacamento_colunas) / 2
 
-    if not aulas:
-        p.setFillColorRGB(*COR_CINZA)
-        p.setFont("Helvetica", 11)
-        p.drawCentredString(W / 2, H / 2, "Nenhuma aula programada para este dia.")
-        p.save()
-        return response
+    colunas_x = [margem_x, margem_x + largura_card + espacamento_colunas]
+    col_atual = 0
+    y = desenhar_cabecalho(p, 1)
+    pagina = 1
 
     for aula in aulas:
-        c      = aula.cavalo
-        altura = 115 + (20 if aula.relatorio_treino else 0)
+        hora_local = timezone.localtime(aula.data_hora).strftime('%H:%M')
+        c = aula.cavalo
 
-        if y - altura < 40:
-            p.showPage()
-            pagina += 1
-            y = cabecalho(p, pagina)
+        if y < 160:
+            if col_atual == 0:
+                col_atual = 1
+                y = H - 85
+            else:
+                p.showPage()
+                pagina += 1
+                y = desenhar_cabecalho(p, pagina)
+                col_atual = 0
 
-        # Fundo card
-        p.setFillColorRGB(*COR_CARD)
-        p.roundRect(25, y - altura, W - 50, altura, 8, fill=True, stroke=False)
+        x = colunas_x[col_atual]
+        altura_card = 135
 
-        # Borda lateral
-        p.setFillColorRGB(*(COR_VERDE if c.categoria == 'HOTELARIA' else COR_INDIGO))
-        p.rect(25, y - altura, 6, altura, fill=True, stroke=False)
+        p.setStrokeColorRGB(*COR_BORDA_CARD)
+        p.setFillColorRGB(*COR_FUNDO_CARD)
+        p.roundRect(x, y - altura_card, largura_card, altura_card, 10, fill=True, stroke=True)
 
-        # Horário
-        p.setFillColorRGB(*COR_INDIGO)
-        p.roundRect(36, y - 24, 52, 20, 4, fill=True, stroke=False)
-        p.setFillColorRGB(*COR_BRANCO)
-        p.setFont("Helvetica-Bold", 11)
-        p.drawCentredString(62, y - 16, aula.data_hora.strftime('%H:%M'))
+        p.setFillColorRGB(*COR_PRIMARIA)
+        p.roundRect(x, y - 30, largura_card, 30, 10, fill=True, stroke=False)
+        p.rect(x, y - 30, largura_card, 15, fill=True, stroke=False)
 
-        # Local
-        p.setFont("Helvetica", 8)
-        p.setFillColorRGB(*COR_CINZA)
-        p.drawString(96, y - 16, f"| {aula.get_local_display()}")
-
-        # Concluída
-        if aula.concluida:
-            p.setFillColorRGB(*COR_VERDE)
-            p.setFont("Helvetica-Bold", 7)
-            p.drawRightString(W - 35, y - 16, "CONCLUÍDA")
-
-        # Aluno
-        p.setFillColorRGB(*COR_BRANCO)
+        p.setFillColorRGB(1, 1, 1)
         p.setFont("Helvetica-Bold", 12)
-        p.drawString(36, y - 40, aula.aluno.nome.upper())
+        p.drawString(x + 10, y - 20, f"🕒 {hora_local}")
 
-        if aula.instrutor:
-            p.setFont("Helvetica", 8)
-            p.setFillColorRGB(*COR_CINZA)
-            nome_inst = aula.instrutor.user.get_full_name() or aula.instrutor.user.username
-            p.drawString(36, y - 52, f"Prof.: {nome_inst}")
+        p.setFillColorRGB(*COR_TEXTO)
+        p.setFont("Helvetica-Bold", 11)
+        nome_aluno = (aula.aluno.nome[:22] + '..') if len(aula.aluno.nome) > 22 else aula.aluno.nome
+        p.drawString(x + 10, y - 45, f"👤 {nome_aluno.upper()}")
 
-        # Bloco cavalo
-        p.setFillColorRGB(*COR_DARK)
-        p.roundRect(34, y - 80, W - 68, 24, 4, fill=True, stroke=False)
-        p.setFillColorRGB(*COR_INDIGO)
         p.setFont("Helvetica-Bold", 10)
-        p.drawString(42, y - 72, f"{c.nome.upper()}")
-        local = (
-            f"Baia {c.baia.numero}" if c.baia
-            else (c.piquete.nome if c.piquete else "—")
-        )
-        p.setFont("Helvetica", 9)
-        p.setFillColorRGB(*COR_CINZA)
-        p.drawString(160, y - 72, f"|  {local}")
-        p.setFillColorRGB(*(COR_VERDE if c.categoria == 'HOTELARIA' else COR_INDIGO))
-        p.setFont("Helvetica-Bold", 8)
-        p.drawRightString(W - 38, y - 72, c.get_categoria_display().upper())
+        p.drawString(x + 10, y - 62, f"🐴 {c.nome}")
 
-        # Sela
-        p.setFillColorRGB(*COR_AMBER)
-        p.setFont("Helvetica-Bold", 8)
-        p.drawString(36, y - 92, "SELA:")
         p.setFont("Helvetica", 9)
-        p.setFillColorRGB(*COR_BRANCO)
-        p.drawString(70, y - 92, c.tipo_sela or "Padrão escola")
+        p.setFillColorRGB(*COR_SUBTITULO)
 
-        # Cabeçada
-        p.setFillColorRGB(0.24, 0.48, 1.0)
-        p.setFont("Helvetica-Bold", 8)
-        p.drawString(36, y - 104, "CABEÇADA:")
-        p.setFont("Helvetica", 9)
-        p.setFillColorRGB(*COR_BRANCO)
-        p.drawString(88, y - 104, c.tipo_cabecada or "Padrão escola")
+        sela     = getattr(c, 'tipo_sela',    None) or 'Padrão'
+        cabecada = getattr(c, 'tipo_cabecada', None) or 'Padrão'
 
-        # Material
+        p.drawString(x + 10, y - 78,  f"🪑 Sela: {sela}")
+        p.drawString(x + 10, y - 90,  f"🎭 Cabeçada: {cabecada}")
+
+        local = f"Baia {c.baia.numero}" if c.baia else (f"Piquete {c.piquete.nome}" if c.piquete else "N/D")
+        p.drawString(x + 10, y - 105, f"📍 Local: {local}")
+
         if c.material_proprio:
-            p.setFillColorRGB(*COR_AMBER)
+            p.setFillColorRGB(0.8, 0, 0)
             p.setFont("Helvetica-Bold", 8)
-            p.drawRightString(W - 35, y - 92, "MATERIAL PROPRIO")
+            p.drawString(x + 10, y - 120, "⚠️ MATERIAL PRÓPRIO")
         else:
-            p.setFillColorRGB(*COR_VERDE)
-            p.setFont("Helvetica-Bold", 8)
-            p.drawRightString(W - 35, y - 92, "MATERIAL ESCOLA")
-
-        # Observações
-        if aula.relatorio_treino:
-            p.setFillColorRGB(*COR_CINZA)
             p.setFont("Helvetica-Oblique", 8)
-            p.drawString(36, y - 116, f"Obs: {aula.relatorio_treino[:90]}")
+            p.drawString(x + 10, y - 120, "Material da Escola")
 
-        y -= altura + 10
+        y -= (altura_card + 15)
 
     p.save()
     return response
@@ -949,7 +1141,6 @@ def manejo_em_massa(request):
     empresa = getattr(request, "empresa", request.user.perfil.empresa)
     hoje = timezone.localdate()
 
-    # Prazos configuráveis
     try:
         from .models import ConfigPrazoManejo
         cfg = ConfigPrazoManejo.objects.get(empresa=request.empresa)
@@ -984,7 +1175,6 @@ def manejo_em_massa(request):
             messages.success(request, f"Vermifugacao registrada em {cavalos_alvos.count()} animal(is).")
 
         elif procedimento == "Ferrageamento":
-            # Ferrageamento sempre inclui casqueamento
             cavalos_alvos.update(
                 ultimo_ferrageamento=data_aplicacao,
                 ultimo_casqueamento=data_aplicacao,
@@ -1043,10 +1233,9 @@ def manejo_em_massa(request):
         .order_by('nome')
     )
 
-    em_alerta    = sorted([c for c in todos if _cavalo_em_alerta(c)],  key=_score_criticidade, reverse=True)
-    em_dia       = sorted([c for c in todos if not _cavalo_em_alerta(c)], key=lambda c: c.nome)
+    em_alerta = sorted([c for c in todos if _cavalo_em_alerta(c)],     key=_score_criticidade, reverse=True)
+    em_dia    = sorted([c for c in todos if not _cavalo_em_alerta(c)], key=lambda c: c.nome)
 
-    # Etiquetas de atraso por cavalo
     def _etiquetas(c):
         tags = []
         if c.status_saude != 'Saudável':
@@ -1055,7 +1244,6 @@ def manejo_em_massa(request):
         if d > 0: tags.append({'label': f'Vacina +{d}d', 'cor': 'red' if d > 30 else 'amber'})
         d = _dias_atraso(c.ultimo_vermifugo) - prazo_vermifugo
         if d > 0: tags.append({'label': f'Vermifugo +{d}d', 'cor': 'red' if d > 30 else 'amber'})
-        # Ferrado: etiqueta de ferrageamento; descalco: etiqueta de casqueamento
         if c.usa_ferradura == 'SIM':
             d = _dias_atraso(c.ultimo_ferrageamento) - prazo_ferrageamento
             if d > 0: tags.append({'label': f'Ferrageamento +{d}d', 'cor': 'red' if d > 30 else 'amber'})
@@ -1068,15 +1256,15 @@ def manejo_em_massa(request):
         c.etiquetas_manejo = _etiquetas(c)
 
     context = {
-        "brand_name":        "Gate 4",
-        "empresa":           empresa,
-        "hoje":              hoje,
-        "cavalos_alerta":    em_alerta,
-        "cavalos_em_dia":    em_dia,
-        "prazo_vacina":      prazo_vacina,
-        "prazo_vermifugo":   prazo_vermifugo,
-        "prazo_ferrageamento": prazo_ferrageamento,
-        "prazo_casqueamento":  prazo_casqueamento,
+        "brand_name":            BRAND_NAME,
+        "empresa":               empresa,
+        "hoje":                  hoje,
+        "cavalos_alerta":        em_alerta,
+        "cavalos_em_dia":        em_dia,
+        "prazo_vacina":          prazo_vacina,
+        "prazo_vermifugo":       prazo_vermifugo,
+        "prazo_ferrageamento":   prazo_ferrageamento,
+        "prazo_casqueamento":    prazo_casqueamento,
     }
     return render(request, "gateagora/manejo_em_massa.html", context)
 
@@ -1085,41 +1273,40 @@ def manejo_em_massa(request):
 
 @login_required
 def dar_baixa_fatura(request, fatura_id):
-    # Pega a empresa do usuário logado
-    empresa = getattr(request, "empresa", request.user.perfil.empresa)
-    fatura = get_object_or_404(Fatura, id=fatura_id, empresa=request.empresa)
-    
-    fatura.status = 'PAGO'
-    fatura.data_pagamento = timezone.now().date()
-    fatura.save()
-    
-    messages.success(request, f"Recebimento de {fatura.aluno.nome} registrado com sucesso!")
+    empresa = request.user.perfil.empresa
+    fatura = get_object_or_404(Fatura, id=fatura_id, empresa=empresa)
+
+    if fatura.status != 'PAGO':
+        v_total = fatura.total  # sempre correto, pois os itens vêm do concluir_aula
+
+        fatura.status = 'PAGO'
+        fatura.data_pagamento = timezone.localdate()
+        fatura.save()
+
+        MovimentacaoFinanceira.objects.create(
+            empresa=empresa,
+            tipo='Receita',
+            valor=v_total,
+            data=timezone.localdate(),
+            descricao=f"Recebimento Fatura #{fatura.id} — {fatura.aluno.nome}"
+        )
+        messages.success(request, f"Baixa realizada! R$ {v_total:,.2f} para {fatura.aluno.nome}.")
+    else:
+        messages.info(request, "Esta fatura já consta como paga.")
+
     return redirect('dashboard')
 
-# ── Marcar como saudável ───────────────────────────────────────────────────────────
-# Este endpoint é para marcar um cavalo como saudável, removendo alertas de saúde.
-@login_required
-def marcar_saudavel(request, cavalo_id):
-    empresa = request.empresa
-    # Adicionamos 'empresa=empresa' na busca para isolar o acesso
-    cavalo = get_object_or_404(Cavalo, id=cavalo_id, empresa=empresa)
-    cavalo.status_saude = 'Saudável'
-    cavalo.save()
-    messages.success(request, f"{cavalo.nome} marcado como Saudável.")
-    return redirect('dashboard')
 
-# ══════════════════════════════════════════════════════════════════════════════
-# Configuração de prazos
-# ══════════════════════════════════════════════════════════════════════════════
+# ── Configuração de prazos ────────────────────────────────────────────────────
+
 @login_required
 def config_prazos_manejo(request):
     from .models import ConfigPrazoManejo
-    
-    # 1. SEGURANÇA: Usa a empresa vinda do middleware
+
     empresa = request.empresa
     if not empresa and not request.user.is_superuser:
         return redirect('/admin/')
-    cfg, _ = ConfigPrazoManejo.objects.get_or_create(empresa=request.empresa,)
+    cfg, _ = ConfigPrazoManejo.objects.get_or_create(empresa=request.empresa)
 
     if request.method == "POST":
         cfg.prazo_vacina        = int(request.POST.get("prazo_vacina",        365))
@@ -1131,15 +1318,15 @@ def config_prazos_manejo(request):
         return redirect("dashboard")
 
     context = {
-        "brand_name": "Gate 4",
+        "brand_name": BRAND_NAME,
         "empresa":    empresa,
         "cfg":        cfg,
     }
     return render(request, "gateagora/config_prazos_manejo.html", context)
 
-# ══════════════════════════════════════════════════════════════════════════════
-# Marcar cavalo como saudável (só libera se tudo em dia)
-# ══════════════════════════════════════════════════════════════════════════════
+
+# ── Marcar cavalo como saudável ───────────────────────────────────────────────
+
 @login_required
 def marcar_saudavel(request, cavalo_id):
     from .models import Cavalo, ConfigPrazoManejo
@@ -1165,9 +1352,8 @@ def marcar_saudavel(request, cavalo_id):
         return (hoje - data_campo).days > prazo
 
     pendencias = []
-    if _atraso(cavalo.ultima_vacina,    prazo_vacina):    pendencias.append("Vacinacao")
-    if _atraso(cavalo.ultimo_vermifugo, prazo_vermifugo): pendencias.append("Vermifugacao")
-    # Ferrado: checa ferrageamento; descalco: checa so casqueamento
+    if _atraso(cavalo.ultima_vacina,    prazo_vacina):    pendencias.append("Vacinação")
+    if _atraso(cavalo.ultimo_vermifugo, prazo_vermifugo): pendencias.append("Vermifugação")
     if cavalo.usa_ferradura == 'SIM':
         if _atraso(cavalo.ultimo_ferrageamento, prazo_ferrageamento):
             pendencias.append("Ferrageamento")
@@ -1185,5 +1371,148 @@ def marcar_saudavel(request, cavalo_id):
         cavalo.status_saude = 'Saudável'
         cavalo.save(update_fields=['status_saude'])
         messages.success(request, f"{cavalo.nome} marcado como Saudável! Todos os procedimentos estão em dia.")
+
+    return redirect("dashboard")
+
+
+# ── Movimentação de Estoque ───────────────────────────────────────────────────
+
+@login_required
+def movimentar_estoque(request):
+    """Registra uma entrada ou saída pontual de estoque."""
+    empresa = getattr(request, "empresa", request.user.perfil.empresa)
+
+    if request.method == "POST":
+        item_id    = request.POST.get("item_id")
+        tipo       = request.POST.get("tipo")          # entrada | saida
+        quantidade = request.POST.get("quantidade")
+        observacao = request.POST.get("observacao", "")
+
+        try:
+            item = get_object_or_404(ItemEstoque, id=item_id, empresa=empresa)
+            qtd  = Decimal(str(quantidade))
+
+            if qtd <= 0:
+                messages.warning(request, "Quantidade deve ser maior que zero.")
+                return redirect("dashboard")
+
+            if tipo == "entrada":
+                item.quantidade_atual += int(qtd)
+            elif tipo == "saida":
+                item.quantidade_atual = max(0, item.quantidade_atual - int(qtd))
+            else:
+                messages.warning(request, "Tipo de movimentação inválido.")
+                return redirect("dashboard")
+
+            item.save(update_fields=["quantidade_atual"])
+
+            MovimentacaoEstoque.objects.create(
+                empresa=empresa,
+                item=item,
+                tipo=tipo,
+                quantidade=qtd,
+                observacao=observacao,
+            )
+
+            messages.success(
+                request,
+                f"{'Entrada' if tipo == 'entrada' else 'Saída'} de {qtd} {item.unidade} "
+                f"registrada para {item.nome}."
+            )
+
+        except Exception as e:
+            messages.error(request, f"Erro ao registrar movimentação: {e}")
+
+    return redirect("dashboard")
+
+
+# ── Fechamento do Dia (Estoque) ───────────────────────────────────────────────
+
+@login_required
+def fechamento_dia(request):
+    """Exibe a tela de fechamento diário de estoque."""
+    empresa = getattr(request, "empresa", request.user.perfil.empresa)
+    hoje    = timezone.localdate()
+
+    itens_qs = ItemEstoque.objects.filter(empresa=empresa)
+
+    # Marca quais itens já tiveram ajuste hoje
+    itens_com_ajuste_hoje = set(
+        MovimentacaoEstoque.objects
+        .filter(empresa=empresa, data=hoje, tipo="ajuste")
+        .values_list("item_id", flat=True)
+    )
+
+    for item in itens_qs:
+        item.ajuste_feito_hoje = item.id in itens_com_ajuste_hoje
+
+    # Ordenação inteligente:
+    # 1º — itens COM consumo_diario, ordenados por dias_restantes (menor = mais urgente)
+    # 2º — itens SEM consumo_diario, ordenados por nome
+    def _sort_key(item):
+        dias = item.dias_restantes  # None se sem consumo_diario
+        if dias is not None:
+            return (0, dias, item.nome)  # grupo urgente, quanto menos dias = mais cedo
+        return (1, 9999, item.nome)      # grupo sem consumo, por nome
+
+    itens = sorted(itens_qs, key=_sort_key)
+
+    context = {
+        "brand_name": BRAND_NAME,
+        "empresa":    empresa,
+        "hoje":       hoje,
+        "itens":      itens,
+    }
+    return render(request, "gateagora/fechamento_estoque.html", context)
+
+
+@login_required
+def salvar_fechamento(request):
+    """Salva os ajustes do fechamento diário de estoque."""
+    empresa = getattr(request, "empresa", request.user.perfil.empresa)
+    hoje    = timezone.localdate()
+
+    if request.method != "POST":
+        return redirect("fechamento_dia")
+
+    itens = ItemEstoque.objects.filter(empresa=empresa)
+    ajustes_salvos = 0
+
+    for item in itens:
+        campo_qtd = request.POST.get(f"qtd_{item.id}")
+        campo_obs = request.POST.get(f"obs_{item.id}", "")
+
+        if campo_qtd is None:
+            continue
+
+        try:
+            nova_qtd = int(campo_qtd)
+        except (ValueError, TypeError):
+            continue
+
+        diferenca = nova_qtd - item.quantidade_atual
+
+        if diferenca == 0:
+            continue
+
+        MovimentacaoEstoque.objects.create(
+            empresa=empresa,
+            item=item,
+            tipo="ajuste",
+            quantidade=abs(diferenca),
+            observacao=campo_obs or (
+                f"Fechamento do dia: {'consumo extra' if diferenca < 0 else 'reposição'}"
+            ),
+            data=hoje,
+        )
+
+        item.quantidade_atual = nova_qtd
+        item.save(update_fields=["quantidade_atual"])
+        ajustes_salvos += 1
+
+    if ajustes_salvos:
+        messages.success(request, f"Fechamento do dia salvo! {ajustes_salvos} item(ns) ajustado(s).")
+    else:
+        messages.info(request, "Nenhuma alteração registrada no fechamento de hoje.")
 
     return redirect("dashboard")
