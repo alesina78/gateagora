@@ -2,17 +2,30 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-  <link rel="icon" type="image/png" sizes="32x32" href="{% static 'img/favicon-32x32.png' %}">
-  <link rel="icon" type="image/png" sizes="16x16" href="{% static 'img/favicon-16x16.png' %}"> 
-  <link rel="apple-touch-icon" sizes="180x180" href="{% static 'img/apple-touch-icon.png' %}">
-  <link rel="manifest" href="{% static 'img/site.webmanifest' %}">
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
   <title>{{ brand_name|default:"Gate 4" }} - {{ empresa.nome|default:"Enterprise" }}</title>
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" sizes="32x32" href="{% static 'images/favicon-32x32.png' %}">
+  <link rel="icon" type="image/png" sizes="16x16" href="{% static 'images/favicon-16x16.png' %}">
+  <link rel="shortcut icon" href="{% static 'images/favicon-32x32.png' %}">
+
+  <!-- Ícones mobile -->
+  <link rel="apple-touch-icon" sizes="180x180" href="{% static 'images/apple-icon-180x180.png' %}">
+  <link rel="icon" type="image/png" sizes="192x192" href="{% static 'images/android-icon-192x192.png' %}">
+
+  <meta name="theme-color" content="#ffffff">
+
+  <!-- Scripts -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Estilos -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"/>
   <link rel="stylesheet" href="{% static 'css/themes.css' %}">
+
   <style>
       @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
 
@@ -300,7 +313,7 @@
         <i class="fa-solid fa-gears mr-1"></i> Admin
       </a>
 
-      <<button onclick="toggleHorseTheme()" 
+      <button onclick="toggleHorseTheme()" 
               id="btn-tema"
               style="background:var(--card-alt); border:1px solid var(--border); color:var(--text-main);
                     padding:0.4rem 0.85rem; border-radius:0.75rem; display:flex; align-items:center; gap:0.4rem;
