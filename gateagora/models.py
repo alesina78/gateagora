@@ -32,6 +32,7 @@ class Perfil(models.Model):
         VETERINARIO = 'Veterinario', 'Veterinário'
         TRATADOR = 'Tratador', 'Tratador'
         PROFESSOR = 'Professor', 'Professor'
+        ALUNO      = 'Aluno',      'Aluno/Cliente'  # novo
 
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     empresa = models.ForeignKey(

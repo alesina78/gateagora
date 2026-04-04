@@ -176,10 +176,15 @@ class PerfilAdmin(ModelAdmin):
         return qs
 
     def has_add_permission(self, request):
-        return True
+        return request.user.is_superuser
 
     def has_change_permission(self, request, obj=None):
-        return True
+        if request.user.is_superuser:
+            return True
+        # gestor só edita o próprio perfil
+        if obj and obj.user == request.user:
+            return True
+        return False
 
 
 @admin.register(Aluno)

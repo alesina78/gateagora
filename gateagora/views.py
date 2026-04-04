@@ -23,6 +23,9 @@ from reportlab.lib.colors import HexColor, black, grey
 from django.utils import timezone
 from django.utils.timezone import localtime
 
+from reportlab.lib import colors
+from urllib.parse import quote  # se precisar
+
 from .models import (
     Empresa, Perfil, Aluno, Cavalo, Baia, Piquete, Aula,
     ItemEstoque, MovimentacaoFinanceira, MovimentacaoEstoque, DocumentoCavalo,
@@ -52,6 +55,16 @@ class CustomLoginView(LoginView):
     template_name = "gateagora/login.html"
     form_class    = AuthenticationForm
     redirect_authenticated_user = True
+
+    def get_success_url(self):
+        user = self.request.user
+        # Se o perfil for Aluno, vai direto para encilhamento
+        try:
+            if user.perfil.cargo == 'Aluno':
+                return '/encilhamento/'
+        except:
+            pass
+        return '/'  # demais cargos vão para o dashboard
 
 def get_pdf_colors(request):
     # SEMPRE LIGHT PARA ECONOMIZAR TINTA
@@ -1033,7 +1046,10 @@ def encilhamento_whatsapp(request):
 
 @login_required
 def encilhamento_pdf(request):
-    empresa = getattr(request, "empresa", request.user.perfil.empresa)
+    empresa = getattr(request, "empresa", None)
+    if not empresa and hasattr(request.user, 'perfil'):
+        empresa = request.user.perfil.empresa
+
     data_str = request.GET.get('data', '')
     aulas, data_selecionada = _get_aulas_encilhamento(empresa, data_str)
 
@@ -1042,93 +1058,102 @@ def encilhamento_pdf(request):
     response['Content-Disposition'] = f'attachment; filename="Encilhamento_{data_fmt}.pdf"'
 
     p = canvas.Canvas(response, pagesize=A4)
-    W, H = A4
+    width, height = A4
 
-    COR_PRIMARIA    = (0.07, 0.45, 0.87)
-    COR_TEXTO       = (0.1,  0.1,  0.1)
-    COR_SUBTITULO   = (0.4,  0.4,  0.4)
-    COR_BORDA_CARD  = (0.85, 0.85, 0.85)
-    COR_FUNDO_CARD  = (0.98, 0.98, 1.0)
+    # Cores ajustadas
+    COR_PRIMARIA = colors.HexColor('#4F46E5')     # indigo-600
+    COR_TEXTO    = colors.HexColor('#1F2937')     # texto principal (quase preto)
+    COR_SUB      = colors.HexColor('#374151')     # cinza mais escuro (melhor que o anterior)
+    COR_BORDA    = colors.HexColor('#CBD5E1')
 
-    def desenhar_cabecalho(p, pag):
-        p.setStrokeColorRGB(0.9, 0.9, 0.9)
-        p.line(40, H - 60, W - 40, H - 60)
+    def desenhar_cabecalho(pagina):
+        p.setStrokeColor(colors.lightgrey)
+        p.line(45, height - 55, width - 45, height - 55)
+
         p.setFont("Helvetica-Bold", 18)
-        p.setFillColorRGB(*COR_PRIMARIA)
-        p.drawString(40, H - 45, f"📋 Guia de Encilhamento")
+        p.setFillColor(COR_PRIMARIA)
+        p.drawString(45, height - 38, "Guia de Encilhamento")
+
         p.setFont("Helvetica", 10)
-        p.setFillColorRGB(*COR_SUBTITULO)
-        p.drawRightString(W - 40, H - 35, empresa.nome.upper())
-        p.drawRightString(W - 40, H - 50, f"Data: {data_selecionada.strftime('%d/%m/%Y')} | Pág. {pag}")
-        return H - 85
+        p.setFillColor(COR_SUB)
+        p.drawRightString(width - 45, height - 38, empresa.nome.upper())
+        p.drawRightString(width - 45, height - 50, f"Data: {data_selecionada.strftime('%d/%m/%Y')}  •  Página {pagina}")
 
-    margem_x = 40
-    espacamento_colunas = 20
-    largura_card = (W - (margem_x * 2) - espacamento_colunas) / 2
+        return height - 80
 
-    colunas_x = [margem_x, margem_x + largura_card + espacamento_colunas]
-    col_atual = 0
-    y = desenhar_cabecalho(p, 1)
+    y = desenhar_cabecalho(1)
     pagina = 1
+    margem_x = 45
+    largura = width - 2 * margem_x
 
     for aula in aulas:
-        hora_local = timezone.localtime(aula.data_hora).strftime('%H:%M')
+        if y < 140:
+            p.showPage()
+            pagina += 1
+            y = desenhar_cabecalho(pagina)
+
+        hora = timezone.localtime(aula.data_hora).strftime('%H:%M')
         c = aula.cavalo
 
-        if y < 160:
-            if col_atual == 0:
-                col_atual = 1
-                y = H - 85
-            else:
-                p.showPage()
-                pagina += 1
-                y = desenhar_cabecalho(p, pagina)
-                col_atual = 0
+        local = f"Baia {c.baia.numero}" if getattr(c, 'baia', None) else \
+                (f"Piquete: {c.piquete.nome}" if getattr(c, 'piquete', None) else "N/D")
 
-        x = colunas_x[col_atual]
-        altura_card = 135
+        material = "⚠️ MATERIAL PRÓPRIO" if getattr(c, 'material_proprio', False) else "Material da Escola"
 
-        p.setStrokeColorRGB(*COR_BORDA_CARD)
-        p.setFillColorRGB(*COR_FUNDO_CARD)
-        p.roundRect(x, y - altura_card, largura_card, altura_card, 10, fill=True, stroke=True)
+        # Card compacto
+        card_altura = 118
 
-        p.setFillColorRGB(*COR_PRIMARIA)
-        p.roundRect(x, y - 30, largura_card, 30, 10, fill=True, stroke=False)
-        p.rect(x, y - 30, largura_card, 15, fill=True, stroke=False)
+        p.setStrokeColor(COR_BORDA)
+        p.setFillColor(colors.white)
+        p.roundRect(margem_x, y - card_altura, largura, card_altura, 8, fill=1, stroke=1)
 
-        p.setFillColorRGB(1, 1, 1)
+        # Borda azul apenas no horário (sem fundo)
+        p.setStrokeColor(COR_PRIMARIA)
+        p.setLineWidth(2)
+        p.roundRect(margem_x + 6, y - 32, 78, 24, 6, fill=0, stroke=1)
+
+        # Hora
+        p.setFillColor(COR_PRIMARIA)
+        p.setFont("Helvetica-Bold", 13)
+        p.drawString(margem_x + 14, y - 22, f"{hora}")
+
+        # Aluno (mais escuro)
+        p.setFillColor(COR_TEXTO)
         p.setFont("Helvetica-Bold", 12)
-        p.drawString(x + 10, y - 20, f"🕒 {hora_local}")
+        nome_aluno = aula.aluno.nome[:38] + "..." if len(aula.aluno.nome) > 38 else aula.aluno.nome
+        p.drawString(margem_x + 15, y - 48, f"👤 {nome_aluno.upper()}")
 
-        p.setFillColorRGB(*COR_TEXTO)
-        p.setFont("Helvetica-Bold", 11)
-        nome_aluno = (aula.aluno.nome[:22] + '..') if len(aula.aluno.nome) > 22 else aula.aluno.nome
-        p.drawString(x + 10, y - 45, f"👤 {nome_aluno.upper()}")
+        # Cavalo
+        p.setFillColor(COR_TEXTO)
+        p.setFont("Helvetica-Bold", 10.5)
+        p.drawString(margem_x + 15, y - 65, f"🐴 {c.nome}")
 
-        p.setFont("Helvetica-Bold", 10)
-        p.drawString(x + 10, y - 62, f"🐴 {c.nome}")
+        # Demais informações - agora com cinza mais escuro
+        p.setFillColor(COR_SUB)          # ← Aqui está o ajuste principal
+        p.setFont("Helvetica", 9.8)
 
-        p.setFont("Helvetica", 9)
-        p.setFillColorRGB(*COR_SUBTITULO)
+        p.drawString(margem_x + 15, y - 79, f"📍 {local} • {aula.get_local_display() or 'Picadeiro'}")
+        p.drawString(margem_x + 15, y - 92, f"🪑 Sela:     {getattr(c, 'tipo_sela', 'Padrão')}")
+        p.drawString(margem_x + 15, y - 104, f"🔗 Cabeçada: {getattr(c, 'tipo_cabecada', 'Padrão')}")
 
-        sela     = getattr(c, 'tipo_sela',    None) or 'Padrão'
-        cabecada = getattr(c, 'tipo_cabecada', None) or 'Padrão'
-
-        p.drawString(x + 10, y - 78,  f"🪑 Sela: {sela}")
-        p.drawString(x + 10, y - 90,  f"🎭 Cabeçada: {cabecada}")
-
-        local = f"Baia {c.baia.numero}" if c.baia else (f"Piquete {c.piquete.nome}" if c.piquete else "N/D")
-        p.drawString(x + 10, y - 105, f"📍 Local: {local}")
-
-        if c.material_proprio:
-            p.setFillColorRGB(0.8, 0, 0)
-            p.setFont("Helvetica-Bold", 8)
-            p.drawString(x + 10, y - 120, "⚠️ MATERIAL PRÓPRIO")
+        # Material
+        if getattr(c, 'material_proprio', False):
+            p.setFillColor(colors.red)
+            p.setFont("Helvetica-Bold", 9)
+            p.drawString(margem_x + 15, y - 117, material)
         else:
-            p.setFont("Helvetica-Oblique", 8)
-            p.drawString(x + 10, y - 120, "Material da Escola")
+            p.setFillColor(COR_SUB)
+            p.setFont("Helvetica", 9)
+            p.drawString(margem_x + 15, y - 117, material)
 
-        y -= (altura_card + 15)
+        # Observação (se houver)
+        if getattr(aula, 'relatorio_treino', None):
+            p.setFillColor(colors.darkgreen)
+            p.setFont("Helvetica", 9)
+            obs = aula.relatorio_treino[:85] + "..." if len(aula.relatorio_treino) > 85 else aula.relatorio_treino
+            p.drawString(margem_x + 15, y - 130, f"📝 {obs}")
+
+        y -= (card_altura + 12)
 
     p.save()
     return response
