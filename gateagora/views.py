@@ -1166,14 +1166,14 @@ def manejo_em_massa(request):
     empresa = getattr(request, "empresa", request.user.perfil.empresa)
     hoje = timezone.localdate()
 
+    # Carrega prazos configurados
     try:
-        from .models import ConfigPrazoManejo
-        cfg = ConfigPrazoManejo.objects.get(empresa=request.empresa)
+        cfg = ConfigPrazoManejo.objects.get(empresa=empresa)
         prazo_vacina        = cfg.prazo_vacina
         prazo_vermifugo     = cfg.prazo_vermifugo
         prazo_ferrageamento = cfg.prazo_ferrageamento
         prazo_casqueamento  = cfg.prazo_casqueamento
-    except Exception:
+    except ConfigPrazoManejo.DoesNotExist:
         prazo_vacina        = 365
         prazo_vermifugo     = 90
         prazo_ferrageamento = 60
@@ -1184,112 +1184,131 @@ def manejo_em_massa(request):
         data_aplicacao = request.POST.get("data")
         ids_cavalos    = request.POST.getlist("cavalos_selecionados")
 
-        from .models import Cavalo
         cavalos_alvos = Cavalo.objects.filter(id__in=ids_cavalos, empresa=empresa)
 
         if not data_aplicacao or not cavalos_alvos.exists():
             messages.warning(request, "Selecione ao menos um cavalo, procedimento e data.")
-            return redirect("dashboard")
+            return redirect("manejo_em_massa")
 
         if procedimento == "Vacinacao":
             cavalos_alvos.update(ultima_vacina=data_aplicacao)
-            messages.success(request, f"Vacinacao registrada em {cavalos_alvos.count()} animal(is).")
+            messages.success(request, f"✅ Vacinação registrada em {cavalos_alvos.count()} cavalo(s).")
 
         elif procedimento == "Vermifugacao":
             cavalos_alvos.update(ultimo_vermifugo=data_aplicacao)
-            messages.success(request, f"Vermifugacao registrada em {cavalos_alvos.count()} animal(is).")
+            messages.success(request, f"✅ Vermifugação registrada em {cavalos_alvos.count()} cavalo(s).")
 
         elif procedimento == "Ferrageamento":
             cavalos_alvos.update(
                 ultimo_ferrageamento=data_aplicacao,
-                ultimo_casqueamento=data_aplicacao,
+                ultimo_casqueamento=data_aplicacao,   # ferrador normalmente faz os dois
             )
-            messages.success(
-                request,
-                f"Ferrageamento (+ Casqueamento) registrado em {cavalos_alvos.count()} animal(is)."
-            )
+            messages.success(request, f"✅ Ferrageamento registrado em {cavalos_alvos.count()} cavalo(s).")
 
         elif procedimento == "Casqueamento":
             cavalos_alvos.update(ultimo_casqueamento=data_aplicacao)
-            messages.success(request, f"Casqueamento registrado em {cavalos_alvos.count()} animal(is).")
+            messages.success(request, f"✅ Casqueamento registrado em {cavalos_alvos.count()} cavalo(s).")
 
-        else:
-            messages.warning(request, "Procedimento invalido.")
+        return redirect("manejo_em_massa")
 
-        return redirect("dashboard")
-
-    # GET — monta lista
-    from .models import Cavalo
-
+    # ====================== LÓGICA CORRIGIDA DE ALERTA ======================
     def _dias_atraso(data_campo):
         if not data_campo:
             return 9999
         return (hoje - data_campo).days
 
-    def _score_criticidade(c):
-        atraso_casco = (
-            max(0, _dias_atraso(c.ultimo_ferrageamento) - prazo_ferrageamento)
-            if c.usa_ferradura == 'SIM'
-            else max(0, _dias_atraso(c.ultimo_casqueamento) - prazo_casqueamento)
-        )
-        atrasos = [
-            max(0, _dias_atraso(c.ultima_vacina)    - prazo_vacina),
-            max(0, _dias_atraso(c.ultimo_vermifugo) - prazo_vermifugo),
-            atraso_casco,
-        ]
-        bonus_status = 10000 if c.status_saude != 'Saudável' else 0
-        return sum(atrasos) + bonus_status
-
     def _cavalo_em_alerta(c):
+        """Regra inteligente baseada no tipo de ferradura"""
         if c.status_saude != 'Saudável':
             return True
+
+        # Vacina e Vermifugo são obrigatórios para todos
         if _dias_atraso(c.ultima_vacina)    > prazo_vacina:    return True
         if _dias_atraso(c.ultimo_vermifugo) > prazo_vermifugo: return True
+
+        # Lógica principal: depende se usa ferradura ou não
         if c.usa_ferradura == 'SIM':
-            if _dias_atraso(c.ultimo_ferrageamento) > prazo_ferrageamento: return True
+            # Deve ter ferrageamento em dia
+            if _dias_atraso(c.ultimo_ferrageamento) > prazo_ferrageamento:
+                return True
         else:
-            if _dias_atraso(c.ultimo_casqueamento) > prazo_casqueamento: return True
+            # Não usa ferradura → só precisa de casqueamento em dia
+            if _dias_atraso(c.ultimo_casqueamento) > prazo_casqueamento:
+                return True
+
         return False
 
-    todos = list(
+    def _score_criticidade(c):
+        """Quanto maior = mais grave (aparece primeiro)"""
+        atraso_vac = max(0, _dias_atraso(c.ultima_vacina)    - prazo_vacina)
+        atraso_ver = max(0, _dias_atraso(c.ultimo_vermifugo) - prazo_vermifugo)
+
+        if c.usa_ferradura == 'SIM':
+            atraso_ferr = max(0, _dias_atraso(c.ultimo_ferrageamento) - prazo_ferrageamento)
+            atraso_casc = 0
+        else:
+            atraso_ferr = 0
+            atraso_casc = max(0, _dias_atraso(c.ultimo_casqueamento) - prazo_casqueamento)
+
+        bonus_status = 100000 if c.status_saude != 'Saudável' else 0
+
+        # Vacina pesa mais, depois vermifugo, depois ferrageamento/casqueamento
+        return (bonus_status +
+                atraso_vac * 1000 +
+                atraso_ver * 800 +
+                atraso_ferr * 600 +
+                atraso_casc * 500)
+
+    # Busca todos os cavalos
+    todos_cavalos = list(
         Cavalo.objects
         .filter(empresa=empresa)
-        .select_related('proprietario', 'baia')
+        .select_related('proprietario')
         .order_by('nome')
     )
 
-    em_alerta = sorted([c for c in todos if _cavalo_em_alerta(c)],     key=_score_criticidade, reverse=True)
-    em_dia    = sorted([c for c in todos if not _cavalo_em_alerta(c)], key=lambda c: c.nome)
+    cavalos_alerta = sorted(
+        [c for c in todos_cavalos if _cavalo_em_alerta(c)],
+        key=_score_criticidade,
+        reverse=True
+    )
 
-    def _etiquetas(c):
+    cavalos_em_dia = sorted(
+        [c for c in todos_cavalos if not _cavalo_em_alerta(c)],
+        key=lambda c: c.nome
+    )
+
+    # Etiquetas visuais melhoradas
+    def _etiquetas_manejo(c):
         tags = []
         if c.status_saude != 'Saudável':
-            tags.append({'label': f'Status: {c.status_saude}', 'cor': 'red'})
+            tags.append({'label': f'Status: {c.status_saude}', 'tipo': 'stat'})
+
         d = _dias_atraso(c.ultima_vacina) - prazo_vacina
-        if d > 0: tags.append({'label': f'Vacina +{d}d', 'cor': 'red' if d > 30 else 'amber'})
+        if d > 0: tags.append({'label': f'Vac +{d}d', 'tipo': 'vac'})
+
         d = _dias_atraso(c.ultimo_vermifugo) - prazo_vermifugo
-        if d > 0: tags.append({'label': f'Vermifugo +{d}d', 'cor': 'red' if d > 30 else 'amber'})
+        if d > 0: tags.append({'label': f'Verm +{d}d', 'tipo': 'verm'})
+
         if c.usa_ferradura == 'SIM':
             d = _dias_atraso(c.ultimo_ferrageamento) - prazo_ferrageamento
-            if d > 0: tags.append({'label': f'Ferrageamento +{d}d', 'cor': 'red' if d > 30 else 'amber'})
+            if d > 0: tags.append({'label': f'Fer +{d}d', 'tipo': 'ferr'})
         else:
             d = _dias_atraso(c.ultimo_casqueamento) - prazo_casqueamento
-            if d > 0: tags.append({'label': f'Casqueamento +{d}d', 'cor': 'red' if d > 30 else 'amber'})
+            if d > 0: tags.append({'label': f'Csc +{d}d', 'tipo': 'casc'})
+
         return tags
 
-    for c in em_alerta + em_dia:
-        c.etiquetas_manejo = _etiquetas(c)
+    for c in cavalos_alerta + cavalos_em_dia:
+        c.etiquetas_manejo = _etiquetas_manejo(c)
 
     context = {
-        "brand_name":            BRAND_NAME,
-        "empresa":               empresa,
-        "hoje":                  hoje,
-        "cavalos_alerta":        em_alerta,
-        "cavalos_em_dia":        em_dia,
-        "prazo_vacina":          prazo_vacina,
-        "prazo_vermifugo":       prazo_vermifugo,
-        "prazo_ferrageamento":   prazo_ferrageamento,
-        "prazo_casqueamento":    prazo_casqueamento,
+        "brand_name": BRAND_NAME,
+        "empresa": empresa,
+        "hoje": hoje,
+        "cavalos_alerta": cavalos_alerta,
+        "cavalos_em_dia": cavalos_em_dia,
+        # Removemos os prazos do context (não são mais necessários no template)
     }
     return render(request, "gateagora/manejo_em_massa.html", context)
 
