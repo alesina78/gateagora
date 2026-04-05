@@ -126,3 +126,10 @@ footer {
               border-color 0.3s ease, 
               color 0.3s ease;
 }
+/* Corrige texto de selects no admin Django (tema claro) */
+[data-theme="tordilho"] select option,
+[data-theme="tordilho"] .selector-chosen select,
+[data-theme="tordilho"] .selector-available select {
+    color: #111111 !important;
+    background-color: #faf8f5 !important;
+}

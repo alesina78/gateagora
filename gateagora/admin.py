@@ -12,6 +12,7 @@ from django.http import HttpResponseRedirect
 from datetime import date
 
 from unfold.admin import ModelAdmin, TabularInline
+from unfold.admin import ModelAdmin as UnfoldModelAdmin
 from unfold.decorators import display
 
 from .models import (
@@ -150,10 +151,22 @@ class EmpresaAdmin(ModelAdmin):
     search_fields = ["nome", "cnpj"]
     prepopulated_fields = {"slug": ("nome",)}
 
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        if request.user.is_superuser:
+            return qs
+        return qs.none()
+
     def has_add_permission(self, request):
         return request.user.is_superuser
 
     def has_change_permission(self, request, obj=None):
+        return request.user.is_superuser
+
+    def has_delete_permission(self, request, obj=None):
+        return request.user.is_superuser
+
+    def has_view_permission(self, request, obj=None):
         return request.user.is_superuser
 
 
@@ -417,7 +430,7 @@ class PerfilInline(TabularInline):
     extra = 0
 
 
-class CustomUserAdmin(BaseUserAdmin):
+class CustomUserAdmin(BaseUserAdmin, UnfoldModelAdmin):
     inlines = [PerfilInline]
     list_display = ("username", "email", "get_telefone", "is_active", "is_staff")
     search_fields = ("username", "email")
