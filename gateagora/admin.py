@@ -153,8 +153,14 @@ class EmpresaAdmin(ModelAdmin):
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
+
         if request.user.is_superuser:
-            return qs
+            return qs  # vê tudo
+
+        # usuário normal
+        if hasattr(request.user, "perfil") and request.user.perfil.empresa:
+            return qs.filter(id=request.user.perfil.empresa.id)
+
         return qs.none()
 
     def has_add_permission(self, request):
