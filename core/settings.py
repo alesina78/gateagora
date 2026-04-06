@@ -37,7 +37,6 @@ CSRF_TRUSTED_ORIGINS = (
 INSTALLED_APPS = [
     'unfold',
     'gateagora',
-
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -83,7 +82,8 @@ ROOT_URLCONF = 'core.urls'          # ← ESSA LINHA ESTAVA FALTANDO!
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'],
+        # Garanta que o BASE_DIR / 'templates' está aqui
+        'DIRS': [BASE_DIR / 'templates'], 
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -91,7 +91,6 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                'django.template.context_processors.media',
             ],
         },
     },

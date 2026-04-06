@@ -1161,55 +1161,142 @@ def encilhamento_pdf(request):
 
 # ── Manejo em Massa ───────────────────────────────────────────────────────────
 
+
+
+
 @login_required
 def manejo_em_massa(request):
-    empresa = getattr(request, "empresa", request.user.perfil.empresa)
-    hoje = timezone.localdate()
+    empresa = request.user.perfil.empresa
+    hoje = date.today()
 
-    # Carrega prazos configurados
+    # ── PRazos configurados (da Base) ─────────────────────────
     try:
         cfg = ConfigPrazoManejo.objects.get(empresa=empresa)
-        prazo_vacina        = cfg.prazo_vacina
-        prazo_vermifugo     = cfg.prazo_vermifugo
+        prazo_vacina = cfg.prazo_vacina
+        prazo_vermifugo = cfg.prazo_vermifugo
         prazo_ferrageamento = cfg.prazo_ferrageamento
-        prazo_casqueamento  = cfg.prazo_casqueamento
+        prazo_casqueamento = cfg.prazo_casqueamento
     except ConfigPrazoManejo.DoesNotExist:
-        prazo_vacina        = 365
-        prazo_vermifugo     = 90
+        prazo_vacina = 365
+        prazo_vermifugo = 90
         prazo_ferrageamento = 60
-        prazo_casqueamento  = 60
+        prazo_casqueamento = 60
 
+    # ── POST: ALTERAÇÃO NA BASE ──────────────────────────────
     if request.method == "POST":
-        procedimento   = request.POST.get("procedimento")
-        data_aplicacao = request.POST.get("data")
-        ids_cavalos    = request.POST.getlist("cavalos_selecionados")
+        procedimento = request.POST.get("procedimento")
+        data = request.POST.get("data")
+        cavalos_ids = request.POST.getlist("cavalos_selecionados")
 
-        cavalos_alvos = Cavalo.objects.filter(id__in=ids_cavalos, empresa=empresa)
+        if procedimento and data and cavalos_ids:
+            data = date.fromisoformat(data)
 
-        if not data_aplicacao or not cavalos_alvos.exists():
-            messages.warning(request, "Selecione ao menos um cavalo, procedimento e data.")
-            return redirect("manejo_em_massa")
-
-        if procedimento == "Vacinacao":
-            cavalos_alvos.update(ultima_vacina=data_aplicacao)
-            messages.success(request, f"✅ Vacinação registrada em {cavalos_alvos.count()} cavalo(s).")
-
-        elif procedimento == "Vermifugacao":
-            cavalos_alvos.update(ultimo_vermifugo=data_aplicacao)
-            messages.success(request, f"✅ Vermifugação registrada em {cavalos_alvos.count()} cavalo(s).")
-
-        elif procedimento == "Ferrageamento":
-            cavalos_alvos.update(
-                ultimo_ferrageamento=data_aplicacao,
-                ultimo_casqueamento=data_aplicacao,   # ferrador normalmente faz os dois
+            cavalos = Cavalo.objects.filter(
+                empresa=empresa,
+                id__in=cavalos_ids
             )
-            messages.success(request, f"✅ Ferrageamento registrado em {cavalos_alvos.count()} cavalo(s).")
 
-        elif procedimento == "Casqueamento":
-            cavalos_alvos.update(ultimo_casqueamento=data_aplicacao)
-            messages.success(request, f"✅ Casqueamento registrado em {cavalos_alvos.count()} cavalo(s).")
+            for cavalo in cavalos:
+                if procedimento == "Vacinacao":
+                    tipo = "VACINA"
+                    titulo = "Vacinação"
+                    validade = data
+
+                elif procedimento == "Vermifugacao":
+                    tipo = "EXAME"
+                    titulo = "Vermifugação"
+                    validade = data
+
+                elif procedimento == "Ferrageamento":
+                    tipo = "OUTRO"
+                    titulo = "Ferrageamento"
+                    validade = data
+
+                elif procedimento == "Casqueamento":
+                    tipo = "OUTRO"
+                    titulo = "Casqueamento"
+                    validade = data
+                else:
+                    continue
+
+                # BASE = DocumentoCavalo
+                doc = (
+                    DocumentoCavalo.objects
+                    .filter(cavalo=cavalo, tipo=tipo)
+                    .order_by("-data_validade")
+                    .first()
+                )
+
+                if doc:
+                    doc.titulo = titulo
+                    doc.data_validade = validade
+                    doc.save(update_fields=["titulo", "data_validade"])
+                else:
+                    DocumentoCavalo.objects.create(
+                        cavalo=cavalo,
+                        tipo=tipo,
+                        titulo=titulo,
+                        data_validade=validade,
+                    )
+
+            messages.success(
+                request,
+                f"Manejo aplicado para {cavalos.count()} cavalo(s)."
+            )
+        else:
+            messages.warning(request, "Dados incompletos.")
 
         return redirect("manejo_em_massa")
+
+    # ── CONSULTA: TUDO VEM DA BASE ───────────────────────────
+
+    cavalos = Cavalo.objects.filter(empresa=empresa).select_related("proprietario")
+
+    cavalos_status = []
+
+    for cavalo in cavalos:
+        atraso_maximo = 0
+
+        def atraso(tipo, prazo):
+            doc = (
+                DocumentoCavalo.objects
+                .filter(cavalo=cavalo, tipo=tipo)
+                .order_by("-data_validade")
+                .first()
+            )
+            if not doc:
+                return 9999
+            return max(0, (hoje - doc.data_validade).days - prazo)
+
+        atrasos = [
+            atraso("VACINA", prazo_vacina),
+            atraso("EXAME", prazo_vermifugo),
+        ]
+
+        if cavalo.usa_ferradura == "SIM":
+            atrasos.append(atraso("OUTRO", prazo_ferrageamento))
+        else:
+            atrasos.append(atraso("OUTRO", prazo_casqueamento))
+
+        atraso_maximo = max(atrasos)
+        vencido = atraso_maximo > 0
+
+        cavalos_status.append({
+            "obj": cavalo,
+            "vencido": vencido,
+            "atraso_maximo": atraso_maximo,
+        })
+
+    # Ordena: mais atrasado primeiro
+    cavalos_status.sort(key=lambda x: x["atraso_maximo"], reverse=True)
+
+    return render(request, "gateagora/manejo_em_massa.html", {
+        "empresa": empresa,
+        "hoje": hoje,
+        "cavalos_status": cavalos_status,
+    })
+
+
 
     # ====================== LÓGICA CORRIGIDA DE ALERTA ======================
     def _dias_atraso(data_campo):
@@ -1299,16 +1386,34 @@ def manejo_em_massa(request):
 
         return tags
 
-    for c in cavalos_alerta + cavalos_em_dia:
-        c.etiquetas_manejo = _etiquetas_manejo(c)
+    # Monta lista unificada no formato que o template espera
+    cavalos_status = []
+    for c in em_alerta:
+        c.etiquetas_manejo = _etiquetas(c)
+        cavalos_status.append({
+            'obj':           c,
+            'vencido':       True,
+            'atraso_maximo': _score_criticidade(c),
+        })
+    for c in em_dia:
+        c.etiquetas_manejo = _etiquetas(c)
+        cavalos_status.append({
+            'obj':           c,
+            'vencido':       False,
+            'atraso_maximo': 0,
+        })
 
     context = {
-        "brand_name": BRAND_NAME,
-        "empresa": empresa,
-        "hoje": hoje,
-        "cavalos_alerta": cavalos_alerta,
-        "cavalos_em_dia": cavalos_em_dia,
-        # Removemos os prazos do context (não são mais necessários no template)
+        "brand_name":          BRAND_NAME,
+        "empresa":             empresa,
+        "hoje":                hoje,
+        "cavalos_status":      cavalos_status,
+        "cavalos_alerta":      em_alerta,
+        "cavalos_em_dia":      em_dia,
+        "prazo_vacina":        prazo_vacina,
+        "prazo_vermifugo":     prazo_vermifugo,
+        "prazo_ferrageamento": prazo_ferrageamento,
+        "prazo_casqueamento":  prazo_casqueamento,
     }
     return render(request, "gateagora/manejo_em_massa.html", context)
 
@@ -1378,8 +1483,9 @@ def marcar_saudavel(request, cavalo_id):
     cavalo  = get_object_or_404(Cavalo, id=cavalo_id, empresa=empresa)
     hoje    = timezone.localdate()
 
+    # Carrega prazos configurados
     try:
-        cfg = ConfigPrazoManejo.objects.get(empresa=request.empresa)
+        cfg = ConfigPrazoManejo.objects.get(empresa=empresa)
         prazo_vacina        = cfg.prazo_vacina
         prazo_vermifugo     = cfg.prazo_vermifugo
         prazo_ferrageamento = cfg.prazo_ferrageamento
@@ -1390,31 +1496,43 @@ def marcar_saudavel(request, cavalo_id):
         prazo_ferrageamento = 60
         prazo_casqueamento  = 60
 
-    def _atraso(data_campo, prazo):
+    def _dias_atraso(data_campo):
         if not data_campo:
-            return True
-        return (hoje - data_campo).days > prazo
+            return 9999
+        return (hoje - data_campo).days
 
+    # Verifica pendências respeitando se o cavalo usa ferradura ou não
     pendencias = []
-    if _atraso(cavalo.ultima_vacina,    prazo_vacina):    pendencias.append("Vacinação")
-    if _atraso(cavalo.ultimo_vermifugo, prazo_vermifugo): pendencias.append("Vermifugação")
+
+    # Vacina e Vermifugo são obrigatórios para todos
+    if _dias_atraso(cavalo.ultima_vacina) > prazo_vacina:
+        pendencias.append("Vacinação")
+
+    if _dias_atraso(cavalo.ultimo_vermifugo) > prazo_vermifugo:
+        pendencias.append("Vermifugação")
+
+    # Ferrageamento ou Casqueamento dependendo do tipo
     if cavalo.usa_ferradura == 'SIM':
-        if _atraso(cavalo.ultimo_ferrageamento, prazo_ferrageamento):
+        if _dias_atraso(cavalo.ultimo_ferrageamento) > prazo_ferrageamento:
             pendencias.append("Ferrageamento")
     else:
-        if _atraso(cavalo.ultimo_casqueamento, prazo_casqueamento):
+        if _dias_atraso(cavalo.ultimo_casqueamento) > prazo_casqueamento:
             pendencias.append("Casqueamento")
 
     if pendencias:
         messages.warning(
             request,
             f"{cavalo.nome} ainda tem pendências: {', '.join(pendencias)}. "
-            f"Registre os procedimentos em Manejo em Massa antes de marcar como Saudável."
+            f"Registre os procedimentos em 'Manejo em Massa' antes de marcar como Saudável."
         )
     else:
+        # Só marca como Saudável se realmente não houver pendências
         cavalo.status_saude = 'Saudável'
         cavalo.save(update_fields=['status_saude'])
-        messages.success(request, f"{cavalo.nome} marcado como Saudável! Todos os procedimentos estão em dia.")
+        messages.success(
+            request, 
+            f"✅ {cavalo.nome} marcado como Saudável! Todos os procedimentos estão em dia."
+        )
 
     return redirect("dashboard")
 

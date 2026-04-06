@@ -205,9 +205,10 @@ class Cavalo(models.Model):
 
     # SAÚDE
     ultima_vacina = models.DateField(null=True, blank=True)
-    ultimo_ferrageamento = models.DateField(null=True, blank=True)
     ultimo_vermifugo = models.DateField(null=True, blank=True)
+    ultimo_ferrageamento = models.DateField(null=True, blank=True)
     ultimo_casqueamento = models.DateField(null=True, blank=True)
+
     usa_ferradura = models.CharField(
         max_length=3,
         choices=USA_FERRADURA_CHOICES,

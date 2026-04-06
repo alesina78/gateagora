@@ -21,23 +21,20 @@
     .badge-verm { background: rgba(245,158,11,0.18); color: #f59e0b; }
     .badge-ferr { background: rgba(239,68,68,0.18);  color: #f87171; }
     .badge-casc { background: rgba(16,185,129,0.18); color: #34d399; }
-    .badge-stat { background: rgba(249,115,22,0.18); color: #fb923c; }
-    .badge-ok   { background: rgba(16,185,129,0.10); color: #6ee7b7; }
 
-    .cavalo-row { display: flex; align-items: center; gap: 0.9rem; padding: 0.75rem 1.25rem; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.12s; }
+    .cavalo-row { display: flex; align-items: center; gap: 0.9rem; padding: 0.75rem 1.25rem; border-bottom: 1px solid var(--border); cursor: pointer; transition: all 0.12s; }
     .cavalo-row:last-child { border-bottom: none; }
     .cavalo-row:hover { background: var(--card-alt); }
-    .cavalo-row.selecionado { background: rgba(99,102,241,0.08); }
-    .cavalo-row.em-alerta { border-left: 3px solid rgba(239,68,68,0.5); background: rgba(239,68,68,0.03); }
-    .cavalo-row.em-alerta:hover { background: rgba(239,68,68,0.07); }
-    .cavalo-row.em-alerta.selecionado { background: rgba(99,102,241,0.09); border-left-color: #6366f1; }
+    .cavalo-row.selecionado { background: rgba(99,102,241,0.08) !important; }
+    
+    .em-alerta { border-left: 4px solid #ef4444 !important; background: rgba(239,68,68,0.02); }
+    .em-alerta:hover { background: rgba(239,68,68,0.05); }
 
-    input[type="checkbox"] { width: 1rem; height: 1rem; accent-color: #4f46e5; cursor: pointer; flex-shrink: 0; }
-
-    .secao-div { padding: 0.45rem 1.25rem; font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; display: flex; align-items: center; gap: 0.5rem; }
+    input[type="checkbox"] { width: 1.1rem; height: 1.1rem; accent-color: #4f46e5; cursor: pointer; flex-shrink: 0; position: relative; z-index: 10; }
     .legenda-item { display: flex; align-items: center; gap: 0.3rem; font-size: 0.6rem; color: var(--text-muted); }
   </style>
 </head>
+
 <script>
 (function () {
   const saved = localStorage.getItem("gate-theme") || "zaino";
@@ -48,6 +45,7 @@
   }
 })();
 </script>
+
 <body>
 
 <nav class="glass sticky top-0 z-50 px-5 py-3">
@@ -107,8 +105,6 @@
     </div>
 
     <div class="card overflow-hidden mb-5">
-
-      <!-- Controles -->
       <div class="px-5 py-3 flex items-center justify-between" style="border-bottom:1px solid var(--border)">
         <span class="text-xs font-bold" style="color:var(--text-muted)">
           <span id="contador" class="font-mono" style="color:var(--indigo-text)">0</span> selecionado(s)
@@ -120,83 +116,53 @@
         </div>
       </div>
 
-      <!-- Legenda -->
       <div class="px-5 py-2 flex flex-wrap gap-3" style="border-bottom:1px solid var(--border);background:var(--card-alt)">
         <span class="legenda-item"><span class="badge-proc badge-vac">Vac</span> Vacinação</span>
         <span class="legenda-item"><span class="badge-proc badge-verm">Vrm</span> Vermífugo</span>
         <span class="legenda-item"><span class="badge-proc badge-ferr">Fer</span> Ferrageamento</span>
         <span class="legenda-item"><span class="badge-proc badge-casc">Csc</span> Casqueamento</span>
-        <span class="legenda-item"><span class="badge-proc badge-stat">Sts</span> Status Saúde</span>
       </div>
 
-      <!-- EM ALERTA -->
-      {% if cavalos_alerta %}
-      <div class="secao-div" style="background:rgba(239,68,68,0.05);border-bottom:1px solid var(--border);color:#f87171;">
-        <i class="fa-solid fa-triangle-exclamation text-[9px]"></i>
-        {{ cavalos_alerta|length }} em alerta
-        <span class="ml-auto font-mono text-[9px]" style="color:var(--text-muted)">borda vermelha = pendência</span>
-      </div>
-      {% for cavalo in cavalos_alerta %}
-      <div class="cavalo-row em-alerta alerta-row" onclick="toggleCavalo({{ cavalo.id }})">
-        <input type="checkbox" name="cavalos_selecionados" value="{{ cavalo.id }}" id="chk_{{ cavalo.id }}" onclick="event.stopPropagation();atualizarContador()">
-        <div class="flex-1 min-w-0">
-          <div class="flex items-center gap-1.5 flex-wrap">
-            <label for="chk_{{ cavalo.id }}" class="text-sm font-bold cursor-pointer" style="color:var(--text-strong)" onclick="event.stopPropagation()">{{ cavalo.nome }}</label>
-            {% if cavalo.proprietario %}<span class="text-[9px]" style="color:var(--text-muted)">{{ cavalo.proprietario.nome }}</span>{% endif %}
-          </div>
-          <div class="flex flex-wrap gap-1 mt-1.5">
-            {% for tag in cavalo.etiquetas_manejo %}
-              {% if "Vac" in tag.label or "vac" in tag.label %}<span class="badge-proc badge-vac" title="{{ tag.label }}">Vac</span>
-              {% elif "erm" in tag.label %}<span class="badge-proc badge-verm" title="{{ tag.label }}">Vrm</span>
-              {% elif "err" in tag.label or "Fer" in tag.label %}<span class="badge-proc badge-ferr" title="{{ tag.label }}">Fer</span>
-              {% elif "asq" in tag.label or "Csc" in tag.label %}<span class="badge-proc badge-casc" title="{{ tag.label }}">Csc</span>
-              {% elif "Status" in tag.label %}<span class="badge-proc badge-stat" title="{{ tag.label }}">Sts</span>
-              {% else %}<span class="badge-proc badge-stat" title="{{ tag.label }}">!</span>{% endif %}
-            {% endfor %}
-          </div>
-        </div>
-        <div class="hidden sm:grid grid-cols-2 gap-x-3 text-[8px] text-right font-mono flex-shrink-0" style="color:var(--text-muted)">
-          <span>Vac</span><span style="color:var(--text-main)">{{ cavalo.ultima_vacina|date:"d/m/y"|default:"—" }}</span>
-          <span>Vrm</span><span style="color:var(--text-main)">{{ cavalo.ultimo_vermifugo|date:"d/m/y"|default:"—" }}</span>
-          <span>Fer</span><span style="color:var(--text-main)">{{ cavalo.ultimo_ferrageamento|date:"d/m/y"|default:"—" }}</span>
-          <span>Csc</span><span style="color:var(--text-main)">{{ cavalo.ultimo_casqueamento|date:"d/m/y"|default:"—" }}</span>
-        </div>
-      </div>
-      {% endfor %}
-      {% endif %}
+      <div id="listaCavalos">
+        {% for item in cavalos_status %}
+          {% with cavalo=item.obj %}
+          <div class="cavalo-row {% if item.vencido %}em-alerta alerta-row{% else %}em-dia-row{% endif %}" 
+               onclick="toggleCavalo({{ cavalo.id }})">
+            
+            <input type="checkbox" name="cavalos_selecionados" value="{{ cavalo.id }}" id="chk_{{ cavalo.id }}" onclick="event.stopPropagation();atualizarContador(this)">
+            
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center justify-between gap-1.5 flex-wrap">
+                <div class="flex items-center gap-2">
+                  <label for="chk_{{ cavalo.id }}" class="text-sm font-bold cursor-pointer" style="color:var(--text-strong)" onclick="event.stopPropagation()">{{ cavalo.nome }}</label>
+                  {% if cavalo.proprietario %}<span class="text-[9px]" style="color:var(--text-muted)">{{ cavalo.proprietario.nome }}</span>{% endif %}
+                </div>
+                
+                {% if item.vencido %}
+                  <span class="text-[8px] font-black bg-red-500 text-white px-1.5 py-0.5 rounded uppercase">
+                    {% if item.atraso_maximo >= 9000 %}PENDENTE{% else %}ATRASADO {{ item.atraso_maximo }}D{% endif %}
+                  </span>
+                {% else %}
+                  <span class="text-[8px] font-bold text-emerald-500 uppercase">✓ em dia</span>
+                {% endif %}
+              </div>
 
-      <!-- EM DIA -->
-      {% if cavalos_em_dia %}
-      <div class="secao-div" style="background:rgba(16,185,129,0.04);border-top:1px solid var(--border);border-bottom:1px solid var(--border);color:#34d399;">
-        <i class="fa-solid fa-circle-check text-[9px]"></i>
-        {{ cavalos_em_dia|length }} em dia — ordem alfabética
-      </div>
-      {% for cavalo in cavalos_em_dia %}
-      <div class="cavalo-row em-dia-row" onclick="toggleCavalo({{ cavalo.id }})">
-        <input type="checkbox" name="cavalos_selecionados" value="{{ cavalo.id }}" id="chk_{{ cavalo.id }}" onclick="event.stopPropagation();atualizarContador()">
-        <div class="flex-1 min-w-0">
-          <div class="flex items-center gap-1.5">
-            <label for="chk_{{ cavalo.id }}" class="text-sm font-bold cursor-pointer" style="color:var(--text-strong)" onclick="event.stopPropagation()">{{ cavalo.nome }}</label>
-            {% if cavalo.proprietario %}<span class="text-[9px]" style="color:var(--text-muted)">{{ cavalo.proprietario.nome }}</span>{% endif %}
+              <div class="grid grid-cols-4 gap-x-2 mt-1.5 text-[8px] font-mono" style="color:var(--text-muted)">
+                <div class="flex flex-col"><span>VAC</span><span style="color:var(--text-main)">{{ cavalo.ultima_vacina|date:"d/m"|default:"—" }}</span></div>
+                <div class="flex flex-col"><span>VRM</span><span style="color:var(--text-main)">{{ cavalo.ultimo_vermifugo|date:"d/m"|default:"—" }}</span></div>
+                <div class="flex flex-col"><span>FER</span><span style="color:var(--text-main)">{{ cavalo.ultimo_ferrageamento|date:"d/m"|default:"—" }}</span></div>
+                <div class="flex flex-col"><span>CSC</span><span style="color:var(--text-main)">{{ cavalo.ultimo_casqueamento|date:"d/m"|default:"—" }}</span></div>
+              </div>
+            </div>
           </div>
-          <span class="badge-proc badge-ok mt-1 inline-block">✓ em dia</span>
-        </div>
-        <div class="hidden sm:grid grid-cols-2 gap-x-3 text-[8px] text-right font-mono flex-shrink-0" style="color:var(--text-muted)">
-          <span>Vac</span><span style="color:var(--text-main)">{{ cavalo.ultima_vacina|date:"d/m/y"|default:"—" }}</span>
-          <span>Vrm</span><span style="color:var(--text-main)">{{ cavalo.ultimo_vermifugo|date:"d/m/y"|default:"—" }}</span>
-          <span>Fer</span><span style="color:var(--text-main)">{{ cavalo.ultimo_ferrageamento|date:"d/m/y"|default:"—" }}</span>
-          <span>Csc</span><span style="color:var(--text-main)">{{ cavalo.ultimo_casqueamento|date:"d/m/y"|default:"—" }}</span>
-        </div>
+          {% endwith %}
+        {% empty %}
+          <div class="flex flex-col items-center py-14" style="color:var(--text-muted)">
+            <i class="fa-solid fa-horse text-4xl mb-3 opacity-20"></i>
+            <p class="text-xs font-bold uppercase">Nenhum cavalo cadastrado.</p>
+          </div>
+        {% endfor %}
       </div>
-      {% endfor %}
-      {% endif %}
-
-      {% if not cavalos_alerta and not cavalos_em_dia %}
-      <div class="flex flex-col items-center py-14" style="color:var(--text-muted)">
-        <i class="fa-solid fa-horse text-4xl mb-3 opacity-20"></i>
-        <p class="text-xs font-bold uppercase">Nenhum cavalo cadastrado.</p>
-      </div>
-      {% endif %}
     </div>
 
     <button type="submit" class="w-full py-4 rounded-xl font-bold uppercase text-sm flex items-center justify-center gap-2" style="background:#4f46e5;color:#fff;">
@@ -206,37 +172,46 @@
 </div>
 
 <script>
-  function atualizarContador() {
+  function atualizarContador(el) {
+    if(el) {
+       el.closest('.cavalo-row').classList.toggle('selecionado', el.checked);
+    }
     document.getElementById('contador').textContent =
       document.querySelectorAll('input[name="cavalos_selecionados"]:checked').length;
   }
+
   function toggleCavalo(id) {
     const chk = document.getElementById('chk_' + id);
     chk.checked = !chk.checked;
     chk.closest('.cavalo-row').classList.toggle('selecionado', chk.checked);
     atualizarContador();
   }
+
   function selecionarTodos() {
     document.querySelectorAll('input[name="cavalos_selecionados"]').forEach(c => {
-      c.checked = true; c.closest('.cavalo-row').classList.add('selecionado');
+      c.checked = true; 
+      c.closest('.cavalo-row').classList.add('selecionado');
     });
     atualizarContador();
   }
+
   function selecionarGrupo(g) {
-    document.querySelectorAll(g === 'alerta' ? '.alerta-row' : '.em-dia-row').forEach(row => {
-      const c = row.querySelector('input'); c.checked = true; row.classList.add('selecionado');
+    const seletor = g === 'alerta' ? '.alerta-row' : '.em-dia-row';
+    document.querySelectorAll(seletor).forEach(row => {
+      const c = row.querySelector('input');
+      c.checked = true;
+      row.classList.add('selecionado');
     });
     atualizarContador();
   }
+
   function limparSelecao() {
     document.querySelectorAll('input[name="cavalos_selecionados"]').forEach(c => {
-      c.checked = false; c.closest('.cavalo-row').classList.remove('selecionado');
+      c.checked = false; 
+      c.closest('.cavalo-row').classList.remove('selecionado');
     });
     atualizarContador();
   }
-  document.querySelectorAll('input[name="cavalos_selecionados"]').forEach(c =>
-    c.addEventListener('change', () => c.closest('.cavalo-row').classList.toggle('selecionado', c.checked))
-  );
 </script>
 </body>
 </html>
