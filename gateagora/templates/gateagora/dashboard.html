@@ -53,6 +53,11 @@
       0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); }
       50%      { box-shadow: 0 0 0 6px rgba(239,68,68,0.2); }
     }
+    .pulse-amber { animation: pulse-amber 3s infinite; }
+    @keyframes pulse-amber {
+      0%,100% { box-shadow: 0 0 0 0 rgba(245,158,11,0); }
+      50%      { box-shadow: 0 0 0 5px rgba(245,158,11,0.18); }
+    }
 
     /* Alertas expansíveis */
     .alerta-painel { max-height:0; overflow:hidden; transition:max-height 0.4s ease; }
@@ -262,9 +267,16 @@
   </div>
 
   <!-- ── 3. Alertas Expansíveis ───────────────────────────── -->
+  <!--
+    Cada painel tem papel ÚNICO:
+    [1] Saúde & Vet   → cavalos com procedimentos vencidos ou status ruim — AÇÃO IMEDIATA
+    [2] Docs Legais   → GTA, Mormo, Anemia, documentos com prazo formal — CONFORMIDADE
+    [3] Estoque       → só itens em alerta + botão Fechar Dia embutido — OPERACIONAL
+  -->
   <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
 
-    <!-- 3a. Saúde & Vet -->
+    <!-- ── 3a. SAÚDE & VET ──────────────────────────────────────────────────── -->
+    <!-- Foco: cavalos que precisam de ação agora (procedimento vencido ou status ruim) -->
     <div class="card-static overflow-hidden {% if stats.cavalos_alerta > 0 %}pulse-red{% endif %}"
          style="border-left:3px solid #ef4444;">
       <button onclick="toggleAlerta('saude')" class="w-full px-4 py-3.5 flex items-center justify-between" style="background:transparent;">
@@ -275,11 +287,22 @@
           <div class="text-left">
             <p class="text-[11px] font-bold uppercase tracking-wide" style="color:var(--red-text)">Saúde & Vet</p>
             <p class="text-[10px]" style="color:var(--text-main)">
-              {{ stats.cavalos_alerta }} em atenção
+              {% if stats.cavalos_alerta > 0 %}
+                <span style="color:var(--red-text)">{{ stats.cavalos_alerta }} com pendência</span>
+              {% else %}
+                <span style="color:var(--emerald-text)">Todos em dia ✓</span>
+              {% endif %}
             </p>
           </div>
         </div>
-        <i id="icon-saude" class="fa-solid fa-chevron-down text-[10px] transition-transform duration-300" style="color:var(--text-muted)"></i>
+        <div class="flex items-center gap-2">
+          <a href="{% url 'manejo_em_massa' %}" onclick="event.stopPropagation()"
+             class="text-[8px] font-bold uppercase px-2 py-1 rounded-lg"
+             style="background:rgba(99,102,241,0.12);color:var(--indigo-text);">
+            <i class="fa-solid fa-syringe mr-0.5"></i>Manejo
+          </a>
+          <i id="icon-saude" class="fa-solid fa-chevron-down text-[10px] transition-transform duration-300" style="color:var(--text-muted)"></i>
+        </div>
       </button>
       <div id="painel-saude" class="alerta-painel custom-scrollbar">
         <div class="px-4 pb-2 flex flex-wrap gap-2">
@@ -297,7 +320,7 @@
                 <p class="text-[11px] font-bold" style="color:var(--red-text)">{{ cavalo.nome }}</p>
                 <p class="text-[9px]" style="color:var(--text-muted)">{{ cavalo.proprietario.nome }}</p>
               </div>
-              <div class="flex flex-wrap gap-1">
+              <div class="flex flex-wrap gap-1 justify-end">
                 {% for d in cavalo.alerta_detalhes %}
                   {% if "Vac" in d or "Vacina" in d %}<span class="badge-proc badge-vac" title="{{ d }}">Vac</span>
                   {% elif "Verm" in d %}<span class="badge-proc badge-verm" title="{{ d }}">Vrm</span>
@@ -308,19 +331,19 @@
                 {% endfor %}
               </div>
             </div>
-            <div class="flex gap-1.5 mt-2">
-              <a href="{% url 'manejo_em_massa' %}"
-                 class="flex-1 text-center text-[8px] font-bold uppercase py-1.5 rounded-lg"
-                 style="background:rgba(99,102,241,0.12);color:var(--indigo-text);">
-                <i class="fa-solid fa-syringe mr-0.5"></i> Manejo
-              </a>
-              <a href="{% url 'marcar_saudavel' cavalo.id %}"
-                 onclick="return confirm('Marcar {{ cavalo.nome }} como Saudável?')"
-                 class="flex-1 text-center text-[8px] font-bold uppercase py-1.5 rounded-lg"
-                 style="background:rgba(16,185,129,0.12);color:var(--emerald-text);">
-                <i class="fa-solid fa-circle-check mr-0.5"></i> Saudável
-              </a>
+            <!-- Datas dos últimos procedimentos -->
+            <div class="grid grid-cols-4 gap-x-2 mt-1.5 mb-2 text-[8px] font-mono" style="color:var(--text-muted)">
+              <div><span>VAC</span><br><span style="color:var(--text-main)">{{ cavalo.ultima_vacina|date:"d/m"|default:"—" }}</span></div>
+              <div><span>VRM</span><br><span style="color:var(--text-main)">{{ cavalo.ultimo_vermifugo|date:"d/m"|default:"—" }}</span></div>
+              <div><span>FER</span><br><span style="color:var(--text-main)">{{ cavalo.ultimo_ferrageamento|date:"d/m"|default:"—" }}</span></div>
+              <div><span>CSC</span><br><span style="color:var(--text-main)">{{ cavalo.ultimo_casqueamento|date:"d/m"|default:"—" }}</span></div>
             </div>
+            <a href="{% url 'marcar_saudavel' cavalo.id %}"
+               onclick="return confirm('Marcar {{ cavalo.nome }} como Saudável? (só funciona se tudo estiver em dia)')"
+               class="block text-center text-[8px] font-bold uppercase py-1.5 rounded-lg"
+               style="background:rgba(16,185,129,0.12);color:var(--emerald-text);">
+              <i class="fa-solid fa-circle-check mr-0.5"></i> Confirmar Saudável
+            </a>
           </div>
           {% empty %}
           <p class="text-[10px] text-center py-6 font-bold" style="color:var(--text-muted)">Todos saudáveis! 🐎</p>
@@ -329,118 +352,166 @@
       </div>
     </div>
 
-    <!-- 3b. Vencimentos -->
-    <div class="card-static overflow-hidden" style="border-left:3px solid #f59e0b;">
+    <!-- ── 3b. DOCUMENTOS LEGAIS ─────────────────────────────────────────────── -->
+    <!-- Foco: GTA, Exames (Mormo/Anemia), documentos formais com validade -->
+    <!-- NÃO inclui procedimentos de manejo — esses ficam em Saúde & Vet       -->
+    <div class="card-static overflow-hidden {% if docs_vencendo %}pulse-amber{% endif %}"
+         style="border-left:3px solid #f59e0b;">
       <button onclick="toggleAlerta('venc')" class="w-full px-4 py-3.5 flex items-center justify-between" style="background:transparent;">
         <div class="flex items-center gap-3">
           <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background:var(--amber-soft)">
-            <i class="fa-solid fa-file-medical" style="color:var(--amber-text)"></i>
+            <i class="fa-solid fa-file-shield" style="color:var(--amber-text)"></i>
           </div>
           <div class="text-left">
-            <p class="text-[11px] font-bold uppercase tracking-wide" style="color:var(--amber-text)"> Documentos & Vacinas</p>
-            <p class="text-[10px]" style="color:var(--text-main)">{{ docs_vencendo|length }} documentos próximos</p>
+            <p class="text-[11px] font-bold uppercase tracking-wide" style="color:var(--amber-text)">Documentos Legais</p>
+            <p class="text-[10px]" style="color:var(--text-main)">
+              {% if docs_vencendo %}
+                <span style="color:var(--amber-text)">{{ docs_vencendo|length }} doc(s) no prazo</span>
+              {% else %}
+                <span style="color:var(--emerald-text)">Tudo regular ✓</span>
+              {% endif %}
+            </p>
           </div>
         </div>
-        <i id="icon-venc" class="fa-solid fa-chevron-down text-[10px] transition-transform duration-300" style="color:var(--text-muted)"></i>
+        <div class="flex items-center gap-2">
+          <a href="/admin/gateagora/documentocavalo/add/" onclick="event.stopPropagation()"
+             class="text-[8px] font-bold uppercase px-2 py-1 rounded-lg"
+             style="background:rgba(245,158,11,0.12);color:var(--amber-text);">
+            <i class="fa-solid fa-plus mr-0.5"></i>Novo
+          </a>
+          <i id="icon-venc" class="fa-solid fa-chevron-down text-[10px] transition-transform duration-300" style="color:var(--text-muted)"></i>
+        </div>
       </button>
       <div id="painel-venc" class="alerta-painel custom-scrollbar">
         <div class="px-4 pb-4 space-y-2">
           {% for doc in docs_vencendo %}
-          <div class="flex items-center justify-between rounded-lg px-3 py-2"
-               style="background:var(--amber-soft);border:1px solid rgba(245,158,11,0.15)">
-            <div>
-              <p class="text-[11px] font-bold" style="color:var(--amber-text)">{{ doc.cavalo.nome }} — {{ doc.titulo }}</p>
-              <p class="text-[9px]" style="color:var(--text-muted)">{{ doc.get_tipo_display }}</p>
+          <div class="rounded-lg px-3 py-2.5"
+               style="background:{% if doc.vencido %}rgba(239,68,68,0.07){% else %}var(--amber-soft){% endif %};
+                      border:1px solid {% if doc.vencido %}rgba(239,68,68,0.25){% else %}rgba(245,158,11,0.2){% endif %}">
+            <div class="flex items-start justify-between gap-2">
+              <div class="flex-1 min-w-0">
+                <p class="text-[11px] font-bold truncate"
+                   style="color:{% if doc.vencido %}var(--red-text){% else %}var(--amber-text){% endif %}">
+                  {{ doc.cavalo.nome }}
+                </p>
+                <p class="text-[9px] font-bold" style="color:var(--text-muted)">
+                  {{ doc.get_tipo_display }} · {{ doc.titulo }}
+                </p>
+              </div>
+              <div class="text-right flex-shrink-0">
+                <p class="text-[10px] font-bold font-mono"
+                   style="color:{% if doc.vencido %}var(--red-text){% else %}var(--amber-text){% endif %}">
+                  {{ doc.data_validade|date:"d/m/Y" }}
+                </p>
+                <p class="text-[8px]" style="color:var(--text-muted)">
+                  {% if doc.vencido %}vencido{% else %}válido até{% endif %}
+                </p>
+              </div>
             </div>
-            <p class="text-[10px] font-bold font-mono" style="color:var(--amber-text)">{{ doc.data_validade|date:"d/m" }}</p>
+            {% if doc.arquivo %}
+            <a href="{{ doc.arquivo.url }}" target="_blank"
+               class="mt-1.5 block text-center text-[8px] font-bold uppercase py-1 rounded"
+               style="background:rgba(245,158,11,0.1);color:var(--amber-text);border:1px dashed rgba(245,158,11,0.3);">
+              <i class="fa-solid fa-file-arrow-down mr-1"></i> Ver Arquivo
+            </a>
+            {% endif %}
           </div>
           {% empty %}
-          <p class="text-[10px] text-center py-3 font-bold" style="color:var(--text-muted)">Nenhum vencimento próximo.</p>
+          <div class="py-8 text-center">
+            <i class="fa-solid fa-shield-halved text-3xl opacity-20 mb-2" style="color:var(--amber-text)"></i>
+            <p class="text-[10px] font-bold uppercase" style="color:var(--text-muted)">Nenhum documento vencendo</p>
+            <p class="text-[9px] mt-1" style="color:var(--text-muted)">GTA, Mormo, Anemia — todos regulares</p>
+          </div>
           {% endfor %}
         </div>
       </div>
     </div>
 
-    <!-- 3c. Estoque — todos os itens, ordenados do mais crítico ao melhor -->
-    <div class="card-static overflow-hidden" style="border-left:3px solid #10b981;">
+    <!-- ── 3c. ESTOQUE & FECHAMENTO ──────────────────────────────────────────── -->
+    <!-- Foco: só itens em alerta (crítico/atenção) + botão fechar dia embutido  -->
+    <!-- Itens OK ficam na página de fechamento — não polui o dashboard          -->
+    <div class="card-static overflow-hidden {% if estoque_baixo_count > 0 %}pulse-emerald{% endif %}"
+         style="border-left:3px solid #10b981;">
       <button onclick="toggleAlerta('estq')" class="w-full px-4 py-3.5 flex items-center justify-between" style="background:transparent;">
         <div class="flex items-center gap-3">
           <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background:var(--emerald-soft)">
             <i class="fa-solid fa-boxes-stacked" style="color:var(--emerald-text)"></i>
           </div>
           <div class="text-left">
-            <p class="text-[11px] font-bold uppercase tracking-wide" style="color:var(--emerald-text)">Estoque Geral</p>
+            <p class="text-[11px] font-bold uppercase tracking-wide" style="color:var(--emerald-text)">Estoque</p>
             <p class="text-[10px]" style="color:var(--text-main)">
               {% if estoque_baixo_count > 0 %}
-                <span style="color:var(--red-text)">{{ estoque_baixo_count }} em atenção</span>
+                <span style="color:var(--red-text)">{{ estoque_baixo_count }} em alerta</span>
+                <span style="color:var(--text-muted)"> · {{ estoque_todos|length }} itens</span>
               {% else %}
-                <span style="color:var(--emerald-text)">Status Normalizado</span>
+                <span style="color:var(--emerald-text)">Normalizado ✓</span>
+                <span style="color:var(--text-muted)"> · {{ estoque_todos|length }} itens</span>
               {% endif %}
-              · {{ estoque_todos|length }} itens total
             </p>
           </div>
         </div>
-        <i id="icon-estq" class="fa-solid fa-chevron-down text-[10px] transition-transform duration-300" style="color:var(--text-muted)"></i>
+        <div class="flex items-center gap-2">
+          <a href="{% url 'fechamento_dia' %}" onclick="event.stopPropagation()"
+             class="text-[8px] font-bold uppercase px-2 py-1 rounded-lg"
+             style="background:rgba(139,92,246,0.12);color:#8b5cf6;">
+            <i class="fa-solid fa-calendar-check mr-0.5"></i>Fechar Dia
+          </a>
+          <i id="icon-estq" class="fa-solid fa-chevron-down text-[10px] transition-transform duration-300" style="color:var(--text-muted)"></i>
+        </div>
       </button>
 
-      <div id="painel-estq" class="alerta-painel custom-scrollbar" style="display: block;"> <div class="px-4 pb-2 flex flex-wrap gap-2">
-          <span class="legenda-badge"><span class="w-2 h-2 rounded-full bg-red-500 inline-block mr-1"></span>Crítico</span>
-          <span class="legenda-badge"><span class="w-2 h-2 rounded-full bg-amber-400 inline-block mr-1"></span>Atenção</span>
-          <span class="legenda-badge"><span class="w-2 h-2 rounded-full bg-emerald-500 inline-block mr-1"></span>OK</span>
-        </div>
-
-        <div class="px-4 pb-4 space-y-2">
-          {% for item in estoque_todos %}
-          <div class="estq-row" style="background:var(--card-alt); border:1px solid 
-            {% if item.prioridade == 0 %}rgba(239,68,68,0.3)
-            {% elif item.prioridade == 1 %}rgba(245,158,11,0.3)
-            {% else %}rgba(16,185,129,0.1){% endif %};">
-            
+      <div id="painel-estq" class="alerta-painel custom-scrollbar">
+        <div class="px-4 pb-4 space-y-2 pt-1">
+          {% for item in estoque_alerta %}
+          <div class="estq-row" style="background:var(--card-alt); border:1px solid
+            {% if item.prioridade == 0 %}rgba(239,68,68,0.3){% else %}rgba(245,158,11,0.3){% endif %};">
             <div class="flex items-center justify-between mb-1">
               <div class="flex items-center gap-1.5">
-                <span class="w-1.5 h-1.5 rounded-full 
-                  {% if item.prioridade == 0 %}bg-red-500
-                  {% elif item.prioridade == 1 %}bg-amber-400
-                  {% else %}bg-emerald-500{% endif %} flex-shrink-0"></span>
+                <span class="w-1.5 h-1.5 rounded-full flex-shrink-0
+                  {% if item.prioridade == 0 %}bg-red-500{% else %}bg-amber-400{% endif %}"></span>
                 <p class="text-[11px] font-bold" style="color:var(--text-main)">{{ item.nome }}</p>
               </div>
-              <div class="flex items-center gap-1.5">
-                <span class="text-[10px] font-bold font-mono" 
-                      style="color:{% if item.prioridade == 0 %}var(--red-text){% elif item.prioridade == 1 %}var(--amber-text){% else %}var(--emerald-text){% endif %}">
-                  {{ item.quantidade_atual }} {{ item.unidade }}
-                </span>
-                <span class="text-[9px]" style="color:var(--text-muted)">/ mín {{ item.alerta_minimo }}</span>
-              </div>
+              <span class="text-[10px] font-bold font-mono"
+                    style="color:{% if item.prioridade == 0 %}var(--red-text){% else %}var(--amber-text){% endif %}">
+                {{ item.quantidade_atual }} {{ item.unidade }}
+              </span>
             </div>
-            {% with dias=item.dias_restantes %}
-            {% if dias is not None %}
-            <p class="text-[9px] font-bold mb-1"
-               style="color:{% if dias <= 3 %}var(--red-text){% elif dias <= 7 %}var(--amber-text){% else %}var(--emerald-text){% endif %}">
-              <i class="fa-solid fa-clock mr-0.5"></i>
-              {% if dias <= 3 %}⚠️ {{ dias }} dia{{ dias|pluralize }} restante{{ dias|pluralize }}
-              {% elif dias <= 7 %}{{ dias }} dias restantes
-              {% else %}{{ dias }} dias restantes{% endif %}
-            </p>
-            {% endif %}
-            {% endwith %}
-
+            <div class="flex items-center justify-between">
+              <span class="text-[9px]" style="color:var(--text-muted)">
+                mín {{ item.alerta_minimo }} {{ item.unidade }}
+                {% if item.dias_restantes is not None %}
+                  · <span style="color:{% if item.dias_restantes <= 3 %}var(--red-text){% else %}var(--amber-text){% endif %}">
+                    {{ item.dias_restantes }}d
+                  </span>
+                {% endif %}
+              </span>
+              {% if item.fornecedor_contato %}
+              <a href="https://wa.me/55{{ item.fornecedor_contato }}" target="_blank"
+                 class="text-[8px] font-bold px-1.5 py-0.5 rounded"
+                 style="background:rgba(16,185,129,0.1);color:var(--emerald-text);">
+                <i class="fa-brands fa-whatsapp mr-0.5"></i>Fornecedor
+              </a>
+              {% endif %}
+            </div>
             {% if item.alerta_minimo > 0 %}
-            <div class="stock-bar-wrap">
-              <div class="stock-bar" 
-                  style="width: {% if item.quantidade_atual > item.alerta_minimo|add:item.alerta_minimo %}100{% else %}{% widthratio item.quantidade_atual item.alerta_minimo|add:item.alerta_minimo 100 %}{% endif %}%;
-                  background:{% if item.prioridade == 0 %}#ef4444{% elif item.prioridade == 1 %}#f59e0b{% else %}#10b981{% endif %};">
+            <div class="stock-bar-wrap mt-1.5">
+              <div class="stock-bar"
+                   style="width:{% widthratio item.quantidade_atual item.alerta_minimo 50 %}%;
+                          background:{% if item.prioridade == 0 %}#ef4444{% else %}#f59e0b{% endif %};">
               </div>
             </div>
             {% endif %}
-
-            <a href="/admin/gateagora/itemestoque/{{ item.id }}/change/" 
-              class="mt-1.5 block text-center text-[8px] font-bold uppercase py-1 rounded"
-              style="background:rgba(99,102,241,0.05); color:var(--text-muted); border: 1px dashed var(--border);">
-              <i class="fa-solid fa-pen-to-square mr-1"></i> Editar Item
-            </a>
           </div>
           {% empty %}
-          <p class="text-[10px] text-center py-3 font-bold" style="color:var(--text-muted)">Nenhum insumo cadastrado.</p>
+          <div class="py-6 text-center">
+            <i class="fa-solid fa-box-open text-3xl opacity-20 mb-2" style="color:var(--emerald-text)"></i>
+            <p class="text-[10px] font-bold uppercase" style="color:var(--text-muted)">Estoque normalizado</p>
+            <a href="{% url 'fechamento_dia' %}"
+               class="mt-3 inline-block text-[8px] font-bold uppercase px-3 py-1.5 rounded-lg"
+               style="background:rgba(139,92,246,0.12);color:#8b5cf6;">
+              <i class="fa-solid fa-calendar-check mr-1"></i>Fazer Fechamento do Dia
+            </a>
+          </div>
           {% endfor %}
         </div>
       </div>
@@ -636,13 +707,9 @@
                style="background:rgba(245,158,11,0.1);color:var(--amber-text);border:1px solid rgba(245,158,11,0.2);">
               <span>Ocorrência Saúde</span><i class="fa-solid fa-notes-medical ml-2"></i>
             </a>
-            <a href="{% url 'gerar_ficha_trato_pdf' %}" class="atalho"
+            <a href="{% url 'gerar_ficha_trato_pdf' %}" class="atalho col-span-2"
                style="background:rgba(8,145,178,0.1);color:#0891b2;border:1px solid rgba(8,145,178,0.2);">
               <span>PDF de Trato</span><i class="fa-solid fa-file-pdf ml-2"></i>
-            </a>
-            <a href="{% url 'fechamento_dia' %}" class="atalho col-span-2"
-               style="background:rgba(139,92,246,0.1);color:#8b5cf6;border:1px solid rgba(139,92,246,0.2);">
-              <span>Fechar Dia · Estoque</span><i class="fa-solid fa-boxes-stacked ml-2"></i>
             </a>
           </div>
         </div>

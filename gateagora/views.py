@@ -260,16 +260,27 @@ def dashboard(request):
         else:
             estoque_cores.append('#10b981') # Verde tailwind
 
-    # 4. Documentos vencendo (Manteve-se igual)
+    # 4. Documentos & Procedimentos vencendo/próximos do vencimento
     janela_venc = hoje + timedelta(days=30)
-    docs_vencendo = (
+
+    # 4a. Documentos legais formais (GTA, Exame Mormo/Anemia, etc.)
+    #     Inclui TODOS os tipos — vencidos (< hoje) ou vencendo em 60 dias
+    janela_docs = hoje + timedelta(days=60)
+    docs_formais_qs = list(
         DocumentoCavalo.objects
-        .filter(cavalo__empresa=empresa, data_validade__range=[hoje, janela_venc])
+        .filter(
+            cavalo__empresa=empresa,
+            data_validade__lte=janela_docs,
+        )
         .select_related('cavalo')
         .order_by('data_validade')
     )
+    # Adiciona atributo vencido a cada doc para uso no template
+    for _doc in docs_formais_qs:
+        _doc.vencido = _doc.data_validade < hoje
+    docs_formais = docs_formais_qs
 
-    # Prazos configuráveis por empresa (usa defaults se não cadastrado)
+    # 4b. Prazos configuráveis por empresa
     try:
         cfg = ConfigPrazoManejo.objects.get(empresa=request.empresa)
         prazo_vacina        = cfg.prazo_vacina
@@ -281,6 +292,10 @@ def dashboard(request):
         prazo_vermifugo     = 90
         prazo_ferrageamento = 60
         prazo_casqueamento  = 60
+
+    # docs_vencendo = apenas documentos formais (GTA, Mormo, Anemia, etc.)
+    # Procedimentos de manejo pertencem ao painel Saúde & Vet, não aqui.
+    docs_vencendo = docs_formais
 
     def _dias_atraso(data_campo):
         if not data_campo:
@@ -575,6 +590,8 @@ def dashboard(request):
         "periodo_atual":            periodo,
         "receita_por_tipo_labels":  json.dumps(receita_por_tipo_labels,  ensure_ascii=False),
         "receita_por_tipo_valores": json.dumps(receita_por_tipo_valores),
+        # Somente itens críticos/atenção para o painel fusionado do dashboard
+        "estoque_alerta":           [i for i in estoque_todos if i.prioridade <= 1],
     }
 
     return render(request, "gateagora/dashboard.html", context)
@@ -1166,8 +1183,8 @@ def encilhamento_pdf(request):
 
 @login_required
 def manejo_em_massa(request):
-    empresa = request.user.perfil.empresa
-    hoje = date.today()
+    empresa = getattr(request, "empresa", None) or request.user.perfil.empresa
+    hoje = timezone.localdate()
 
     # ── PRazos configurados (da Base) ─────────────────────────
     try:
@@ -1182,240 +1199,118 @@ def manejo_em_massa(request):
         prazo_ferrageamento = 60
         prazo_casqueamento = 60
 
-    # ── POST: ALTERAÇÃO NA BASE ──────────────────────────────
+    # ── POST: ATUALIZA CAVALO + DocumentoCavalo (fonte única de verdade) ────────
     if request.method == "POST":
         procedimento = request.POST.get("procedimento")
-        data = request.POST.get("data")
-        cavalos_ids = request.POST.getlist("cavalos_selecionados")
+        data_str     = request.POST.get("data")
+        cavalos_ids  = request.POST.getlist("cavalos_selecionados")
 
-        if procedimento and data and cavalos_ids:
-            data = date.fromisoformat(data)
+        if procedimento and data_str and cavalos_ids:
+            data_proc = date.fromisoformat(data_str)
 
-            cavalos = Cavalo.objects.filter(
-                empresa=empresa,
-                id__in=cavalos_ids
-            )
+            cavalos = Cavalo.objects.filter(empresa=empresa, id__in=cavalos_ids)
+
+            # Mapeamento procedimento → (campo_cavalo, tipo_doc, titulo_doc)
+            MAPA = {
+                "Vacinacao":     ("ultima_vacina",        "VACINA", "Vacinação"),
+                "Vermifugacao":  ("ultimo_vermifugo",     "EXAME",  "Vermifugação"),
+                "Ferrageamento": ("ultimo_ferrageamento", "OUTRO",  "Ferrageamento"),
+                "Casqueamento":  ("ultimo_casqueamento",  "OUTRO",  "Casqueamento"),
+            }
+
+            if procedimento not in MAPA:
+                messages.warning(request, "Procedimento inválido.")
+                return redirect("manejo_em_massa")
+
+            campo_cavalo, tipo_doc, titulo_doc = MAPA[procedimento]
 
             for cavalo in cavalos:
-                if procedimento == "Vacinacao":
-                    tipo = "VACINA"
-                    titulo = "Vacinação"
-                    validade = data
+                # 1. Atualiza o campo direto no Cavalo (fonte principal do dashboard)
+                setattr(cavalo, campo_cavalo, data_proc)
+                cavalo.save(update_fields=[campo_cavalo])
 
-                elif procedimento == "Vermifugacao":
-                    tipo = "EXAME"
-                    titulo = "Vermifugação"
-                    validade = data
+                # 2. Cria ou atualiza o DocumentoCavalo correspondente
+                #    (para o painel "Documentos & Vacinas" e histórico)
+                # Para OUTRO (ferrageamento/casqueamento), usa o titulo como discriminador
+                qs_doc = DocumentoCavalo.objects.filter(cavalo=cavalo, tipo=tipo_doc)
+                if tipo_doc == "OUTRO":
+                    qs_doc = qs_doc.filter(titulo=titulo_doc)
 
-                elif procedimento == "Ferrageamento":
-                    tipo = "OUTRO"
-                    titulo = "Ferrageamento"
-                    validade = data
-
-                elif procedimento == "Casqueamento":
-                    tipo = "OUTRO"
-                    titulo = "Casqueamento"
-                    validade = data
-                else:
-                    continue
-
-                # BASE = DocumentoCavalo
-                doc = (
-                    DocumentoCavalo.objects
-                    .filter(cavalo=cavalo, tipo=tipo)
-                    .order_by("-data_validade")
-                    .first()
-                )
+                doc = qs_doc.order_by("-data_validade").first()
 
                 if doc:
-                    doc.titulo = titulo
-                    doc.data_validade = validade
-                    doc.save(update_fields=["titulo", "data_validade"])
+                    doc.data_validade = data_proc
+                    doc.save(update_fields=["data_validade"])
                 else:
                     DocumentoCavalo.objects.create(
                         cavalo=cavalo,
-                        tipo=tipo,
-                        titulo=titulo,
-                        data_validade=validade,
+                        tipo=tipo_doc,
+                        titulo=titulo_doc,
+                        data_validade=data_proc,
                     )
 
             messages.success(
                 request,
-                f"Manejo aplicado para {cavalos.count()} cavalo(s)."
+                f"✅ {titulo_doc} registrada para {cavalos.count()} cavalo(s).",
+                extra_tags="success"
             )
         else:
-            messages.warning(request, "Dados incompletos.")
+            messages.warning(request, "Selecione ao menos um cavalo, um procedimento e uma data.")
 
         return redirect("manejo_em_massa")
 
-    # ── CONSULTA: TUDO VEM DA BASE ───────────────────────────
+    # ── GET: lê dos campos diretos do Cavalo (mesma fonte que o dashboard) ───────
 
-    cavalos = Cavalo.objects.filter(empresa=empresa).select_related("proprietario")
-
-    cavalos_status = []
-
-    for cavalo in cavalos:
-        atraso_maximo = 0
-
-        def atraso(tipo, prazo):
-            doc = (
-                DocumentoCavalo.objects
-                .filter(cavalo=cavalo, tipo=tipo)
-                .order_by("-data_validade")
-                .first()
-            )
-            if not doc:
-                return 9999
-            return max(0, (hoje - doc.data_validade).days - prazo)
-
-        atrasos = [
-            atraso("VACINA", prazo_vacina),
-            atraso("EXAME", prazo_vermifugo),
-        ]
-
-        if cavalo.usa_ferradura == "SIM":
-            atrasos.append(atraso("OUTRO", prazo_ferrageamento))
-        else:
-            atrasos.append(atraso("OUTRO", prazo_casqueamento))
-
-        atraso_maximo = max(atrasos)
-        vencido = atraso_maximo > 0
-
-        cavalos_status.append({
-            "obj": cavalo,
-            "vencido": vencido,
-            "atraso_maximo": atraso_maximo,
-        })
-
-    # Ordena: mais atrasado primeiro
-    cavalos_status.sort(key=lambda x: x["atraso_maximo"], reverse=True)
-
-    return render(request, "gateagora/manejo_em_massa.html", {
-        "empresa": empresa,
-        "hoje": hoje,
-        "cavalos_status": cavalos_status,
-    })
-
-
-
-    # ====================== LÓGICA CORRIGIDA DE ALERTA ======================
     def _dias_atraso(data_campo):
         if not data_campo:
             return 9999
         return (hoje - data_campo).days
 
-    def _cavalo_em_alerta(c):
-        """Regra inteligente baseada no tipo de ferradura"""
-        if c.status_saude != 'Saudável':
-            return True
-
-        # Vacina e Vermifugo são obrigatórios para todos
-        if _dias_atraso(c.ultima_vacina)    > prazo_vacina:    return True
-        if _dias_atraso(c.ultimo_vermifugo) > prazo_vermifugo: return True
-
-        # Lógica principal: depende se usa ferradura ou não
-        if c.usa_ferradura == 'SIM':
-            # Deve ter ferrageamento em dia
-            if _dias_atraso(c.ultimo_ferrageamento) > prazo_ferrageamento:
-                return True
+    def _atraso_excedido(c):
+        """Retorna o maior excedente de dias (0 = em dia)."""
+        atrasos = [
+            max(0, _dias_atraso(c.ultima_vacina)    - prazo_vacina),
+            max(0, _dias_atraso(c.ultimo_vermifugo) - prazo_vermifugo),
+        ]
+        if c.usa_ferradura == "SIM":
+            atrasos.append(max(0, _dias_atraso(c.ultimo_ferrageamento) - prazo_ferrageamento))
         else:
-            # Não usa ferradura → só precisa de casqueamento em dia
-            if _dias_atraso(c.ultimo_casqueamento) > prazo_casqueamento:
-                return True
+            atrasos.append(max(0, _dias_atraso(c.ultimo_casqueamento)  - prazo_casqueamento))
+        bonus = 100000 if c.status_saude != "Saudável" else 0
+        return sum(atrasos) + bonus
 
-        return False
-
-    def _score_criticidade(c):
-        """Quanto maior = mais grave (aparece primeiro)"""
-        atraso_vac = max(0, _dias_atraso(c.ultima_vacina)    - prazo_vacina)
-        atraso_ver = max(0, _dias_atraso(c.ultimo_vermifugo) - prazo_vermifugo)
-
-        if c.usa_ferradura == 'SIM':
-            atraso_ferr = max(0, _dias_atraso(c.ultimo_ferrageamento) - prazo_ferrageamento)
-            atraso_casc = 0
-        else:
-            atraso_ferr = 0
-            atraso_casc = max(0, _dias_atraso(c.ultimo_casqueamento) - prazo_casqueamento)
-
-        bonus_status = 100000 if c.status_saude != 'Saudável' else 0
-
-        # Vacina pesa mais, depois vermifugo, depois ferrageamento/casqueamento
-        return (bonus_status +
-                atraso_vac * 1000 +
-                atraso_ver * 800 +
-                atraso_ferr * 600 +
-                atraso_casc * 500)
-
-    # Busca todos os cavalos
-    todos_cavalos = list(
+    cavalos_qs = (
         Cavalo.objects
         .filter(empresa=empresa)
-        .select_related('proprietario')
-        .order_by('nome')
+        .select_related("proprietario")
+        .order_by("nome")
     )
 
-    cavalos_alerta = sorted(
-        [c for c in todos_cavalos if _cavalo_em_alerta(c)],
-        key=_score_criticidade,
-        reverse=True
-    )
-
-    cavalos_em_dia = sorted(
-        [c for c in todos_cavalos if not _cavalo_em_alerta(c)],
-        key=lambda c: c.nome
-    )
-
-    # Etiquetas visuais melhoradas
-    def _etiquetas_manejo(c):
-        tags = []
-        if c.status_saude != 'Saudável':
-            tags.append({'label': f'Status: {c.status_saude}', 'tipo': 'stat'})
-
-        d = _dias_atraso(c.ultima_vacina) - prazo_vacina
-        if d > 0: tags.append({'label': f'Vac +{d}d', 'tipo': 'vac'})
-
-        d = _dias_atraso(c.ultimo_vermifugo) - prazo_vermifugo
-        if d > 0: tags.append({'label': f'Verm +{d}d', 'tipo': 'verm'})
-
-        if c.usa_ferradura == 'SIM':
-            d = _dias_atraso(c.ultimo_ferrageamento) - prazo_ferrageamento
-            if d > 0: tags.append({'label': f'Fer +{d}d', 'tipo': 'ferr'})
-        else:
-            d = _dias_atraso(c.ultimo_casqueamento) - prazo_casqueamento
-            if d > 0: tags.append({'label': f'Csc +{d}d', 'tipo': 'casc'})
-
-        return tags
-
-    # Monta lista unificada no formato que o template espera
     cavalos_status = []
-    for c in em_alerta:
-        c.etiquetas_manejo = _etiquetas(c)
+    for cavalo in cavalos_qs:
+        score = _atraso_excedido(cavalo)
         cavalos_status.append({
-            'obj':           c,
-            'vencido':       True,
-            'atraso_maximo': _score_criticidade(c),
-        })
-    for c in em_dia:
-        c.etiquetas_manejo = _etiquetas(c)
-        cavalos_status.append({
-            'obj':           c,
-            'vencido':       False,
-            'atraso_maximo': 0,
+            "obj":           cavalo,
+            "vencido":       score > 0,
+            "atraso_maximo": score,
         })
 
-    context = {
-        "brand_name":          BRAND_NAME,
+    # Mais crítico primeiro
+    cavalos_status.sort(key=lambda x: x["atraso_maximo"], reverse=True)
+
+    return render(request, "gateagora/manejo_em_massa.html", {
         "empresa":             empresa,
         "hoje":                hoje,
         "cavalos_status":      cavalos_status,
-        "cavalos_alerta":      em_alerta,
-        "cavalos_em_dia":      em_dia,
         "prazo_vacina":        prazo_vacina,
         "prazo_vermifugo":     prazo_vermifugo,
         "prazo_ferrageamento": prazo_ferrageamento,
         "prazo_casqueamento":  prazo_casqueamento,
-    }
-    return render(request, "gateagora/manejo_em_massa.html", context)
+    })
+
+
+
+
 
 
 # ── Baixa de Fatura ───────────────────────────────────────────────────────────

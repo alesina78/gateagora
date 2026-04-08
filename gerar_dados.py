@@ -1,146 +1,233 @@
-# -*- coding: utf-8 -*-
-import os
-import django
-import random
+"""
+Seed completo Gate 4
+Apaga tudo e recria base fictícia realista
+Período: 01/11/2025 → 30/04/2026
+"""
+
+from datetime import date, datetime, timedelta, time
 from decimal import Decimal
-from datetime import datetime, date, timedelta
+import random
+
 from django.utils import timezone
-
-# Configuração do Ambiente Django
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings')
-django.setup()
-
 from django.contrib.auth.models import User
+
 from gateagora.models import (
-    Empresa, Perfil, Aluno, Cavalo, Baia, Piquete, 
-    Aula, ItemEstoque, MovimentacaoFinanceira
+    Empresa, Perfil, Aluno, Cavalo, Aula,
+    DocumentoCavalo, RegistroOcorrencia,
+    ItemEstoque, MovimentacaoFinanceira,
+    ConfigPrazoManejo
 )
 
-def limpar_dados():
-    print("Limpando base de dados antiga...")
-    MovimentacaoFinanceira.objects.all().delete()
-    Aula.objects.all().delete()
-    ItemEstoque.objects.all().delete()
-    Cavalo.objects.all().delete()
-    Piquete.objects.all().delete()
-    Baia.objects.all().delete()
-    Aluno.objects.all().delete()
-    Perfil.objects.all().delete()
-    User.objects.exclude(is_superuser=True).delete()
-    Empresa.objects.all().delete()
+# =====================================================
+# CONFIGURAÇÕES
+# =====================================================
+TELEFONE = "+5551991387872"
+INICIO = date(2025, 11, 1)
+FIM = date(2026, 4, 30)
 
-def criar_usuarios():
-    print("Criando usuários e empresas...")
-    
-    # Empresa A
-    e1 = Empresa.objects.create(nome="Haras Elite Prateada", slug="elite-prateada", cidade="Portão")
-    u1 = User.objects.create_user(username="gestor_hipica1", email="gateagora@gmail.com", password="Teste123")
-    Perfil.objects.create(user=u1, empresa=e1, cargo='Gestor')
+random.seed(42)
 
-    # Empresa B
-    e2 = Empresa.objects.create(nome="Centro Hípico Aguiar", slug="hipico-aguiar", cidade="São Leopoldo")
-    u2 = User.objects.create_user(username="admin4", email="gateagora@gmail.com", password="Gate$2024")
-    Perfil.objects.create(user=u2, empresa=e2, cargo='Gestor')
+# =====================================================
+# LIMPEZA TOTAL (ordem segura)
+# =====================================================
+Aula.objects.all().delete()
+DocumentoCavalo.objects.all().delete()
+RegistroOcorrencia.objects.all().delete()
+MovimentacaoFinanceira.objects.all().delete()
+ItemEstoque.objects.all().delete()
+Cavalo.objects.all().delete()
+Aluno.objects.all().delete()
+Perfil.objects.all().delete()
+Empresa.objects.all().delete()
+User.objects.all().delete()
 
-    # Professor para aulas
-    prof = User.objects.create_user(username="professor_teste", password="Gate$2024")
-    p_prof = Perfil.objects.create(user=prof, empresa=e1, cargo='Professor')
+# =====================================================
+# EMPRESAS
+# =====================================================
+empresas = [
+    Empresa.objects.create(nome="Hípica Estrela do Sul", slug="hipica-estrela"),
+    Empresa.objects.create(nome="Haras Santa Aurora", slug="haras-santa-aurora"),
+]
 
-    return e1, e2, p_prof
-
-def popular_empresa(empresa, professor, prefixo_nomes):
-    print(f"Populando dados para: {empresa.nome}")
-    
-    # 1. Aluno "Hípica" para cavalos próprios
-    aluno_hipica = Aluno.objects.create(
-        empresa=empresa, nome=f"Gestão {empresa.nome}", 
-        telefone="+5551991387872", ativo=True
+# =====================================================
+# PRAZOS DE MANEJO
+# =====================================================
+for emp in empresas:
+    ConfigPrazoManejo.objects.create(
+        empresa=emp,
+        prazo_vacina=180,
+        prazo_vermifugo=90,
+        prazo_ferrageamento=45,
+        prazo_casqueamento=30,
     )
 
-    # 2. Criar Baias e Piquetes
-    baias = [Baia.objects.create(empresa=empresa, numero=str(i), status='Livre') for i in range(1, 33)]
-    piquete = Piquete.objects.create(empresa=empresa, nome="Piquete Leste", capacidade=10)
+# =====================================================
+# FUNÇÃO USUÁRIO + PERFIL
+# =====================================================
+def criar_usuario(username, senha, *, empresa=None, cargo=None, superuser=False):
+    u = User.objects.create(
+        username=username,
+        is_superuser=superuser,
+        is_staff=True,
+        is_active=True,
+    )
+    u.set_password(senha)
+    u.save()
 
-    # 3. Criar Alunos (15 no total, 5 são proprietários)
-    nomes_alunos = ["Ricardo", "Beatriz", "Carlos", "Fernanda", "Gabriel", "Helena", "Igor", "Julia", "Lucas", "Mariana", "Nuno", "Olivia", "Paulo", "Quiteria", "Rafael"]
-    alunos_objs = []
-    for i, nome in enumerate(nomes_alunos):
-        a = Aluno.objects.create(
-            empresa=empresa, 
-            nome=f"{nome} {prefixo_nomes}", 
-            telefone="+5551991387872",
-            valor_aula=Decimal("150.00")
-        )
-        alunos_objs.append(a)
-
-    # 4. Criar Cavalos (32 totais: 17 Próprios, 15 Hotelaria)
-    nomes_cavalos = ["Apolo", "Zéfiro", "Luna", "Trovão", "Fênix", "Diamante", "Pérola", "Eclipse", "Cometa", "Atena", "Baco", "Cigana", "Dante", "Estrela", "Faísca", "Garoa", "Hera", "Ícaro", "Jasmim", "Kaiser", "Lorde", "Mistério", "Netuno", "Orion", "Pégaso", "Quartzo", "Raio", "Sombra", "Titã", "Urano", "Vênus", "Zorro"]
-    
-    hoje = date.today()
-    for i in range(32):
-        is_proprio = i < 17
-        dono = aluno_hipica if is_proprio else alunos_objs[i % 5] # Primeiros 5 alunos são os donos
-        
-        c = Cavalo.objects.create(
+    if empresa:
+        Perfil.objects.create(
+            user=u,
             empresa=empresa,
-            nome=nomes_cavalos[i],
-            categoria='PROPRIO' if is_proprio else 'HOTELARIA',
-            proprietario=dono,
-            baia=baias[i],
-            material_proprio=(i < 2), # 2 com material próprio
-            mensalidade_baia=Decimal("1200.00") if not is_proprio else Decimal("0.00")
+            cargo=cargo,
+            telefone=TELEFONE
         )
 
-        # Datas de Manejo específicas solicitadas
-        if i == 0 or i == 1: # 2 com casqueio em 3 dias
-            c.ultimo_casqueamento = hoje - timedelta(days=42) # Próximo será logo
-        if i >= 2 and i <= 5: # 4 com vermifugação em 2 dias
-            c.ultimo_vermifugo = hoje - timedelta(days=88)
+    return u
+
+# =====================================================
+# USUÁRIOS
+# =====================================================
+criar_usuario("AdminGate", "DadoManco$29", superuser=True)
+criar_usuario("Gate4", "Gate2026")
+
+for emp in empresas:
+    criar_usuario("gestor_hipica1", "DadoManco$29", empresa=emp, cargo="GESTOR")
+    criar_usuario("Suzana", "Asterix", empresa=emp, cargo="ATENDENTE")
+    criar_usuario("Aluno33", "Aluno$2026", empresa=emp, cargo="ALUNO")
+
+# =====================================================
+# DADOS POR EMPRESA
+# =====================================================
+for emp in empresas:
+    hoje = timezone.localdate()
+
+    # Aluno institucional (dono dos cavalos próprios)
+    institucional = Aluno.objects.create(
+        empresa=emp,
+        nome=emp.nome,
+        telefone=TELEFONE,
+        ativo=True
+    )
+
+    donos = []
+    for nome in ["Carlos Menezes","Fernanda Lopes","Ricardo Motta","Juliana Reis","Paulo Teixeira"]:
+        donos.append(
+            Aluno.objects.create(
+                empresa=emp,
+                nome=nome,
+                telefone=TELEFONE,
+                ativo=True
+            )
+        )
+
+    alunos = donos[:]
+    for nome in ["Ana","Bruno","Diego","Larissa","Marcos","Renata","Tiago","Sofia","Pedro"]:
+        alunos.append(
+            Aluno.objects.create(
+                empresa=emp,
+                nome=f"{nome} Silva",
+                telefone=TELEFONE,
+                ativo=True
+            )
+        )
+
+    # =================================================
+    # CAVALOS
+    # =================================================
+    cavalos = []
+    for i in range(32):
+        proprio = i < 17
+        cav = Cavalo.objects.create(
+            empresa=emp,
+            nome=f"Cavalo {i+1}",
+            proprietario=donos[i % 5] if proprio else institucional,
+            categoria="PROPRIO" if proprio else "HOTELARIA",
+            material_proprio=(i < 2),
+        )
+        cavalos.append(cav)
+
+    # Casqueio e vermífugo próximos
+    for c in cavalos[:2]:
+        c.ultimo_casqueamento = hoje - timedelta(days=27)
         c.save()
 
-    # 5. Financeiro (Nov/2025 a Mar/2026)
-    data_inicio = date(2025, 11, 1)
-    for i in range(150):
-        data_mov = data_inicio + timedelta(days=i)
-        if data_mov > date(2026, 3, 30): break
-        
-        # Receitas (Mensalidades no dia 5)
-        if data_mov.day == 5:
-            MovimentacaoFinanceira.objects.create(
-                empresa=empresa, descricao="Mensalidades Hotelaria",
-                valor=Decimal(random.randint(5000, 8000)), tipo='Receita', data=data_mov
-            )
-        # Despesas aleatórias
-        if random.random() > 0.7:
-            MovimentacaoFinanceira.objects.create(
-                empresa=empresa, descricao="Compra de Feno/Ração",
-                valor=Decimal(random.randint(1200, 3000)), tipo='Despesa', data=data_mov
-            )
+    for c in cavalos[2:6]:
+        c.ultimo_vermifugo = hoje - timedelta(days=88)
+        c.save()
 
-    # 6. Aulas (Segunda a Sábado)
-    cavalos_aula = Cavalo.objects.filter(empresa=empresa)
-    for i in range(120):
-        data_aula = data_inicio + timedelta(days=i)
-        if data_aula.weekday() == 6: continue # Sem domingo
-        if data_aula > date(2026, 3, 30): break
-
-        dt_hora = timezone.make_aware(datetime.combine(data_aula, datetime.min.time().replace(hour=random.randint(8, 17))))
-        
-        Aula.objects.create(
-            empresa=empresa,
-            aluno=random.choice(alunos_objs),
-            cavalo=random.choice(cavalos_aula),
-            instrutor=professor,
-            data_hora=dt_hora,
-            concluida=(data_aula < hoje)
+    # Problemas veterinários
+    for c in cavalos[6:9]:
+        RegistroOcorrencia.objects.create(
+            cavalo=c,
+            data=hoje - timedelta(days=2),
+            titulo="Claudicação leve",
+            descricao="Monitorar evolução",
         )
 
-if __name__ == "__main__":
-    limpar_dados()
-    emp1, emp2, prof_e1 = criar_usuarios()
-    popular_empresa(emp1, prof_e1, "Haras A")
-    popular_empresa(emp2, prof_e1, "Haras B") # Usando mesmo prof para simplificar o seed
-    print("\n[SUCESSO] Dados gerados de 01/11/2025 até 30/03/2026!")
-    print("Logins disponíveis:")
-    print("- admin4 / Gate$2024")
-    print("- gestor_hipica1 / Teste123")
+    # =================================================
+    # DOCUMENTOS
+    # =================================================
+    DocumentoCavalo.objects.create(
+        cavalo=cavalos[0],
+        tipo="GTA",
+        titulo="GTA Novembro",
+        data_validade=hoje - timedelta(days=1)
+    )
+
+    for c in cavalos[1:4]:
+        DocumentoCavalo.objects.create(
+            cavalo=c,
+            tipo="ANEMIA",
+            titulo="Exame de rotina",
+            data_validade=hoje + timedelta(days=4)
+        )
+
+    # =================================================
+    # ESTOQUE
+    # =================================================
+    for nome, qtd in [
+        ("Ração Premium", 10),
+        ("Vermífugo", 2),
+        ("Ferraduras", 5),
+        ("Seringas", 20),
+    ]:
+        ItemEstoque.objects.create(
+            empresa=emp,
+            nome=nome,
+            quantidade_atual=qtd,
+            alerta_minimo=15,
+        )
+
+    # =================================================
+    # AULAS / TREINOS (sem domingos)
+    # =================================================
+    d = INICIO
+    while d <= FIM:
+        if d.weekday() != 6:  # domingo
+            for h in range(random.randint(3, 5)):
+                Aula.objects.create(
+                    empresa=emp,
+                    aluno=random.choice(alunos),
+                    cavalo=random.choice(cavalos),
+                    tipo="TREINO",
+                    data_hora=timezone.make_aware(
+                        datetime.combine(d, time(8 + h, 0))
+                    )
+                )
+        d += timedelta(days=1)
+
+    # =================================================
+    # FINANCEIRO (mensal, data única)
+    # =================================================
+    m = INICIO
+    while m <= FIM:
+        MovimentacaoFinanceira.objects.create(
+            empresa=emp,
+            data=date(m.year, m.month, 5),
+            tipo="RECEITA",
+            descricao="Mensalidades",
+            valor=Decimal(random.randint(8000, 12000))
+        )
+        m = (m.replace(day=28) + timedelta(days=4)).replace(day=1)
+
+print("✅ Base completa gerada com sucesso.")
