@@ -486,7 +486,7 @@
                 {% endif %}
               </span>
               {% if item.fornecedor_contato %}
-              <a href="https://wa.me/55{{ item.fornecedor_contato }}" target="_blank"
+              <a href="{{ item.whatsapp_fornecedor }}" target="_blank"
                  class="text-[8px] font-bold px-1.5 py-0.5 rounded"
                  style="background:rgba(16,185,129,0.1);color:var(--emerald-text);">
                 <i class="fa-brands fa-whatsapp mr-0.5"></i>Fornecedor

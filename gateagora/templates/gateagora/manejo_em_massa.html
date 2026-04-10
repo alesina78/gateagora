@@ -137,14 +137,35 @@
                   <label for="chk_{{ cavalo.id }}" class="text-sm font-bold cursor-pointer" style="color:var(--text-strong)" onclick="event.stopPropagation()">{{ cavalo.nome }}</label>
                   {% if cavalo.proprietario %}<span class="text-[9px]" style="color:var(--text-muted)">{{ cavalo.proprietario.nome }}</span>{% endif %}
                 </div>
-                
-                {% if item.vencido %}
-                  <span class="text-[8px] font-black bg-red-500 text-white px-1.5 py-0.5 rounded uppercase">
-                    {% if item.atraso_maximo >= 9000 %}PENDENTE{% else %}ATRASADO {{ item.atraso_maximo }}D{% endif %}
-                  </span>
-                {% else %}
-                  <span class="text-[8px] font-bold text-emerald-500 uppercase">✓ em dia</span>
-                {% endif %}
+
+                <div class="flex items-center gap-1.5">
+                  {% if item.vencido %}
+                    {% if item.por_status and item.atraso_maximo == 0 %}
+                      <span class="text-[8px] font-black px-1.5 py-0.5 rounded uppercase"
+                            style="background:rgba(245,158,11,0.2);color:#f59e0b;">
+                        {{ cavalo.status_saude|upper }}
+                      </span>
+                    {% elif item.atraso_maximo >= 9000 %}
+                      <span class="text-[8px] font-black bg-red-500 text-white px-1.5 py-0.5 rounded uppercase">
+                        PENDENTE
+                      </span>
+                    {% else %}
+                      <span class="text-[8px] font-black bg-red-500 text-white px-1.5 py-0.5 rounded uppercase">
+                        ATRASADO {{ item.atraso_maximo }}D
+                      </span>
+                    {% endif %}
+                    <a href="/admin/gateagora/cavalo/{{ cavalo.id }}/change/"
+                       onclick="event.stopPropagation()"
+                       target="_blank"
+                       title="Abrir cadastro do cavalo"
+                       class="text-[8px] font-bold px-1.5 py-0.5 rounded"
+                       style="background:rgba(99,102,241,0.12);color:var(--indigo-text);border:1px solid rgba(99,102,241,0.2);">
+                      <i class="fa-solid fa-pen-to-square"></i>
+                    </a>
+                  {% else %}
+                    <span class="text-[8px] font-bold text-emerald-500 uppercase">✓ em dia</span>
+                  {% endif %}
+                </div>
               </div>
 
               <div class="grid grid-cols-4 gap-x-2 mt-1.5 text-[8px] font-mono" style="color:var(--text-muted)">

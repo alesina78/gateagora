@@ -242,7 +242,7 @@ class CavaloAdmin(BaseEmpresaAdmin):
         ("Informações Básicas", {"fields": ("nome", "proprietario", "categoria", "raca", "peso", "fator_atividade")}),
         ("Localização", {"fields": ("onde_dorme", "baia", "piquete")}),
         ("Equipamentos", {"fields": ("tipo_sela", "tipo_cabecada", "material_proprio")}),
-        ("Saúde", {"fields": ("status_saude", "ultima_vacina", "ultimo_vermifugo", "ultimo_ferrageamento", "ultimo_casqueamento")}),
+        ("Saúde", {"fields": ("status_saude", "usa_ferradura", "ultima_vacina", "ultimo_vermifugo", "ultimo_ferrageamento", "ultimo_casqueamento")}),
         ("Plano Alimentar", {"fields": ("racao_tipo", "racao_qtd_manha", "racao_qtd_noite", "feno_tipo", "feno_qtd", "complemento_nutricional")}),
         ("Financeiro", {"fields": ("mensalidade_baia",)}),
     )

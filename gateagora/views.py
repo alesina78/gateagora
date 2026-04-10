@@ -225,7 +225,7 @@ def dashboard(request):
     # ── 2) Alertas e Estoque Unificado ────────────────────────────────────────
     
     # 1. Busca TODOS os itens, classificando por prioridade
-    estoque_todos = (
+    estoque_todos = list(
         ItemEstoque.objects
         .filter(empresa=empresa)
         .annotate(
@@ -239,11 +239,31 @@ def dashboard(request):
         .order_by('prioridade', 'quantidade_atual')
     )
 
+    # Gera link WhatsApp para fornecedor com mensagem padrão Gate 4
+    for _item in estoque_todos:
+        if _item.fornecedor_contato:
+            tel = "".join(filter(str.isdigit, str(_item.fornecedor_contato)))
+            if not tel.startswith("55"):
+                tel = f"55{tel}"
+            msg = (
+                f"📦 *Pedido de Reposição — {empresa.nome}* 🐎\n\n"
+                f"Olá! Gostaríamos de solicitar a reposição do seguinte item:\n\n"
+                f"*Produto:* {_item.nome}\n"
+                f"*Estoque atual:* {_item.quantidade_atual} {_item.unidade}\n"
+                f"*Estoque mínimo:* {_item.alerta_minimo} {_item.unidade}\n"
+                f"*Quantidade a pedir:* ??? {_item.unidade}\n\n"
+                f"Por favor, confirme disponibilidade e prazo de entrega.\n"
+                f"⚠️ Antes de qualquer alteração, envie os documentos para conferência.\n\n"
+                f"📲 _Enviado via *Gate 4 — Gestão de Haras e Hípicas*_ 🐎"
+            )
+            _item.whatsapp_fornecedor = f"https://wa.me/{tel}?text={quote(msg)}"
+        else:
+            _item.whatsapp_fornecedor = None
+
     # 2. Contador para o badge de alerta no topo do Dashboard
     estoque_baixo_count = sum(1 for item in estoque_todos if item.prioridade == 0)
 
     # 3. Preparação dos dados para o GRÁFICO (Chart.js)
-    # Aqui garantimos que todos os dados vão para o gráfico, não só os críticos
     estoque_labels = []
     estoque_valores = []
     estoque_cores = []
@@ -251,14 +271,12 @@ def dashboard(request):
     for item in estoque_todos:
         estoque_labels.append(item.nome)
         estoque_valores.append(float(item.quantidade_atual))
-        
-        # Define a cor da barra no gráfico baseada na prioridade calculada
         if item.prioridade == 0:
-            estoque_cores.append('#ef4444') # Vermelho tailwind
+            estoque_cores.append('#ef4444')
         elif item.prioridade == 1:
-            estoque_cores.append('#f59e0b') # Amarelo tailwind
+            estoque_cores.append('#f59e0b')
         else:
-            estoque_cores.append('#10b981') # Verde tailwind
+            estoque_cores.append('#10b981')
 
     # 4. Documentos & Procedimentos vencendo/próximos do vencimento
     janela_venc = hoje + timedelta(days=30)
