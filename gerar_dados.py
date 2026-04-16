@@ -18,10 +18,11 @@ Empresas:
   - Hípica Cavalos do Sul  (slug: hipica-cavalos-sul)
 
 Usuários pré-existentes mantidos:
-  AdminGate / DadoManco$29 (superuser)
+  AdminGate / Gate2024 (superuser)
+  admin / Gate2024 (superuser)
   Gate4 / Gate2026
-  gestor_hipica  / DadoManco$29  → Haras Elite Prateada
-  gestor_hipica1 / DadoManco$29  → Hípica Cavalos do Sul
+  gestor_hipica  / Gate2024  → Haras Elite Prateada
+  gestor_hipica1 / Gate2024  → Hípica Cavalos do Sul
   Suzana / Asterix               → professora, ambas empresas
   Aluno33 / Aluno$2026           → aluno
 
@@ -133,21 +134,20 @@ def criar_perfil(user, empresa, cargo):
     )
 
 # Superuser
-u_admin = get_or_create_user("AdminGate", "DadoManco$29", is_superuser=True)
+u_admin = get_or_create_user("AdminGate", "Gate2024", is_superuser=True)
 
 # Usuário sem empresa (acesso geral)
-u_gate4 = get_or_create_user("Gate4", "Gate2026")
+u_gate4 = get_or_create_user("Gate4", "Gate2024")
 
 # Gestores
-u_gestor1 = get_or_create_user("gestor_hipica",  "DadoManco$29")
-u_gestor2 = get_or_create_user("gestor_hipica1", "DadoManco$29")
+u_gestor1 = get_or_create_user("gestor_hipica",  "Gate2024")
+u_gestor2 = get_or_create_user("gestor_hipica1", "Gate2024")
 criar_perfil(u_gestor1, emp1, "Gestor")
 criar_perfil(u_gestor2, emp2, "Gestor")
 
 # Professores — Suzana e Alessandro vinculados à emp1
 u_suzana    = get_or_create_user("Suzana",        "Asterix")
 u_alessand  = get_or_create_user("Alessandro",    "Gate2026")
-u_luiza_sq  = get_or_create_user("LuizaSqueff",   "Gate2026")
 p_suz1  = criar_perfil(u_suzana,   emp1, "Professor")
 p_ale1  = criar_perfil(u_alessand, emp1, "Professor")
 p_lui1  = criar_perfil(u_luiza_sq, emp1, "Professor")
@@ -643,7 +643,7 @@ piquetes2 = criar_piquetes(emp2, ["Piquete Norte", "Piquete Sul", "Piquete Leste
 
 # Usuários professores empresa 2
 u_suz2 = get_or_create_user("Suzana2", "Asterix")
-u_ale2 = get_or_create_user("Alessandro2", "Gate2026")
+u_ale2 = get_or_create_user("Alessandro2", "Gate42026")
 p_suz2 = criar_perfil(u_suz2, emp2, "Professor")
 p_ale2 = criar_perfil(u_ale2, emp2, "Professor")
 
@@ -898,12 +898,11 @@ print(f"  Aulas:       {Aula.objects.count()}")
 print(f"  Financeiro:  {MovimentacaoFinanceira.objects.count()}")
 print("="*60)
 print("\n🔐 CREDENCIAIS:")
-print("  AdminGate  / DadoManco$29   (superuser)")
-print("  Gate4      / Gate2026")
-print("  gestor_hipica  / DadoManco$29  → Haras Elite Prateada")
-print("  gestor_hipica1 / DadoManco$29  → Hípica Cavalos do Sul")
+print("  AdminGate  / Gate2024   (superuser)")
+print("  Gate4      / Gate2024")
+print("  gestor_hipica  / Gate4@2026  → Haras Elite Prateada")
+print("  gestor_hipica1 / Gate4@2026  → Hípica Cavalos do Sul")
 print("  Suzana     / Asterix         → Professora emp1")
-print("  Alessandro / Gate2026        → Professor emp1")
-print("  LuizaSqueff/ Gate2026        → Professora emp1")
+print("  Alessandro / Gate2024        → Professor emp1")
 print("  Aluno33    / Aluno$2026      → Aluno emp1")
 print("="*60)

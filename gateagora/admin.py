@@ -21,6 +21,7 @@ from .models import (
     Baia,
     Cavalo,
     ConfigPrazoManejo,
+    ConfigPrecoManejo,
     DocumentoCavalo,
     Empresa,
     EventoAgendaCavalo,
@@ -416,10 +417,15 @@ class EventoAgendaAdmin(BaseCavaloAdmin):
     list_filter = ["tipo", "cavalo"]
 
 
-@admin.register(ConfigPrazoManejo)
-class ConfigPrazoManejoAdmin(BaseEmpresaAdmin):
-    list_display = ["empresa", "prazo_vacina", "prazo_vermifugo", "prazo_ferrageamento", "prazo_casqueamento"]
-
+@admin.register(ConfigPrecoManejo)
+class ConfigPrecoManejoAdmin(BaseEmpresaAdmin):
+    list_display = ["empresa", "cobrar_vacina", "valor_vacina", "cobrar_vermifugo", "valor_vermifugo", "cobrar_ferrageamento", "valor_ferrageamento", "cobrar_casqueamento", "valor_casqueamento"]
+    fieldsets = (
+        ("Vacinação",     {"fields": ("cobrar_vacina",        "valor_vacina")}),
+        ("Vermifugação",  {"fields": ("cobrar_vermifugo",     "valor_vermifugo")}),
+        ("Ferrageamento", {"fields": ("cobrar_ferrageamento", "valor_ferrageamento")}),
+        ("Casqueamento",  {"fields": ("cobrar_casqueamento",  "valor_casqueamento")}),
+    )
 
 # ── USER ADMIN (registrado apenas UMA vez) ──────────────────────────────────
 

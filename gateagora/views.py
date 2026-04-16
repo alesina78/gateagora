@@ -29,7 +29,7 @@ from urllib.parse import quote  # se precisar
 from .models import (
     Empresa, Perfil, Aluno, Cavalo, Baia, Piquete, Aula,
     ItemEstoque, MovimentacaoFinanceira, MovimentacaoEstoque, DocumentoCavalo,
-    ConfigPrazoManejo, Fatura, ItemFatura
+    ConfigPrazoManejo, ConfigPrecoManejo, Fatura, ItemFatura
 )
 
 BRAND_NAME = "Gate 4"
@@ -44,8 +44,8 @@ EMOJIS_TIPO_FATURA = {
     'VETERINARIO':   '🩺',
     'VERMIFUGO':     '💊',
     'CASQUEIO':      '🦶',
-    'FERRAGEAMENTO': '🦶',
-    'OUTROS':        '🧪',
+    'FERRAGEAMENTO': '🧲',
+    'OUTROS':        '📦',
 }
 
 
@@ -551,8 +551,8 @@ def dashboard(request):
         'VETERINARIO':   '🩺 Veterinário',
         'VERMIFUGO':     '💊 Vermífugo',
         'CASQUEIO':      '🦶 Casqueio',
-        'FERRAGEAMENTO': '🦶 Ferrageamento',
-        'OUTROS':        '🧪 Outros',
+        'FERRAGEAMENTO': '🧲 Ferrageamento',
+        'OUTROS':        '📦 Outros',
     }
     try:
         receita_cat_qs = (
@@ -1242,12 +1242,54 @@ def manejo_em_massa(request):
 
             campo_cavalo, tipo_doc, titulo_doc = MAPA[procedimento]
 
+            # Carrega config de preços da empresa (se existir)
+            try:
+                cfg_preco = ConfigPrecoManejo.objects.get(empresa=empresa)
+            except Exception:
+                cfg_preco = None
+
+            # Mapeamento procedimento → campo de cobrança e tipo ItemFatura
+            MAPA_PRECO = {
+                "Vacinacao":     ("cobrar_vacina",        "valor_vacina",        "VETERINARIO"),
+                "Vermifugacao":  ("cobrar_vermifugo",     "valor_vermifugo",     "VERMIFUGO"),
+                "Ferrageamento": ("cobrar_ferrageamento", "valor_ferrageamento", "FERRAGEAMENTO"),
+                "Casqueamento":  ("cobrar_casqueamento",  "valor_casqueamento",  "CASQUEIO"),
+            }
+            campo_cobrar, campo_valor, tipo_fatura = MAPA_PRECO[procedimento]
+
             for cavalo in cavalos:
                 # 1. Atualiza o campo direto no Cavalo (fonte principal do dashboard)
                 setattr(cavalo, campo_cavalo, data_proc)
                 cavalo.save(update_fields=[campo_cavalo])
 
-                # 2. Cria ou atualiza o DocumentoCavalo correspondente
+                # 2. Gera ItemFatura se cavalo é de hotelaria e procedimento é cobrado
+                if (
+                    cavalo.categoria == 'HOTELARIA'
+                    and cfg_preco
+                    and getattr(cfg_preco, campo_cobrar, False)
+                ):
+                    valor_proc = getattr(cfg_preco, campo_valor, Decimal('0.00'))
+                    if valor_proc > 0:
+                        hoje_proc = data_proc if hasattr(data_proc, 'year') else timezone.localdate()
+                        venc = hoje_proc.replace(day=28) if hasattr(hoje_proc, 'replace') else hoje_proc
+                        fatura, _ = Fatura.objects.get_or_create(
+                            empresa=empresa,
+                            aluno=cavalo.proprietario,
+                            status='PENDENTE',
+                            data_vencimento__year=hoje_proc.year,
+                            data_vencimento__month=hoje_proc.month,
+                            defaults={'data_vencimento': venc},
+                        )
+                        ItemFatura.objects.create(
+                            fatura=fatura,
+                            tipo=tipo_fatura,
+                            cavalo=cavalo,
+                            descricao=f"{titulo_doc} — {data_proc}",
+                            valor=valor_proc,
+                            data=hoje_proc,
+                        )
+
+                # 3. Cria ou atualiza o DocumentoCavalo correspondente
                 #    (para o painel "Documentos & Vacinas" e histórico)
                 # Para OUTRO (ferrageamento/casqueamento), usa o titulo como discriminador
                 qs_doc = DocumentoCavalo.objects.filter(cavalo=cavalo, tipo=tipo_doc)

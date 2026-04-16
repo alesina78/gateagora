@@ -513,6 +513,28 @@ class ConfigPrazoManejo(models.Model):
 
     def __str__(self):
         return f"Prazos de Manejo — {self.empresa.nome}"
+    
+class ConfigPrecoManejo(models.Model):
+    """Preços de cobrança por procedimento de manejo — por empresa."""
+    empresa = models.OneToOneField(
+        Empresa, on_delete=models.CASCADE, related_name='config_preco_manejo'
+    )
+    cobrar_vacina        = models.BooleanField(default=False)
+    valor_vacina         = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
+    cobrar_vermifugo     = models.BooleanField(default=False)
+    valor_vermifugo      = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
+    cobrar_ferrageamento = models.BooleanField(default=False)
+    valor_ferrageamento  = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
+    cobrar_casqueamento  = models.BooleanField(default=False)
+    valor_casqueamento   = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
+
+    class Meta:
+        verbose_name        = "Configuração de Preços de Manejo"
+        verbose_name_plural = "Configurações de Preços de Manejo"
+
+    def __str__(self):
+        return f"Preços de Manejo — {self.empresa.nome}"
+
 
 # --- 6. MOVIMENTAÇÃO DE ESTOQUE ---
 
