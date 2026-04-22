@@ -8,6 +8,8 @@ from django.utils.html import format_html
 from django import forms
 from django.urls import reverse
 from django.http import HttpResponseRedirect
+from django.contrib import messages
+from django.utils.crypto import get_random_string
 
 from datetime import date
 
@@ -71,6 +73,11 @@ class BaseEmpresaAdmin(ModelAdmin):
             if not request.user.is_superuser and hasattr(request, 'empresa') and request.empresa:
                 model = db_field.related_model
                 kwargs["queryset"] = model.objects.filter(empresa=request.empresa)
+
+        if db_field.name == "perfil_usuario":
+            if not request.user.is_superuser and hasattr(request, 'empresa') and request.empresa:
+                kwargs["queryset"] = Perfil.objects.filter(empresa=request.empresa)
+
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 
@@ -208,15 +215,81 @@ class PerfilAdmin(ModelAdmin):
 
 
 @admin.register(Aluno)
+
 class AlunoAdmin(BaseEmpresaAdmin):
-    list_display = ["nome", "telefone", "ativo", "valor_aula_formatado"]
+    list_display = ["nome", "telefone", "ativo", "valor_aula_formatado", "usuario_login"]
     list_editable = ["ativo"]
     list_filter = ["ativo"]
-    search_fields = ["nome", "telefone"]
+    search_fields = ["nome", "telefone", "user__username", "user__email"]
+
+    @admin.display(description="Usuário")
+    def usuario_login(self, obj):
+        return obj.user.username if obj.user else "-"
+
+
+    # Lista segura de campos (evita FieldError)
+    fields = [
+        'empresa',
+        'nome',
+        'telefone',
+        'foto',
+        'ativo',
+        'valor_aula',
+        'plano',
+        'perfil_usuario'   # ← só aparece se a migração rodou
+    ]
 
     @display(description="Valor Aula")
     def valor_aula_formatado(self, obj):
         return f"R$ {obj.valor_aula}"
+
+    @display(description="Tem Login?", boolean=True)
+    def tem_login(self, obj):
+        return hasattr(obj, 'perfil_usuario') and obj.perfil_usuario is not None
+
+    @admin.action(description="🔑 Criar Login para Aluno(s) selecionado(s)")
+    def criar_login_aluno(modeladmin, request, queryset):
+        criados = 0
+        for aluno in queryset:
+            if hasattr(aluno, 'perfil_usuario') and aluno.perfil_usuario:
+                messages.warning(request, f"{aluno.nome} já possui login.")
+                continue
+
+            base_username = aluno.nome.lower().replace(" ", ".").replace("ç", "c").replace("ã", "a")[:25]
+            username = base_username
+            counter = 1
+            while User.objects.filter(username=username).exists():
+                username = f"{base_username}{counter}"
+                counter += 1
+
+            senha_temp = (aluno.telefone[-4:] if aluno.telefone and len(aluno.telefone) >= 4 else "1234") + "aluno"
+
+            user = User.objects.create_user(
+                username=username,
+                first_name=aluno.nome.split()[0] if aluno.nome else "",
+                last_name=" ".join(aluno.nome.split()[1:]) if len(aluno.nome.split()) > 1 else "",
+                password=senha_temp
+            )
+
+            perfil = Perfil.objects.create(
+                user=user,
+                empresa=aluno.empresa,
+                cargo='Aluno',
+                telefone=aluno.telefone
+            )
+
+            aluno.perfil_usuario = perfil
+            aluno.save(update_fields=['perfil_usuario'])
+
+            criados += 1
+            messages.success(
+                request, 
+                f"✅ Login criado para <b>{aluno.nome}</b><br>"
+                f"Usuário: <b>{username}</b> | Senha: <b>{senha_temp}</b>"
+            )
+
+        if criados == 0:
+            messages.warning(request, "Nenhum login foi criado.")
 
 
 @admin.register(Baia)

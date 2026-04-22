@@ -28,19 +28,94 @@
       border-bottom: 1px solid var(--border);
       backdrop-filter: blur(10px);
     }
-    .aula-card { 
-        transition: all 0.2s ease; 
-        border-left: 4px solid #6366f1; 
-    }
-    .aula-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
-    
-    /* Ajuste para o Select no modo Light */
+
+    /* ── Ajuste para o Select no modo Light ── */
     select {
         appearance: none;
         background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
         background-repeat: no-repeat;
         background-position: right 1rem center;
         background-size: 1em;
+    }
+
+    /* ══════════════════════════════════════════
+       CARDS DE AULA — ESTADOS DE CONFIRMAÇÃO
+    ══════════════════════════════════════════ */
+
+    .aula-card {
+        transition: all 0.2s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    /* CONFIRMADA — verde, destaque total */
+    .aula-confirmada {
+        border-left: 4px solid #10b981 !important;
+        background-color: var(--card-bg) !important;
+        opacity: 1;
+    }
+    .aula-confirmada:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px -4px rgba(16, 185, 129, 0.2);
+    }
+
+    /* NÃO CONFIRMADA — opaco, borda âmbar, fundo levemente diferente */
+    .aula-nao-confirmada {
+        border-left: 4px solid #f59e0b !important;
+        opacity: 0.55;
+        filter: saturate(0.6);
+    }
+    .aula-nao-confirmada:hover {
+        opacity: 0.75;
+        filter: saturate(0.9);
+        transform: translateY(-2px);
+    }
+
+    /* Faixa de alerta "SEM CONFIRMAÇÃO" no canto do card não confirmado */
+    .ribbon-pendente {
+        position: absolute;
+        top: 0;
+        right: 0;
+        background: #f59e0b;
+        color: #78350f;
+        font-size: 8px;
+        font-weight: 900;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        padding: 3px 10px 3px 14px;
+        border-bottom-left-radius: 8px;
+        clip-path: polygon(12px 0%, 100% 0%, 100% 100%, 0% 100%);
+    }
+
+    /* Badge de confirmado — pill com check */
+    .badge-confirmado {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        background: #10b981;
+        color: #fff;
+        font-size: 9px;
+        font-weight: 900;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        padding: 4px 10px;
+        border-radius: 99px;
+    }
+
+    /* Badge aguardando — pill âmbar */
+    .badge-pendente {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        background: rgba(245, 158, 11, 0.15);
+        color: #d97706;
+        border: 1px solid #f59e0b;
+        font-size: 9px;
+        font-weight: 900;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        padding: 4px 10px;
+        border-radius: 99px;
     }
   </style>
 </head>
@@ -83,9 +158,22 @@
     <div>
       <p class="text-[10px] text-slate-400 uppercase font-black tracking-widest mb-1">Programação selecionada</p>
       <h2 class="text-2xl font-black text-slate-900 tracking-tight">{{ data_selecionada|date:"l, d \d\e F"|capfirst }}</h2>
-      <div class="flex items-center gap-2 mt-1">
-          <span class="w-2 h-2 bg-indigo-500 rounded-full animate-pulse"></span>
-          <p class="text-xs text-indigo-600 font-bold uppercase tracking-tighter">{{ total_aulas }} aula{{ total_aulas|pluralize }} hoje</p>
+      <div class="flex items-center gap-4 mt-1">
+          <div class="flex items-center gap-2">
+              <span class="w-2 h-2 bg-indigo-500 rounded-full animate-pulse"></span>
+              <p class="text-xs text-indigo-600 font-bold uppercase tracking-tighter">{{ total_aulas }} aula{{ total_aulas|pluralize }} hoje</p>
+          </div>
+          <!-- Legenda visual rápida -->
+          <div class="flex items-center gap-3">
+              <span class="flex items-center gap-1.5 text-[10px] font-bold text-emerald-600">
+                  <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span>
+                  Confirmadas
+              </span>
+              <span class="flex items-center gap-1.5 text-[10px] font-bold text-amber-600">
+                  <span class="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block"></span>
+                  Pendentes
+              </span>
+          </div>
       </div>
     </div>
     <div class="flex gap-2">
@@ -143,13 +231,20 @@
     </div>
   </div>
 
-  {% if aulas %}
+    {% if aulas %}
   <div class="grid grid-cols-1 gap-4">
     {% for aula in aulas %}
-    <div class="aula-card card p-5 flex gap-5 {% if aula.concluida %}opacity-60 grayscale{% endif %}">
-      
+    <div class="aula-card card p-5 flex gap-5 {% if aula.confirmacao %}aula-confirmada{% else %}aula-nao-confirmada{% endif %}">
+
+      <!-- Faixa de pendência no canto superior direito (só aparece se não confirmado) -->
+      {% if not aula.confirmacao %}
+        <div class="ribbon-pendente">
+          <i class="fa-solid fa-triangle-exclamation mr-1"></i> Sem confirmação
+        </div>
+      {% endif %}
+
       <div class="flex flex-col items-center">
-        <span class="bg-indigo-600 text-white text-sm font-black px-3 py-1 rounded-lg shadow-lg shadow-indigo-100">
+        <span class="{% if aula.confirmacao %}bg-emerald-600{% else %}bg-indigo-600{% endif %} text-white text-sm font-black px-3 py-1 rounded-lg shadow-lg">
           {{ aula.data_hora|date:"H:i" }}
         </span>
       </div>
@@ -162,24 +257,36 @@
                 {{ aula.get_tipo_display }} {% if aula.instrutor %}· Prof. {{ aula.instrutor.user.first_name }}{% endif %}
             </p>
           </div>
-          <span class="text-[9px] font-black px-3 py-1 rounded-full uppercase bg-slate-100 text-slate-500">
-            {{ aula.get_local_display }}
-          </span>
+
+          <div class="flex items-center gap-2 flex-wrap justify-end">
+            {% if aula.confirmacao %}
+              <span class="badge-confirmado">
+                <i class="fa-solid fa-circle-check"></i> Confirmada
+              </span>
+            {% else %}
+              <span class="badge-pendente">
+                <i class="fa-solid fa-clock"></i> Aguardando
+              </span>
+            {% endif %}
+            <span class="text-[9px] font-black px-3 py-1 rounded-full uppercase bg-slate-700 text-slate-300">
+              {{ aula.get_local_display }}
+            </span>
+          </div>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
-            <i class="fa-solid fa-horse text-indigo-500"></i>
+          <div class="flex items-center gap-3 p-3 bg-slate-800 rounded-xl border border-slate-700">
+            <i class="fa-solid fa-horse text-indigo-400"></i>
             <div>
                 <p class="text-[9px] text-slate-400 font-black uppercase leading-none">Cavalo</p>
-                <p class="text-xs font-bold text-slate-900 uppercase">{{ aula.cavalo.nome }}</p>
+                <p class="text-xs font-bold text-slate-100 uppercase">{{ aula.cavalo.nome }}</p>
             </div>
           </div>
-          <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
-            <i class="fa-solid fa-location-dot text-rose-500"></i>
+          <div class="flex items-center gap-3 p-3 bg-slate-800 rounded-xl border border-slate-700">
+            <i class="fa-solid fa-location-dot text-rose-400"></i>
             <div>
                 <p class="text-[9px] text-slate-400 font-black uppercase leading-none">Localização</p>
-                <p class="text-xs font-bold text-slate-900 uppercase">
+                <p class="text-xs font-bold text-slate-100 uppercase">
                     {% if aula.cavalo.baia %}Baia {{ aula.cavalo.baia.numero }}
                     {% elif aula.cavalo.piquete %}Piquete: {{ aula.cavalo.piquete.nome }}
                     {% else %}N/D{% endif %}
@@ -190,11 +297,11 @@
 
         <div class="mt-3 flex items-center gap-2">
             {% if aula.cavalo.material_proprio %}
-                <span class="text-[9px] font-black uppercase bg-amber-50 text-amber-600 border border-amber-200 px-2 py-1 rounded-md">
+                <span class="text-[9px] font-black uppercase bg-amber-500/20 text-amber-400 border border-amber-400 px-2 py-1 rounded-md">
                     <i class="fa-solid fa-lock mr-1"></i> Material Próprio
                 </span>
             {% else %}
-                <span class="text-[9px] font-black uppercase bg-slate-100 text-slate-500 px-2 py-1 rounded-md">
+                <span class="text-[9px] font-black uppercase bg-slate-700 text-slate-300 px-2 py-1 rounded-md">
                     Material Escola
                 </span>
             {% endif %}

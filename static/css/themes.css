@@ -133,3 +133,23 @@ footer {
     color: #111111 !important;
     background-color: #faf8f5 !important;
 }
+
+/* Luísa confirmou: FICA 100% VISÍVEL */
+.aula-confirmada {
+    opacity: 1 !important;
+    filter: none !important;
+    border-left: 6px solid #10b981 !important; /* Verde */
+}
+
+/* Não confirmou: FICA APAGADO */
+.aula-nao_confirmada {
+    opacity: 0.3 !important; /* Bem apagado mesmo */
+    filter: grayscale(100%) !important;
+    border-left: 6px solid #f59e0b !important; /* Laranja */
+}
+
+/* Concluída: CINZA */
+.aula-concluida {
+    opacity: 0.2 !important;
+    filter: grayscale(100%) brightness(0.5) !important;
+}

@@ -26,10 +26,12 @@ from django.utils.timezone import localtime
 from reportlab.lib import colors
 from urllib.parse import quote  # se precisar
 
+from django.views.decorators.http import require_POST
+
 from .models import (
     Empresa, Perfil, Aluno, Cavalo, Baia, Piquete, Aula,
     ItemEstoque, MovimentacaoFinanceira, MovimentacaoEstoque, DocumentoCavalo,
-    ConfigPrazoManejo, ConfigPrecoManejo, Fatura, ItemFatura
+    ConfigPrazoManejo, ConfigPrecoManejo, Fatura, ItemFatura, ConfirmacaoPresenca
 )
 
 BRAND_NAME = "Gate 4"
@@ -58,10 +60,10 @@ class CustomLoginView(LoginView):
 
     def get_success_url(self):
         user = self.request.user
-        # Se o perfil for Aluno, vai direto para encilhamento
+        # Se o perfil for Aluno, vai direto para minhas aulas
         try:
             if user.perfil.cargo == 'Aluno':
-                return '/encilhamento/'
+                return '/minhas-aulas/'
         except:
             pass
         return '/'  # demais cargos vão para o dashboard
@@ -969,8 +971,27 @@ def _get_aulas_encilhamento(empresa, data_str):
             'aluno', 'cavalo', 'cavalo__baia',
             'cavalo__piquete', 'instrutor', 'instrutor__user'
         )
+        .prefetch_related('confirmacao')
         .order_by('data_hora')
     )
+    # ... código do queryset (aulas = ...)
+
+    # Loop para definir o estado visual
+    for aula in aulas:
+        try:
+            # Verifica se existe o registro na tabela ConfirmacaoPresenca
+            # Use o nome correto do related_name (confirmacao)
+            tem_confirmacao = hasattr(aula, 'confirmacao') and aula.confirmacao is not None
+        except:
+            tem_confirmacao = False
+        
+        if aula.concluida:
+            aula.ui_estado = "concluida"
+        elif tem_confirmacao:
+            aula.ui_estado = "confirmada"     # LUÍSA (Aceso)
+        else:
+            aula.ui_estado = "nao_confirmada" # OUTROS (Apagado)
+
     return aulas, data
 
 
@@ -1019,6 +1040,7 @@ def encilhamento(request):
         "brand_name":            BRAND_NAME,
         "empresa":               empresa,
         "aulas":                 aulas,
+        "total_aulas":           aulas.count(),
         "data_selecionada":      data_selecionada,
         "contatos_funcionarios": contatos_funcionarios,
         "contatos_clientes":     contatos_clientes,
@@ -1633,3 +1655,161 @@ def salvar_fechamento(request):
         messages.info(request, "Nenhuma alteração registrada no fechamento de hoje.")
 
     return redirect("dashboard")
+
+
+# ── Minhas Aulas (Aluno) ──────────────────────────────────────────────────────
+
+@login_required
+def minhas_aulas(request):
+    "Tela exclusiva para o Aluno ver e confirmar suas próprias aulas."
+
+    # 1. Perfil (obrigatório)
+    try:
+        perfil = request.user.perfil
+    except Exception:
+        return redirect('login')
+
+    # 2. Aluno vinculado ao usuário (FORMA CORRETA)
+    aluno = getattr(request.user, "aluno", None)
+
+    if not aluno or aluno.empresa_id != perfil.empresa_id:
+        return render(
+            request,
+            "gateagora/minhas_aulas.html",
+            {"aluno": None}
+        )
+
+    # 3. Prazos de confirmação
+    config = ConfigPrazoManejo.objects.filter(
+        empresa=perfil.empresa
+    ).first()
+
+    prazo_horas = config.prazo_confirmacao_horas if config else 0
+    agora = timezone.now()
+
+    # 4. Aulas do aluno
+    aulas = (
+        Aula.objects
+        .filter(
+            aluno=aluno,
+            empresa=perfil.empresa,
+        )
+        .select_related(
+            "cavalo",
+            "instrutor",
+            "instrutor__user",
+        )
+        .prefetch_related("confirmacao")
+        .order_by("data_hora")
+    )
+
+    aulas_com_status = []
+
+    for aula in aulas:
+        confirmacao = getattr(aula, "confirmacao", None)
+        aula_passada = aula.data_hora < agora
+
+        pode_confirmar = (
+            not aula_passada
+            and not confirmacao
+            and (
+                prazo_horas == 0
+                or aula.data_hora <= agora + timezone.timedelta(hours=prazo_horas)
+            )
+        )
+
+        aulas_com_status.append({
+            "aula": aula,
+            "ja_confirmou": bool(confirmacao),
+            "confirmacao": confirmacao,
+            "aula_passada": aula_passada,
+            "pode_confirmar": pode_confirmar,
+        })
+
+    return render(
+        request,
+        "gateagora/minhas_aulas.html",
+        {
+            "aluno": aluno,
+            "aulas_com_status": aulas_com_status,
+            "prazo_horas": prazo_horas,
+        }
+    )
+
+
+@login_required
+@require_POST
+def confirmar_presenca(request, aula_id):
+    """Aluno confirma presença em uma aula."""
+    try:
+        perfil = request.user.perfil
+    except Exception:
+        return redirect('login')
+
+    if perfil.cargo != 'Aluno':
+        return redirect('dashboard')
+
+    empresa      = perfil.empresa
+    nome_usuario = request.user.get_full_name() or request.user.username
+
+    try:
+        aluno = Aluno.objects.get(empresa=empresa, nome__iexact=nome_usuario)
+    except Aluno.DoesNotExist:
+        messages.error(request, "Aluno não encontrado para este usuário.")
+        return redirect('minhas_aulas')
+    except Aluno.MultipleObjectsReturned:
+        aluno = Aluno.objects.filter(empresa=empresa, nome__iexact=nome_usuario).first()
+
+    aula  = get_object_or_404(Aula, id=aula_id, empresa=empresa, aluno=aluno)
+    agora = timezone.now()
+
+    if agora > aula.data_hora:
+        messages.warning(request, "Esta aula já aconteceu, não é possível confirmar.")
+        return redirect('minhas_aulas')
+
+    _, criado = ConfirmacaoPresenca.objects.get_or_create(aula=aula, aluno=aluno)
+
+    if criado:
+        messages.success(request, f"✅ Presença confirmada para {aula.data_hora.strftime('%d/%m às %H:%M')}!")
+    else:
+        messages.info(request, "Você já havia confirmado esta aula.")
+
+    return redirect('minhas_aulas')
+
+
+@login_required
+@require_POST
+def desconfirmar_presenca(request, aula_id):
+    """Aluno cancela a confirmação de presença."""
+    try:
+        perfil = request.user.perfil
+    except Exception:
+        return redirect('login')
+
+    if perfil.cargo != 'Aluno':
+        return redirect('dashboard')
+
+    empresa      = perfil.empresa
+    nome_usuario = request.user.get_full_name() or request.user.username
+
+    try:
+        aluno = Aluno.objects.get(empresa=empresa, nome__iexact=nome_usuario)
+    except Aluno.DoesNotExist:
+        messages.error(request, "Aluno não encontrado para este usuário.")
+        return redirect('minhas_aulas')
+    except Aluno.MultipleObjectsReturned:
+        aluno = Aluno.objects.filter(empresa=empresa, nome__iexact=nome_usuario).first()
+
+    aula  = get_object_or_404(Aula, id=aula_id, empresa=empresa, aluno=aluno)
+    agora = timezone.now()
+
+    if agora > aula.data_hora:
+        messages.warning(request, "Esta aula já aconteceu.")
+        return redirect('minhas_aulas')
+
+    deleted, _ = ConfirmacaoPresenca.objects.filter(aula=aula, aluno=aluno).delete()
+
+    if deleted:
+        messages.info(request, f"Confirmação cancelada para {aula.data_hora.strftime('%d/%m às %H:%M')}.")
+
+    return redirect('minhas_aulas')

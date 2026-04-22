@@ -23,6 +23,11 @@ urlpatterns = [
     path('encilhamento/pdf/',      views.encilhamento_pdf,      name='encilhamento_pdf'),
     path('encilhamento/whatsapp/', views.encilhamento_whatsapp, name='encilhamento_whatsapp'),
 
+    # Minhas Aulas (aluno)
+    path('minhas-aulas/',                         views.minhas_aulas,          name='minhas_aulas'),
+    path('minhas-aulas/confirmar/<int:aula_id>/', views.confirmar_presenca,    name='confirmar_presenca'),
+    path('minhas-aulas/cancelar/<int:aula_id>/',  views.desconfirmar_presenca, name='desconfirmar_presenca'),
+
     # Manejo em massa
     path('manejo-em-massa/', views.manejo_em_massa, name='manejo_em_massa'),
 

@@ -26,6 +26,30 @@ class Empresa(models.Model):
         return self.nome
 
 
+class Aluno(models.Model):
+    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE)
+
+    user = models.OneToOneField(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="aluno",
+        help_text="Usuário de login do aluno"
+    )
+
+    nome = models.CharField(max_length=200)
+    telefone = models.CharField(
+        max_length=20,
+        default="",
+        validators=[
+            RegexValidator(
+                r'^\+?\d{10,15}$',
+                'Telefone deve estar no formato internacional, ex: 5511999999999'
+            )
+        ],
+    )
+
 class Perfil(models.Model):
     class Cargo(models.TextChoices):
         GESTOR = 'Gestor', 'Gestor/Dono'
@@ -96,6 +120,15 @@ class Aluno(models.Model):
         null=True, 
         blank=True, 
         verbose_name="Plano Contratado"
+    )
+    perfil_usuario = models.OneToOneField(
+        'Perfil',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='aluno_vinculado',
+        verbose_name="Login do Aluno",
+        help_text="Perfil de acesso do aluno ao sistema"
     )
 
 
@@ -332,6 +365,30 @@ class Aula(models.Model):
         return f"{self.aluno.nome} - {data}"
 
 
+class ConfirmacaoPresenca(models.Model):
+    """
+    Registra que um aluno confirmou presença em uma aula específica.
+    """
+    aula = models.OneToOneField(
+        'Aula',
+        on_delete=models.CASCADE,
+        related_name='confirmacao'
+    )
+    aluno = models.ForeignKey(
+        'Aluno',
+        on_delete=models.CASCADE,
+        related_name='confirmacoes'
+    )
+    confirmado_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name        = "Confirmação de Presença"
+        verbose_name_plural = "Confirmações de Presença"
+
+    def __str__(self):
+        return f"✅ {self.aluno.nome} confirmou {self.aula}"
+
+
 class ItemEstoque(models.Model):
     empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE)
     nome = models.CharField(max_length=100)
@@ -506,6 +563,10 @@ class ConfigPrazoManejo(models.Model):
     prazo_vermifugo     = models.PositiveIntegerField(default=90,  help_text="Dias entre vermifugações")
     prazo_ferrageamento = models.PositiveIntegerField(default=60,  help_text="Dias entre ferrageamentos")
     prazo_casqueamento  = models.PositiveIntegerField(default=60,  help_text="Dias entre casqueamentos")
+    prazo_confirmacao_horas = models.PositiveIntegerField(
+        default=24,
+        help_text="Horas antes da aula dentro das quais o aluno pode confirmar presença (0 = sem prazo)"
+    )
 
     class Meta:
         verbose_name        = "Configuração de Prazos de Manejo"
