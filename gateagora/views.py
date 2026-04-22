@@ -1669,8 +1669,11 @@ def minhas_aulas(request):
     except Exception:
         return redirect('login')
 
-    # 2. Aluno vinculado ao usuário (FORMA CORRETA)
-    aluno = getattr(request.user, "aluno", None)
+    # 2. Aluno vinculado ao usuário via perfil_usuario
+    try:
+        aluno = Aluno.objects.get(perfil_usuario=perfil)
+    except Aluno.DoesNotExist:
+        aluno = None
 
     if not aluno or aluno.empresa_id != perfil.empresa_id:
         return render(
@@ -1687,12 +1690,15 @@ def minhas_aulas(request):
     prazo_horas = config.prazo_confirmacao_horas if config else 0
     agora = timezone.now()
 
-    # 4. Aulas do aluno
+    # 4. Aulas do aluno — futuras + últimos 30 dias
+    trinta_dias_atras = agora - timezone.timedelta(days=30)
+
     aulas = (
         Aula.objects
         .filter(
             aluno=aluno,
             empresa=perfil.empresa,
+            data_hora__gte=trinta_dias_atras,
         )
         .select_related(
             "cavalo",
@@ -1703,7 +1709,8 @@ def minhas_aulas(request):
         .order_by("data_hora")
     )
 
-    aulas_com_status = []
+    proximas = []
+    historico = []
 
     for aula in aulas:
         confirmacao = getattr(aula, "confirmacao", None)
@@ -1718,20 +1725,29 @@ def minhas_aulas(request):
             )
         )
 
-        aulas_com_status.append({
+        item = {
             "aula": aula,
             "ja_confirmou": bool(confirmacao),
             "confirmacao": confirmacao,
             "aula_passada": aula_passada,
             "pode_confirmar": pode_confirmar,
-        })
+        }
+
+        if aula_passada:
+            historico.append(item)
+        else:
+            proximas.append(item)
+
+    # Histórico mais recente primeiro
+    historico = list(reversed(historico))
 
     return render(
         request,
         "gateagora/minhas_aulas.html",
         {
             "aluno": aluno,
-            "aulas_com_status": aulas_com_status,
+            "proximas": proximas,
+            "historico": historico,
             "prazo_horas": prazo_horas,
         }
     )
@@ -1753,12 +1769,10 @@ def confirmar_presenca(request, aula_id):
     nome_usuario = request.user.get_full_name() or request.user.username
 
     try:
-        aluno = Aluno.objects.get(empresa=empresa, nome__iexact=nome_usuario)
+        aluno = Aluno.objects.get(perfil_usuario=perfil)
     except Aluno.DoesNotExist:
         messages.error(request, "Aluno não encontrado para este usuário.")
         return redirect('minhas_aulas')
-    except Aluno.MultipleObjectsReturned:
-        aluno = Aluno.objects.filter(empresa=empresa, nome__iexact=nome_usuario).first()
 
     aula  = get_object_or_404(Aula, id=aula_id, empresa=empresa, aluno=aluno)
     agora = timezone.now()
@@ -1793,12 +1807,10 @@ def desconfirmar_presenca(request, aula_id):
     nome_usuario = request.user.get_full_name() or request.user.username
 
     try:
-        aluno = Aluno.objects.get(empresa=empresa, nome__iexact=nome_usuario)
+        aluno = Aluno.objects.get(perfil_usuario=perfil)
     except Aluno.DoesNotExist:
         messages.error(request, "Aluno não encontrado para este usuário.")
         return redirect('minhas_aulas')
-    except Aluno.MultipleObjectsReturned:
-        aluno = Aluno.objects.filter(empresa=empresa, nome__iexact=nome_usuario).first()
 
     aula  = get_object_or_404(Aula, id=aula_id, empresa=empresa, aluno=aluno)
     agora = timezone.now()

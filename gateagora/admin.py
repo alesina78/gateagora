@@ -215,47 +215,47 @@ class PerfilAdmin(ModelAdmin):
 
 
 @admin.register(Aluno)
-
 class AlunoAdmin(BaseEmpresaAdmin):
     list_display = ["nome", "telefone", "ativo", "valor_aula_formatado", "usuario_login"]
     list_editable = ["ativo"]
     list_filter = ["ativo"]
-    search_fields = ["nome", "telefone", "user__username", "user__email"]
+    search_fields = ["nome", "telefone", "perfil_usuario__user__username"]
+    actions = ["criar_login_aluno"]
 
-    @admin.display(description="Usuário")
-    def usuario_login(self, obj):
-        return obj.user.username if obj.user else "-"
-
-
-    # Lista segura de campos (evita FieldError)
     fields = [
         'empresa',
+        'perfil_usuario',
         'nome',
         'telefone',
         'foto',
         'ativo',
         'valor_aula',
         'plano',
-        'perfil_usuario'   # ← só aparece se a migração rodou
     ]
 
-    @display(description="Valor Aula")
+    @admin.display(description="Usuário")
+    def usuario_login(self, obj):
+        if obj.perfil_usuario and obj.perfil_usuario.user:
+            return obj.perfil_usuario.user.username
+        return "-"
+
+    @admin.display(description="Valor Aula")
     def valor_aula_formatado(self, obj):
         return f"R$ {obj.valor_aula}"
 
-    @display(description="Tem Login?", boolean=True)
+    @admin.display(description="Tem Login?", boolean=True)
     def tem_login(self, obj):
-        return hasattr(obj, 'perfil_usuario') and obj.perfil_usuario is not None
+        return obj.perfil_usuario is not None
 
     @admin.action(description="🔑 Criar Login para Aluno(s) selecionado(s)")
-    def criar_login_aluno(modeladmin, request, queryset):
+    def criar_login_aluno(self, request, queryset):
         criados = 0
         for aluno in queryset:
-            if hasattr(aluno, 'perfil_usuario') and aluno.perfil_usuario:
+            if aluno.perfil_usuario:
                 messages.warning(request, f"{aluno.nome} já possui login.")
                 continue
 
-            base_username = aluno.nome.lower().replace(" ", ".").replace("ç", "c").replace("ã", "a")[:25]
+            base_username = aluno.nome.lower().replace(" ", ".").replace("ç", "c").replace("ã", "a").replace("ê", "e").replace("é", "e").replace("á", "a").replace("ó", "o").replace("ú", "u").replace("í", "i")[:25]
             username = base_username
             counter = 1
             while User.objects.filter(username=username).exists():
@@ -283,9 +283,9 @@ class AlunoAdmin(BaseEmpresaAdmin):
 
             criados += 1
             messages.success(
-                request, 
-                f"✅ Login criado para <b>{aluno.nome}</b><br>"
-                f"Usuário: <b>{username}</b> | Senha: <b>{senha_temp}</b>"
+                request,
+                f"✅ Login criado para {aluno.nome} — "
+                f"Usuário: {username} | Senha: {senha_temp}"
             )
 
         if criados == 0:
