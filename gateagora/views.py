@@ -176,7 +176,26 @@ def dashboard(request):
     # 3. Fluxo normal do sistema
     hoje = timezone.localdate()
 
-        # CONTAS A RECEBER
+    # --- INÍCIO DO BLOCO CORRIGIDO ---
+    # 1. CÁLCULOS PARA OS GRÁFICOS DO DASHBOARD
+    hoje = timezone.localdate()
+    
+    # Soma o valor das faturas PAGAS no mês atual
+    faturas_pagas = Fatura.objects.filter(
+        empresa=empresa,
+        status='PAGO',
+        data_vencimento__year=hoje.year,
+        data_vencimento__month=hoje.month
+    ).aggregate(total=Sum('valor'))['total'] or Decimal('0.00')
+
+    # Soma o valor de TODAS as faturas ATRASADAS ou PENDENTES que já venceram (acumulado)
+    faturas_vencidas = Fatura.objects.filter(
+        empresa=empresa,
+        status__in=['PENDENTE', 'ATRASADO'],
+        data_vencimento__lt=hoje
+    ).aggregate(total=Sum('valor'))['total'] or Decimal('0.00')
+
+    # 2. LISTAGEM DE COBRANÇA (CARD DO DASHBOARD)
     faturas_criticas = Fatura.objects.filter(
         empresa=empresa,
         status__in=['PENDENTE', 'ATRASADO'],
@@ -185,26 +204,26 @@ def dashboard(request):
 
     listagem_cobranca = []
     for fatura in faturas_criticas:
-        # Tenta o total via ItemFatura primeiro
-        v_total = fatura.total
+        # Pega o valor nominal da fatura
+        v_total = Decimal(str(fatura.valor or 0))
 
-        # Fallback: se nao ha itens, usa o campo valor direto da Fatura
-        if v_total == Decimal("0.00") and getattr(fatura, "valor", None):
-            v_total = Decimal(str(fatura.valor))
-
-        # Fallback final: hotelaria + aulas concluidas do mes de referencia
+        # Se o valor estiver zerado, tenta calcular via itens ou fallback (sua lógica original)
         if v_total == Decimal("0.00"):
-            cavalos_aluno = Cavalo.objects.filter(proprietario=fatura.aluno, empresa=empresa)
-            v_hotel = sum(Decimal(str(c.mensalidade_baia or 0)) for c in cavalos_aluno)
-            n_aulas = Aula.objects.filter(
-                aluno=fatura.aluno, empresa=empresa, concluida=True,
-                data_hora__year=fatura.data_vencimento.year,
-                data_hora__month=fatura.data_vencimento.month,
-            ).count()
-            v_total = v_hotel + Decimal(str(n_aulas)) * Decimal(str(fatura.aluno.valor_aula or 0))
+            v_total = fatura.total
+            if v_total == Decimal("0.00"):
+                cavalos_aluno = Cavalo.objects.filter(proprietario=fatura.aluno, empresa=empresa)
+                v_hotel = sum(Decimal(str(c.mensalidade_baia or 0)) for c in cavalos_aluno)
+                n_aulas = Aula.objects.filter(
+                    aluno=fatura.aluno, empresa=empresa, concluida=True,
+                    data_hora__year=fatura.data_vencimento.year,
+                    data_hora__month=fatura.data_vencimento.month,
+                ).count()
+                v_total = v_hotel + Decimal(str(n_aulas)) * Decimal(str(fatura.aluno.valor_aula or 0))
 
         tel_c = "".join(filter(str.isdigit, str(fatura.aluno.telefone or "")))
-        link_zap = f"https://wa.me/55{tel_c}?text={quote(_montar_msg_fatura_whatsapp(fatura, empresa))}" if tel_c else "#"
+        # Usa a função auxiliar para montar a mensagem
+        msg_zap = _montar_msg_fatura_whatsapp(fatura, empresa)
+        link_zap = f"https://wa.me/55{tel_c}?text={quote(msg_zap)}" if tel_c else "#"
 
         listagem_cobranca.append({
             "fatura_id":  fatura.id,
@@ -214,7 +233,7 @@ def dashboard(request):
             "atrasado":   fatura.data_vencimento < hoje,
             "link_zap":   link_zap,
         })
-
+    
 
     # ── 1) Aulas de hoje — inclui concluídas para não sumirem da lista ─────────
     proximas_aulas = (
