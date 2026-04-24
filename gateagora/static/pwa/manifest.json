@@ -1,0 +1,26 @@
+{
+  "name": "Gate 4 — Minhas Aulas",
+  "short_name": "Gate 4",
+  "description": "Acompanhe suas aulas e confirme presença.",
+  "start_url": "/minhas-aulas/",
+  "scope": "/minhas-aulas/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0d0d14",
+  "theme_color": "#6366f1",
+  "lang": "pt-BR",
+  "icons": [
+    {
+      "src": "/static/pwa/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/pwa/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

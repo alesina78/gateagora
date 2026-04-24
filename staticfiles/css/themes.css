@@ -1,4 +1,9 @@
-:root, html {
+/* ============================================= */
+/*          THEMES.CSS - GATE 4                  */
+/* ============================================= */
+
+/* ── TEMA PADRÃO: ZAINO (ESCURO) ── */
+:root {
   /* DARK - ZAINO */
   --bg-main:    #0d1117;
   --card-bg:    #161b22;
@@ -10,7 +15,7 @@
   --border:     #30363d;
   --alert-bg:   rgba(255,255,255,0.03);
 
-  /* extras usados no HTML */
+  /* Cores de destaque */
   --emerald-text:  #10b981;
   --indigo-text:   #818cf8;
   --amber-text:    #fbbf24;
@@ -22,7 +27,7 @@
   --white-soft:    rgba(255,255,255,0.05);
 }
 
-/* ☀️ MODO TORDILHO — ELEGANTE / GESTORES */
+/* ── TEMA CLARO: TORDILHO (ELEGANTE) ── */
 [data-theme="tordilho"] {
   --bg-main:    #f2efe9;
   --card-bg:    #faf8f5;
@@ -34,7 +39,7 @@
   --border:     #d8d3c8;
   --alert-bg:   rgba(0,0,0,0.03);
 
-  /* extras — versões claras e elegantes */
+  /* Cores de destaque no claro */
   --emerald-text:  #0a5c43;
   --indigo-text:   #3730a3;
   --amber-text:    #92400e;
@@ -46,14 +51,17 @@
   --white-soft:    rgba(0,0,0,0.04);
 }
 
-/* ── BASE ── */
+/* ============================================= */
+/*                   BASE                        */
+/* ============================================= */
+
 body {
   background-color: var(--bg-main) !important;
   color: var(--text-main) !important;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition: background-color 0.4s ease, color 0.4s ease;
 }
 
-/* ── CARDS ── */
+/* Cards e containers */
 .card, .card-static, .glass,
 .bg-white, .bg-slate-900, .bg-neutral-900 {
   background-color: var(--card-bg) !important;
@@ -61,39 +69,87 @@ body {
   color: var(--text-main) !important;
 }
 
-/* ── TEXTOS ── */
-h1, h2, h3, strong { color: var(--text-strong) !important; }
-p, span, td, th    { color: var(--text-main); }
-.text-white        { color: var(--text-strong) !important; }
-.text-slate-200, .text-slate-300 { color: var(--text-main)  !important; }
-.text-slate-400, .text-slate-500, .text-slate-600 { color: var(--text-muted) !important; }
-
-/* ── LINKS ── */
-a { color: var(--primary); }
-
-/* ── NAVBAR ── */
-nav.glass {
-  background-color: var(--card-bg) !important;
-  border-bottom: 1px solid var(--border);
+/* Textos */
+h1, h2, h3, strong, .text-strong { 
+  color: var(--text-strong) !important; 
 }
 
-/* ── BOTÕES ── */
-button { color: var(--text-main); }
+p, span, td, th, .text-muted { 
+  color: var(--text-main) !important; 
+}
 
-/* ── ALERTAS ── */
-.alerta-box { background: var(--alert-bg); }
+.text-slate-200, .text-slate-300 { color: var(--text-main) !important; }
+.text-slate-400, .text-slate-500, .text-slate-600 { 
+  color: var(--text-muted) !important; 
+}
 
-/* ── BORDAS SLATE HARDCODED ── */
-.border-slate-700, .border-slate-800 { border-color: var(--border) !important; }
-.border-slate-700\/50 { border-color: var(--border) !important; }
+/* Links e primary */
+a, .text-primary { color: var(--primary) !important; }
 
-/* ── FUNDOS SLATE HARDCODED ── */
+/* Navbar */
+nav.glass {
+  background-color: var(--card-bg) !important;
+  border-bottom: 1px solid var(--border) !important;
+}
+
+/* Alertas e soft backgrounds */
+.alerta-box, .alerta-item {
+  background: var(--alert-bg) !important;
+}
+
+/* Bordas e fundos hard-coded do Tailwind/Slate */
+.border-slate-700, .border-slate-800,
+.border-slate-700\/50 {
+  border-color: var(--border) !important;
+}
+
 .bg-slate-700 { background-color: var(--border) !important; }
 .bg-slate-800 { background-color: var(--card-alt) !important; }
 
-/* ── SCROLL ── */
-.custom-scrollbar::-webkit-scrollbar-track { background: var(--bg-main); }
-.custom-scrollbar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+/* Scrollbar */
+.custom-scrollbar::-webkit-scrollbar-track { 
+  background: var(--bg-main); 
+}
+.custom-scrollbar::-webkit-scrollbar-thumb { 
+  background: var(--border); 
+  border-radius: 10px; 
+}
 
-/* ── FOOTER ── */
-footer { border-color: var(--border) !important; }
+/* Footer */
+footer { 
+  border-color: var(--border) !important; 
+}
+
+/* Transição suave em todos os elementos principais */
+* {
+  transition: background-color 0.3s ease, 
+              border-color 0.3s ease, 
+              color 0.3s ease;
+}
+/* Corrige texto de selects no admin Django (tema claro) */
+[data-theme="tordilho"] select option,
+[data-theme="tordilho"] .selector-chosen select,
+[data-theme="tordilho"] .selector-available select {
+    color: #111111 !important;
+    background-color: #faf8f5 !important;
+}
+
+/* Luísa confirmou: FICA 100% VISÍVEL */
+.aula-confirmada {
+    opacity: 1 !important;
+    filter: none !important;
+    border-left: 6px solid #10b981 !important; /* Verde */
+}
+
+/* Não confirmou: FICA APAGADO */
+.aula-nao_confirmada {
+    opacity: 0.3 !important; /* Bem apagado mesmo */
+    filter: grayscale(100%) !important;
+    border-left: 6px solid #f59e0b !important; /* Laranja */
+}
+
+/* Concluída: CINZA */
+.aula-concluida {
+    opacity: 0.2 !important;
+    filter: grayscale(100%) brightness(0.5) !important;
+}

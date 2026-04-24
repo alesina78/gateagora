@@ -1671,7 +1671,7 @@ def minhas_aulas(request):
 
     # 2. Aluno vinculado ao usuário via perfil_usuario
     try:
-        aluno = Aluno.objects.get(perfil_usuario=perfil)
+        aluno = Aluno.objects.select_related('plano').get(perfil_usuario=perfil)
     except Aluno.DoesNotExist:
         aluno = None
 
@@ -1679,20 +1679,16 @@ def minhas_aulas(request):
         return render(
             request,
             "gateagora/minhas_aulas.html",
-            {"aluno": None}
+            {"aluno": None, "empresa": perfil.empresa}
         )
 
     # 3. Prazos de confirmação
-    config = ConfigPrazoManejo.objects.filter(
-        empresa=perfil.empresa
-    ).first()
-
+    config = ConfigPrazoManejo.objects.filter(empresa=perfil.empresa).first()
     prazo_horas = config.prazo_confirmacao_horas if config else 0
     agora = timezone.now()
-
-    # 4. Aulas do aluno — futuras + últimos 30 dias
     trinta_dias_atras = agora - timezone.timedelta(days=30)
 
+    # 4. Aulas do aluno — futuras + últimos 30 dias
     aulas = (
         Aula.objects
         .filter(
@@ -1701,9 +1697,8 @@ def minhas_aulas(request):
             data_hora__gte=trinta_dias_atras,
         )
         .select_related(
-            "cavalo",
-            "instrutor",
-            "instrutor__user",
+            "cavalo", "cavalo__baia", "cavalo__piquete",
+            "instrutor", "instrutor__user",
         )
         .prefetch_related("confirmacao")
         .order_by("data_hora")
@@ -1741,14 +1736,38 @@ def minhas_aulas(request):
     # Histórico mais recente primeiro
     historico = list(reversed(historico))
 
+    # ── Extras para as 3 abas ────────────────────────────────────────────────
+
+    proxima_aula = proximas[0] if proximas else None
+    proxima_aula_iso = proxima_aula['aula'].data_hora.isoformat() if proxima_aula else None
+
+    semana = agora + timezone.timedelta(days=7)
+    aulas_semana = [p for p in proximas if p['aula'].data_hora <= semana]
+
+    # Cavalo e instrutor: próxima aula tem prioridade, fallback no histórico
+    cavalo = None
+    instrutor = None
+    if proxima_aula:
+        cavalo    = proxima_aula['aula'].cavalo
+        instrutor = proxima_aula['aula'].instrutor
+    elif historico:
+        cavalo    = historico[0]['aula'].cavalo
+        instrutor = historico[0]['aula'].instrutor
+
     return render(
         request,
         "gateagora/minhas_aulas.html",
         {
-            "aluno": aluno,
-            "proximas": proximas,
-            "historico": historico,
-            "prazo_horas": prazo_horas,
+            "aluno":            aluno,
+            "proximas":         proximas,
+            "historico":        historico,
+            "prazo_horas":      prazo_horas,
+            "empresa":          perfil.empresa,
+            "proxima_aula":     proxima_aula,
+            "proxima_aula_iso": proxima_aula_iso,
+            "aulas_semana":     aulas_semana,
+            "cavalo":           cavalo,
+            "instrutor":        instrutor,
         }
     )
 

@@ -26,6 +26,30 @@ class Empresa(models.Model):
         return self.nome
 
 
+class Aluno(models.Model):
+    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE)
+
+    user = models.OneToOneField(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="aluno",
+        help_text="Usuário de login do aluno"
+    )
+
+    nome = models.CharField(max_length=200)
+    telefone = models.CharField(
+        max_length=20,
+        default="",
+        validators=[
+            RegexValidator(
+                r'^\+?\d{10,15}$',
+                'Telefone deve estar no formato internacional, ex: 5511999999999'
+            )
+        ],
+    )
+
 class Perfil(models.Model):
     class Cargo(models.TextChoices):
         GESTOR = 'Gestor', 'Gestor/Dono'
