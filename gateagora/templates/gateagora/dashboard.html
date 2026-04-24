@@ -22,7 +22,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
   <link rel="stylesheet" href="{% static 'css/themes.css' %}">
 
   <!-- Fontes -->
@@ -364,8 +364,8 @@
          style="border-left:3px solid #f59e0b;">
       <button onclick="toggleAlerta('venc')" class="w-full px-4 py-3.5 flex items-center justify-between" style="background:transparent;">
         <div class="flex items-center gap-3">
-          <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background:var(--amber-soft)">
-            <i class="fa-solid fa-file-shield" style="color:var(--amber-text)"></i>
+          <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background:rgba(245,158,11,0.15)">
+              <i class="fa-solid fa-file-shield" style="color:#f59e0b"></i>
           </div>
           <div class="text-left">
             <p class="text-[11px] font-bold uppercase tracking-wide" style="color:var(--amber-text)">Documentos Legais</p>
@@ -382,7 +382,7 @@
           <a href="/admin/gateagora/documentocavalo/add/" onclick="event.stopPropagation()"
              class="text-[8px] font-bold uppercase px-2 py-1 rounded-lg"
              style="background:rgba(245,158,11,0.12);color:var(--amber-text);">
-            <i class="fa-solid fa-plus mr-0.5"></i>Novo
+            <i class="fa-solid fa-file-circle-plus mr-0.5"></i>Novo Doc
           </a>
           <i id="icon-venc" class="fa-solid fa-chevron-down text-[10px] transition-transform duration-300" style="color:var(--text-muted)"></i>
         </div>
@@ -550,7 +550,19 @@
             <div class="flex justify-between items-start mb-2">
               <span class="text-[10px] font-bold px-2 py-0.5 rounded-md font-mono"
                     style="background:#4f46e5;color:#fff">{{ aula.data_hora|date:"H:i" }}</span>
-              <span class="text-[9px] font-bold uppercase" style="color:var(--text-muted)">{{ aula.tipo }}</span>
+              {% if aula.concluida %}
+                <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(99,102,241,0.15);color:#818cf8;font-size:8px;font-weight:900;text-transform:uppercase;padding:2px 8px;border-radius:99px;">
+                  <i class="fa-solid fa-flag-checkered"></i> Concluída
+                </span>
+              {% elif aula.confirmacao %}
+                <span style="display:inline-flex;align-items:center;gap:4px;background:#10b981;color:#fff;font-size:8px;font-weight:900;text-transform:uppercase;padding:2px 8px;border-radius:99px;">
+                  <i class="fa-solid fa-circle-check"></i> Confirmada
+                </span>
+              {% else %}
+                <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(245,158,11,0.15);color:#d97706;border:1px solid rgba(245,158,11,0.4);font-size:8px;font-weight:900;text-transform:uppercase;padding:2px 8px;border-radius:99px;">
+                  <i class="fa-solid fa-clock"></i> Aguardando
+                </span>
+              {% endif %}
             </div>
             <p class="text-sm font-bold" style="color:var(--text-strong)">{{ aula.aluno.nome }}</p>
             <p class="text-[11px] mt-0.5 flex items-center gap-1" style="color:var(--indigo-text)">
@@ -779,6 +791,48 @@
         </div>
       </div>
 
+      <!-- ── Inadimplência do Mês ── -->
+      <div class="card-static p-4" style="border-left:3px solid #ef4444;">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background:rgba(239,68,68,0.1);">
+              <i class="fa-solid fa-circle-exclamation" style="color:#ef4444"></i>
+            </div>
+            <div>
+              <p class="text-[11px] font-bold uppercase tracking-wide" style="color:var(--text-strong)">Inadimplência</p>
+              <p class="text-[9px]" style="color:var(--text-muted)">{{ hoje|date:"F Y" }}</p>
+            </div>
+          </div>
+          <span class="text-[11px] font-bold px-2 py-0.5 rounded-full"
+                style="background:rgba(239,68,68,0.1);color:#ef4444;">
+            {{ indice_inadimplencia }}%
+          </span>
+        </div>
+        <div class="flex items-center gap-4">
+          <div class="relative flex-shrink-0" style="width:72px;height:72px;">
+            <canvas id="chartInadimplencia" style="width:72px;height:72px;"></canvas>
+            <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+              <span class="text-[13px] font-bold" style="color:var(--text-strong)">{{ indice_inadimplencia }}%</span>
+            </div>
+          </div>
+          <div class="flex-1 space-y-1.5">
+            <div class="flex justify-between text-[10px]">
+              <span style="color:var(--text-muted)"><span class="w-2 h-2 rounded-full bg-emerald-500 inline-block mr-1"></span>Pagas</span>
+              <strong style="color:var(--emerald-text)">{{ faturas_pagas }}</strong>
+            </div>
+            <div class="flex justify-between text-[10px]">
+              <span style="color:var(--text-muted)"><span class="w-2 h-2 rounded-full bg-red-500 inline-block mr-1"></span>Vencidas</span>
+              <strong style="color:#ef4444">{{ faturas_vencidas }}</strong>
+            </div>
+            <div class="flex justify-between text-[10px]">
+              <span style="color:var(--text-muted)"><span class="w-2 h-2 rounded-full inline-block mr-1" style="background:var(--border)"></span>Total</span>
+              <strong style="color:var(--text-main)">{{ total_faturas }}</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Contas a Receber ── -->
       <div class="card-static overflow-hidden" style="border-left: 3px solid #ef4444;">
         <div class="px-4 py-3 flex items-center justify-between bg-[var(--card-bg)]" style="border-bottom: 1px solid var(--border);">
           <div class="flex items-center gap-3">
@@ -1020,6 +1074,21 @@
             </div>`).join('');
         }
       }
+    }
+
+    /* Inadimplência */
+    const elInad = document.getElementById('chartInadimplencia');
+    if (elInad) {
+      if (elInad._c) elInad._c.destroy();
+      elInad._c = new Chart(elInad, {
+        type: 'doughnut',
+        data: {
+          labels: ['Pagas', 'Vencidas'],
+          datasets: [{ data: [{{ faturas_pagas|default:0 }}, {{ faturas_vencidas|default:0 }}], backgroundColor: ['#10b981','#ef4444'], borderWidth: 0 }]
+        },
+        options: { responsive:false, maintainAspectRatio:false, cutout:'74%',
+                   plugins:{ legend:{display:false}, tooltip:{enabled:false} }, animation:{duration:600} }
+      });
     }
   }
 

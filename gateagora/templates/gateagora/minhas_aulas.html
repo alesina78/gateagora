@@ -150,7 +150,12 @@
                 <span style="font-size:13px;font-weight:800;color:var(--indigo-text)">{{ item.aula.data_hora|date:"d/m" }}</span>
                 <span style="font-size:19px;font-weight:800;color:var(--text-strong)">{{ item.aula.data_hora|date:"H:i" }}</span>
               </div>
-              {% if item.ja_confirmou %}<span class="badge badge-confirmada"><i class="fa-solid fa-circle-check"></i> Confirmada</span>
+              {% if item.aula_passada %}
+                {% if item.ja_confirmou %}<span class="badge badge-confirmada"><i class="fa-solid fa-circle-check"></i> Confirmada</span>
+                {% else %}<span class="badge badge-encerrada"><i class="fa-solid fa-clock-rotate-left"></i> Encerrada</span>{% endif %}
+              {% elif item.aula.concluida %}
+                <span style="display:inline-flex;align-items:center;gap:3px;background:rgba(99,102,241,0.15);color:#818cf8;font-size:9px;font-weight:700;text-transform:uppercase;padding:3px 8px;border-radius:99px;"><i class="fa-solid fa-flag-checkered"></i> Concluída</span>
+              {% elif item.ja_confirmou %}<span class="badge badge-confirmada"><i class="fa-solid fa-circle-check"></i> Confirmada</span>
               {% elif item.pode_confirmar %}<span class="badge badge-aguardando"><i class="fa-solid fa-hourglass-half"></i> Aguardando</span>
               {% else %}<span class="badge badge-breve"><i class="fa-solid fa-calendar-days"></i> Em breve</span>{% endif %}
             </div>
@@ -192,9 +197,14 @@
               <span style="font-size:19px;font-weight:800;color:var(--text-strong)">{{ aula.data_hora|date:"H:i" }}</span>
               <span class="badge badge-breve" style="font-size:8px;padding:2px 6px">{{ aula.get_local_display }}</span>
             </div>
-            {% if item.ja_confirmou %}<span class="badge badge-confirmada"><i class="fa-solid fa-circle-check"></i> Confirmada</span>
-            {% elif item.pode_confirmar %}<span class="badge badge-aguardando"><i class="fa-solid fa-hourglass-half"></i> Aguardando</span>
-            {% else %}<span class="badge badge-breve"><i class="fa-solid fa-calendar-days"></i> Em breve</span>{% endif %}
+            {% if item.aula_passada %}
+                {% if item.ja_confirmou %}<span class="badge badge-confirmada"><i class="fa-solid fa-circle-check"></i> Confirmada</span>
+                {% else %}<span class="badge badge-encerrada"><i class="fa-solid fa-clock-rotate-left"></i> Encerrada</span>{% endif %}
+              {% elif item.aula.concluida %}
+                <span style="display:inline-flex;align-items:center;gap:3px;background:rgba(99,102,241,0.15);color:#818cf8;font-size:9px;font-weight:700;text-transform:uppercase;padding:3px 8px;border-radius:99px;"><i class="fa-solid fa-flag-checkered"></i> Concluída</span>
+              {% elif item.ja_confirmou %}<span class="badge badge-confirmada"><i class="fa-solid fa-circle-check"></i> Confirmada</span>
+              {% elif item.pode_confirmar %}<span class="badge badge-aguardando"><i class="fa-solid fa-hourglass-half"></i> Aguardando</span>
+              {% else %}<span class="badge badge-breve"><i class="fa-solid fa-calendar-days"></i> Em breve</span>{% endif %}
           </div>
           <div style="display:flex;flex-wrap:wrap;gap:10px;font-size:12px;color:var(--text-muted);margin-bottom:10px">
             <span><i class="fa-solid fa-horse" style="margin-right:4px"></i><strong style="color:var(--text-main)">{{ aula.cavalo.nome }}</strong>
@@ -245,8 +255,11 @@
               <span style="font-size:10px;color:var(--text-muted)">{{ aula.data_hora|date:"H:i" }} · {{ aula.get_local_display }}</span>
             </div>
           </div>
-          {% if item.ja_confirmou %}<span class="badge badge-confirmada"><i class="fa-solid fa-circle-check"></i></span>
-          {% else %}<span class="badge badge-encerrada">Encerrada</span>{% endif %}
+          {% if item.ja_confirmou %}
+            <span class="badge badge-confirmada"><i class="fa-solid fa-circle-check"></i> Confirmada</span>
+          {% else %}
+            <span class="badge badge-encerrada"><i class="fa-solid fa-clock-rotate-left"></i> Encerrada</span>
+          {% endif %}
         </div>
       {% endwith %}{% endfor %}
     {% endif %}

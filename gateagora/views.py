@@ -216,13 +216,19 @@ def dashboard(request):
         })
 
 
-    # ── 1) Próximas aulas de hoje ──────────────────────────────────────────────
+    # ── 1) Aulas de hoje — inclui concluídas para não sumirem da lista ─────────
     proximas_aulas = (
         Aula.objects
-        .filter(empresa=empresa, concluida=False, data_hora__date=hoje)
+        .filter(empresa=empresa, data_hora__date=hoje)
         .select_related('aluno', 'cavalo')
+        .prefetch_related('confirmacao')
         .order_by('data_hora')
     )
+    for _a in proximas_aulas:
+        try:
+            _ = _a.confirmacao
+        except Exception:
+            _a.confirmacao = None
 
     # ── 2) Alertas e Estoque Unificado ────────────────────────────────────────
     
@@ -409,6 +415,18 @@ def dashboard(request):
         data_vencimento__year=ano_selecionado,
         data_vencimento__month=mes_selecionado,
     ).prefetch_related('itens').select_related('aluno')
+
+    # ── Inadimplência do mês ─────────────────────────────────────────────────
+    total_faturas_mes    = faturas_mes.count()
+    faturas_pagas_mes    = faturas_mes.filter(status='PAGO').count()
+    faturas_vencidas_mes = faturas_mes.filter(
+        status__in=['PENDENTE', 'ATRASADO'],
+        data_vencimento__lt=hoje
+    ).count()
+    indice_inadimplencia = (
+        round(faturas_vencidas_mes / total_faturas_mes * 100, 1)
+        if total_faturas_mes else 0
+    )
 
     relatorio = []
     receita_total_prevista = ItemFatura.objects.filter(
@@ -612,6 +630,11 @@ def dashboard(request):
         "receita_por_tipo_valores": json.dumps(receita_por_tipo_valores),
         # Somente itens críticos/atenção para o painel fusionado do dashboard
         "estoque_alerta":           [i for i in estoque_todos if i.prioridade <= 1],
+        # Inadimplência
+        "total_faturas":            total_faturas_mes,
+        "faturas_pagas":            faturas_pagas_mes,
+        "faturas_vencidas":         faturas_vencidas_mes,
+        "indice_inadimplencia":     indice_inadimplencia,
     }
 
     return render(request, "gateagora/dashboard.html", context)
@@ -1676,11 +1699,9 @@ def minhas_aulas(request):
         aluno = None
 
     if not aluno or aluno.empresa_id != perfil.empresa_id:
-        return render(
-            request,
-            "gateagora/minhas_aulas.html",
-            {"aluno": None, "empresa": perfil.empresa}
-        )
+        return render(request, "gateagora/minhas_aulas.html", {
+            "aluno": None, "empresa": perfil.empresa
+        })
 
     # 3. Prazos de confirmação
     config = ConfigPrazoManejo.objects.filter(empresa=perfil.empresa).first()
@@ -1710,7 +1731,6 @@ def minhas_aulas(request):
     for aula in aulas:
         confirmacao = getattr(aula, "confirmacao", None)
         aula_passada = aula.data_hora < agora
-
         pode_confirmar = (
             not aula_passada
             and not confirmacao
@@ -1719,33 +1739,27 @@ def minhas_aulas(request):
                 or aula.data_hora <= agora + timezone.timedelta(hours=prazo_horas)
             )
         )
-
         item = {
-            "aula": aula,
+            "aula":         aula,
             "ja_confirmou": bool(confirmacao),
-            "confirmacao": confirmacao,
+            "confirmacao":  confirmacao,
             "aula_passada": aula_passada,
             "pode_confirmar": pode_confirmar,
         }
-
         if aula_passada:
             historico.append(item)
         else:
             proximas.append(item)
 
-    # Histórico mais recente primeiro
     historico = list(reversed(historico))
 
-    # ── Extras para as 3 abas ────────────────────────────────────────────────
-
-    proxima_aula = proximas[0] if proximas else None
+    # ── Extras para as 3 abas ─────────────────────────────────────────────────
+    proxima_aula     = proximas[0] if proximas else None
     proxima_aula_iso = proxima_aula['aula'].data_hora.isoformat() if proxima_aula else None
+    semana           = agora + timezone.timedelta(days=7)
+    aulas_semana     = [p for p in proximas if p['aula'].data_hora <= semana]
 
-    semana = agora + timezone.timedelta(days=7)
-    aulas_semana = [p for p in proximas if p['aula'].data_hora <= semana]
-
-    # Cavalo e instrutor: próxima aula tem prioridade, fallback no histórico
-    cavalo = None
+    cavalo    = None
     instrutor = None
     if proxima_aula:
         cavalo    = proxima_aula['aula'].cavalo
