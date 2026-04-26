@@ -312,6 +312,20 @@ class Aula(models.Model):
     concluida = models.BooleanField(default=False)
     relatorio_treino = models.TextField(blank=True)
 
+    # ── Turmas (opcional) ─────────────────────────────────────────────────────
+    # Quando preenchido, a aula é tratada como turma em vez de aula individual.
+    # O campo aluno continua obrigatório — use o aluno principal ou o "responsável"
+    # da turma (ex: o próprio gestor/escola) para aulas sem aluno fixo.
+    nome_turma = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Preencha apenas para aulas em grupo (ex: 'Turma Iniciantes Sábado')"
+    )
+    vagas_maximas = models.PositiveSmallIntegerField(
+        null=True, blank=True,
+        help_text="Capacidade máxima da turma. Deixe em branco para aulas individuais."
+    )
+
     class Meta:
         ordering = ["data_hora"]
         indexes = [models.Index(fields=["empresa", "data_hora"])]
@@ -363,6 +377,34 @@ class ConfirmacaoPresenca(models.Model):
 
     def __str__(self):
         return f"✅ {self.aluno.nome} confirmou {self.aula}"
+
+
+class InscricaoAula(models.Model):
+    """
+    Inscrição de um aluno em uma aula de turma.
+    Usado APENAS quando Aula.nome_turma estiver preenchido.
+    Para aulas individuais, continua usando Aula.aluno diretamente.
+    """
+    aula  = models.ForeignKey(
+        'Aula',
+        on_delete=models.CASCADE,
+        related_name='inscricoes'
+    )
+    aluno = models.ForeignKey(
+        'Aluno',
+        on_delete=models.CASCADE,
+        related_name='inscricoes'
+    )
+    inscrito_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('aula', 'aluno')
+        verbose_name        = "Inscrição em Aula"
+        verbose_name_plural = "Inscrições em Aulas"
+        indexes = [models.Index(fields=['aula', 'aluno'])]
+
+    def __str__(self):
+        return f"{self.aluno.nome} → {self.aula}"
 
 
 class ItemEstoque(models.Model):

@@ -227,60 +227,91 @@
   {% endfor %}
   {% endif %}
 
-  <!-- ── 2. KPIs — 3 cards (Saúde Crítica removida: redundante com alerta abaixo) -->
-  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+  <!-- ── 2. KPIs ── -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-{% if capacity_utilization is not None %}4{% else %}3{% endif %} gap-4">
 
-    <div class="kpi-card">
-      <p class="sec-title mb-2">Faturamento do Mês</p>
-      <p class="text-2xl font-bold" style="color:var(--text-strong)">R$ {{ receita_total_prevista|floatformat:0 }}</p>
-      <p class="text-[9px] mt-1.5 flex items-center gap-1" style="color:var(--text-muted)">
+    <!-- Faturamento -->
+    <div class="kpi-card" style="display:flex;flex-direction:column;justify-content:space-between;min-height:100px;">
+      <div>
+        <p class="sec-title mb-2">Faturamento do Mês</p>
+        <p class="text-2xl font-bold" style="color:var(--text-strong)">R$ {{ receita_total_prevista|floatformat:0 }}</p>
+      </div>
+      <p class="text-[9px] mt-auto pt-3 flex items-center gap-1" style="color:var(--text-muted)">
         <i class="fa-solid fa-chart-line" style="color:#10b981"></i>
         {{ relatorio|length }} fatura(s) no mês
       </p>
     </div>
 
-    <div class="kpi-card">
-      <p class="sec-title mb-2">Confirmações Hoje</p>
-      <div class="flex items-end gap-1.5">
-        <p class="text-2xl font-bold" style="color:var(--text-strong)">{{ aulas_confirmadas_hoje }}</p>
-        <p class="text-xs mb-0.5" style="color:var(--text-muted)">/ {{ total_aulas_hoje }} aulas</p>
-      </div>
-      {% if total_aulas_hoje > 0 %}
-        <div class="mt-2 mb-1" style="height:4px;background:var(--border);border-radius:99px;overflow:hidden;">
-          <div style="height:100%;border-radius:99px;transition:width .6s ease;
-                      width:{% widthratio aulas_confirmadas_hoje total_aulas_hoje 100 %}%;
-                      background:{% if aulas_confirmadas_hoje == total_aulas_hoje %}#10b981{% else %}#f59e0b{% endif %};"></div>
+    <!-- Confirmações -->
+    <div class="kpi-card" style="display:flex;flex-direction:column;justify-content:space-between;min-height:100px;">
+      <div>
+        <p class="sec-title mb-2">Confirmações Hoje</p>
+        <div class="flex items-end gap-1.5">
+          <p class="text-2xl font-bold" style="color:var(--text-strong)">{{ aulas_confirmadas_hoje }}</p>
+          <p class="text-xs mb-0.5" style="color:var(--text-muted)">/ {{ total_aulas_hoje }} aulas</p>
         </div>
-        <p class="text-[9px] flex items-center gap-1" style="color:var(--text-muted)">
-          <i class="fa-solid fa-flag-checkered" style="color:#818cf8"></i>
-          {{ aulas_concluidas_hoje }} concluída{{ aulas_concluidas_hoje|pluralize }}
-        </p>
-      {% else %}
-        <p class="text-[9px] mt-1.5" style="color:var(--text-muted)">Sem aulas hoje</p>
-      {% endif %}
+      </div>
+      <div class="mt-auto pt-3">
+        {% if total_aulas_hoje > 0 %}
+          <div class="mb-1" style="height:4px;background:var(--border);border-radius:99px;overflow:hidden;">
+            <div style="height:100%;border-radius:99px;transition:width .6s ease;
+                        width:{% widthratio aulas_confirmadas_hoje total_aulas_hoje 100 %}%;
+                        background:{% if aulas_confirmadas_hoje == total_aulas_hoje %}#10b981{% else %}#f59e0b{% endif %};"></div>
+          </div>
+          <p class="text-[9px] flex items-center gap-1" style="color:var(--text-muted)">
+            <i class="fa-solid fa-flag-checkered" style="color:#818cf8"></i>
+            {{ aulas_concluidas_hoje }} concluída{{ aulas_concluidas_hoje|pluralize }}
+          </p>
+        {% else %}
+          <p class="text-[9px]" style="color:var(--text-muted)">Sem aulas hoje</p>
+        {% endif %}
+      </div>
     </div>
 
-    <!-- KPI Ocupação com mini donut embutido -->
-    <div class="kpi-card flex items-center gap-4">
-      <div class="flex-1">
-        <p class="sec-title mb-2">Ocupação de Baias</p>
-        <div class="flex items-end gap-1.5">
-          <p class="text-2xl font-bold" style="color:var(--text-strong)">{{ stats.baias_ocupadas }}</p>
-          <p class="text-xs mb-0.5" style="color:var(--text-muted)">/ {{ stats.total_baias }}</p>
+    <!-- Ocupação de Baias -->
+    <div class="kpi-card" style="display:flex;flex-direction:column;justify-content:space-between;min-height:100px;">
+      <div class="flex items-start justify-between">
+        <div>
+          <p class="sec-title mb-2">Ocupação de Baias</p>
+          <div class="flex items-end gap-1.5">
+            <p class="text-2xl font-bold" style="color:var(--text-strong)">{{ stats.baias_ocupadas }}</p>
+            <p class="text-xs mb-0.5" style="color:var(--text-muted)">/ {{ stats.total_baias }}</p>
+          </div>
         </div>
-        <div class="flex gap-3 mt-1.5 text-[9px]" style="color:var(--text-muted)">
-          <span><strong style="color:var(--emerald-text)">{{ stats.baias_livres }}</strong> livres</span>
-          <span><strong style="color:var(--text-main)">{{ stats.vacinados }}</strong> vacinados</span>
+        <div class="relative flex-shrink-0" style="width:56px;height:56px;">
+          <canvas id="chartOcupacao" style="width:56px;height:56px;"></canvas>
+          <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <span class="text-[10px] font-bold" style="color:var(--text-strong)">{{ stats.porcentagem_ocupacao|floatformat:0 }}%</span>
+          </div>
         </div>
       </div>
-      <!-- Mini donut compacto -->
-      <div class="relative flex-shrink-0" style="width:64px;height:64px;">
-        <canvas id="chartOcupacao" style="width:64px;height:64px;"></canvas>
-        <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <span class="text-[11px] font-bold" style="color:var(--text-strong)">{{ stats.porcentagem_ocupacao|floatformat:0 }}%</span>
-        </div>
+      <div class="flex gap-3 mt-auto pt-2 text-[9px]" style="color:var(--text-muted)">
+        <span><strong style="color:var(--emerald-text)">{{ stats.baias_livres }}</strong> livres</span>
+        <span><strong style="color:var(--text-main)">{{ stats.vacinados }}</strong> vacinados</span>
       </div>
     </div>
+
+    <!-- Ocupação das Turmas — só quando há turmas hoje -->
+    {% if capacity_utilization is not None %}
+    <div class="kpi-card" style="display:flex;flex-direction:column;justify-content:space-between;min-height:100px;">
+      <div>
+        <p class="sec-title mb-2">Ocupação das Turmas</p>
+        <p class="text-2xl font-bold" style="color:var(--text-strong)">{{ capacity_utilization }}%</p>
+      </div>
+      <div class="mt-auto pt-3">
+        <div class="mb-1" style="height:4px;background:var(--border);border-radius:99px;overflow:hidden;">
+          <div style="height:100%;border-radius:99px;transition:width .6s ease;
+                      width:{{ capacity_utilization }}%;
+                      background:{% if capacity_utilization >= 90 %}#ef4444{% elif capacity_utilization >= 70 %}#f59e0b{% else %}#10b981{% endif %};"></div>
+        </div>
+        <p class="text-[9px] flex items-center gap-1" style="color:var(--text-muted)">
+          <i class="fa-solid fa-users" style="color:var(--indigo-text)"></i>
+          média de vagas preenchidas
+        </p>
+      </div>
+    </div>
+    {% endif %}
+
   </div>
 
   <!-- ── 3. Alertas Expansíveis ───────────────────────────── -->
@@ -536,6 +567,40 @@
 
   </div><!-- /alertas -->
 
+  <!-- ── 4. Bem-Estar Animal — Sobrecarga de Cavalos ───────────── -->
+  {% if cavalos_sobrecarga %}
+  <div class="card-static p-4" style="border-left:3px solid #f59e0b;">
+    <div class="flex items-center justify-between mb-3">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background:rgba(245,158,11,0.12);">
+          <i class="fa-solid fa-horse-head" style="color:#f59e0b"></i>
+        </div>
+        <div>
+          <p class="text-[11px] font-bold uppercase tracking-wide" style="color:#f59e0b">
+            Alerta de Bem-Estar Animal
+          </p>
+          <p class="text-[9px]" style="color:var(--text-muted)">
+            {{ cavalos_sobrecarga|length }} cavalo{{ cavalos_sobrecarga|length|pluralize }} com 3+ aulas hoje
+          </p>
+        </div>
+      </div>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      {% for c in cavalos_sobrecarga %}
+      <span style="display:inline-flex;align-items:center;gap:5px;
+                   padding:4px 10px;border-radius:99px;font-size:10px;font-weight:700;
+                   background:{% if c.critico %}rgba(239,68,68,0.12){% else %}rgba(245,158,11,0.12){% endif %};
+                   color:{% if c.critico %}#ef4444{% else %}#f59e0b{% endif %};
+                   border:1px solid {% if c.critico %}rgba(239,68,68,0.3){% else %}rgba(245,158,11,0.3){% endif %};">
+        <i class="fa-solid fa-triangle-exclamation text-[9px]"></i>
+        {{ c.cavalo__nome }}
+        <span style="font-family:monospace;font-size:9px;opacity:.8">{{ c.total_aulas }}x</span>
+      </span>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
   <!-- ── 5. Grade Principal ───────────────────────────────── -->
   <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
 
@@ -598,8 +663,28 @@
               {% endif %}
             </div>
 
-            {# Aluno + Cavalo #}
-            <p class="text-[13px] font-bold leading-tight" style="color:var(--text-strong)">{{ aula.aluno.nome }}</p>
+            {# Turma ou Aluno Individual #}
+            {% if aula.nome_turma %}
+              <div class="flex items-center gap-2 mb-0.5">
+                <p class="text-[13px] font-bold leading-tight" style="color:var(--text-strong)">{{ aula.nome_turma }}</p>
+                {% if aula.vagas_maximas %}
+                  {% with total_inscritos=aula.inscricoes.count %}
+                  <span style="display:inline-flex;align-items:center;gap:3px;
+                               padding:2px 7px;border-radius:99px;font-size:9px;font-weight:800;
+                               background:{% if total_inscritos >= aula.vagas_maximas %}rgba(239,68,68,0.12){% else %}rgba(99,102,241,0.12){% endif %};
+                               color:{% if total_inscritos >= aula.vagas_maximas %}#ef4444{% else %}var(--indigo-text){% endif %};">
+                    <i class="fa-solid fa-users text-[8px]"></i>
+                    {{ total_inscritos }}/{{ aula.vagas_maximas }}
+                  </span>
+                  {% endwith %}
+                {% endif %}
+              </div>
+              <p class="text-[9px] mt-0.5" style="color:var(--text-muted)">
+                <i class="fa-solid fa-user text-[8px]"></i> {{ aula.aluno.nome }}
+              </p>
+            {% else %}
+              <p class="text-[13px] font-bold leading-tight" style="color:var(--text-strong)">{{ aula.aluno.nome }}</p>
+            {% endif %}
             <p class="text-[10px] mt-0.5 flex items-center gap-1" style="color:var(--indigo-text)">
               <i class="fa-solid fa-horse text-[9px]"></i>
               <strong>{{ aula.cavalo.nome }}</strong>

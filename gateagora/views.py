@@ -681,7 +681,45 @@ def dashboard(request):
     alunos_inativos = sorted(alunos_inativos, key=lambda x: x.dias_inativo or 0, reverse=True)[:8]
     alunos_risco    = sorted(alunos_risco,    key=lambda x: x.dias_inativo or 0, reverse=True)[:8]
 
-    # ── 11) Contexto final ────────────────────────────────────────────────────
+    # ── 11) Capacity Utilization (turmas de hoje) ───────────────────────────
+    # Só considera aulas que têm vagas_maximas definido (são turmas)
+    turmas_hoje = [a for a in proximas_aulas if a.vagas_maximas]
+    if turmas_hoje:
+        # Busca inscrições de todas as turmas de hoje num único hit ao banco
+        from gateagora.models import InscricaoAula
+        _ids_turmas = [a.id for a in turmas_hoje]
+        _contagem = {}
+        for row in (
+            InscricaoAula.objects
+            .filter(aula_id__in=_ids_turmas)
+            .values('aula_id')
+            .annotate(total=models.Count('id'))
+        ):
+            _contagem[row['aula_id']] = row['total']
+
+        taxas = []
+        for a in turmas_hoje:
+            inscritos = _contagem.get(a.id, 0)
+            taxas.append(inscritos / a.vagas_maximas)
+        capacity_utilization = round(sum(taxas) / len(taxas) * 100, 1)
+    else:
+        capacity_utilization = None  # sem turmas hoje — não exibe o card
+
+    # ── 12) Equine Workload — cavalos com 3+ aulas hoje ──────────────────────
+    from django.db.models import Count as _Count
+    cavalos_sobrecarga = list(
+        Aula.objects
+        .filter(empresa=empresa, data_hora__date=hoje)
+        .values('cavalo__id', 'cavalo__nome')
+        .annotate(total_aulas=_Count('id'))
+        .filter(total_aulas__gte=3)
+        .order_by('-total_aulas')
+    )
+    # total_aulas=3 já é alerta; >=4 é crítico
+    for c in cavalos_sobrecarga:
+        c['critico'] = c['total_aulas'] >= 4
+
+    # ── 13) Contexto final ────────────────────────────────────────────────────
     context = {
         "brand_name":               BRAND_NAME,
         "empresa":                  empresa,
@@ -728,6 +766,9 @@ def dashboard(request):
         # Retenção / churn
         "alunos_inativos":          alunos_inativos,
         "alunos_risco":             alunos_risco,
+        # Turmas / bem-estar
+        "capacity_utilization":     capacity_utilization,
+        "cavalos_sobrecarga":       cavalos_sobrecarga,
     }
 
     return render(request, "gateagora/dashboard.html", context)
