@@ -234,17 +234,17 @@
     {% if aulas %}
   <div class="grid grid-cols-1 gap-4">
     {% for aula in aulas %}
-    <div class="aula-card card p-5 flex gap-5 {% if aula.confirmacao %}aula-confirmada{% else %}aula-nao-confirmada{% endif %}">
+    <div class="aula-card card p-5 flex gap-5 {% if aula.is_confirmada %}aula-confirmada{% else %}aula-nao-confirmada{% endif %}">
 
       <!-- Faixa de pendência no canto superior direito (só aparece se não confirmado) -->
-      {% if not aula.confirmacao %}
+      {% if not aula.is_confirmada %}
         <div class="ribbon-pendente">
           <i class="fa-solid fa-triangle-exclamation mr-1"></i> Sem confirmação
         </div>
       {% endif %}
 
       <div class="flex flex-col items-center">
-        <span class="{% if aula.confirmacao %}bg-emerald-600{% else %}bg-indigo-600{% endif %} text-white text-sm font-black px-3 py-1 rounded-lg shadow-lg">
+        <span class="{% if aula.is_confirmada %}bg-emerald-600{% else %}bg-indigo-600{% endif %} text-white text-sm font-black px-3 py-1 rounded-lg shadow-lg">
           {{ aula.data_hora|date:"H:i" }}
         </span>
       </div>
@@ -259,7 +259,7 @@
           </div>
 
           <div class="flex items-center gap-2 flex-wrap justify-end">
-            {% if aula.confirmacao %}
+            {% if aula.is_confirmada %}
               <span class="badge-confirmado">
                 <i class="fa-solid fa-circle-check"></i> Confirmada
               </span>

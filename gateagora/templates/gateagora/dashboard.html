@@ -240,12 +240,24 @@
     </div>
 
     <div class="kpi-card">
-      <p class="sec-title mb-2">Agenda Hoje</p>
+      <p class="sec-title mb-2">Confirmações Hoje</p>
       <div class="flex items-end gap-1.5">
-        <p class="text-2xl font-bold" style="color:var(--text-strong)">{{ proximas_aulas|length }}</p>
-        <p class="text-xs mb-0.5" style="color:var(--text-muted)">aulas</p>
+        <p class="text-2xl font-bold" style="color:var(--text-strong)">{{ aulas_confirmadas_hoje }}</p>
+        <p class="text-xs mb-0.5" style="color:var(--text-muted)">/ {{ total_aulas_hoje }} aulas</p>
       </div>
-      <p class="text-[9px] mt-1.5 font-mono" style="color:var(--text-muted)">{{ hoje|date:"d/m/Y" }}</p>
+      {% if total_aulas_hoje > 0 %}
+        <div class="mt-2 mb-1" style="height:4px;background:var(--border);border-radius:99px;overflow:hidden;">
+          <div style="height:100%;border-radius:99px;transition:width .6s ease;
+                      width:{% widthratio aulas_confirmadas_hoje total_aulas_hoje 100 %}%;
+                      background:{% if aulas_confirmadas_hoje == total_aulas_hoje %}#10b981{% else %}#f59e0b{% endif %};"></div>
+        </div>
+        <p class="text-[9px] flex items-center gap-1" style="color:var(--text-muted)">
+          <i class="fa-solid fa-flag-checkered" style="color:#818cf8"></i>
+          {{ aulas_concluidas_hoje }} concluída{{ aulas_concluidas_hoje|pluralize }}
+        </p>
+      {% else %}
+        <p class="text-[9px] mt-1.5" style="color:var(--text-muted)">Sem aulas hoje</p>
+      {% endif %}
     </div>
 
     <!-- KPI Ocupação com mini donut embutido -->
@@ -376,7 +388,7 @@
                 <span style="color:var(--emerald-text)">Tudo regular ✓</span>
               {% endif %}
             </p>
-        </div>
+          </div>
         </div>
         <div class="flex items-center gap-2">
           <a href="/admin/gateagora/documentocavalo/add/" onclick="event.stopPropagation()"
@@ -533,11 +545,18 @@
       <!-- 5a. Atividades de Hoje — 4 aulas visíveis, restante no scroll -->
       <div class="card-static p-5">
         <div class="flex items-center justify-between mb-4">
-          <h3 class="text-sm font-bold" style="color:var(--text-strong)">
-            <i class="fa-solid fa-calendar-day mr-2" style="color:var(--indigo-text)"></i>Atividades de Hoje
-          </h3>
+          <div>
+            <h3 class="text-sm font-bold" style="color:var(--text-strong)">
+              <i class="fa-solid fa-calendar-day mr-2" style="color:var(--indigo-text)"></i>Atividades de Hoje
+            </h3>
+            <p class="text-[9px] mt-0.5" style="color:var(--text-muted)">
+              <span style="color:#10b981">{{ aulas_confirmadas_hoje }} confirmada{{ aulas_confirmadas_hoje|pluralize }}</span>
+              · <span style="color:#818cf8">{{ aulas_concluidas_hoje }} concluída{{ aulas_concluidas_hoje|pluralize }}</span>
+              · {{ total_aulas_hoje }} total
+            </p>
+          </div>
           <a href="/admin/gateagora/aula/?concluida=False" class="text-[9px] font-bold uppercase" style="color:var(--text-muted);">
-            Todos <i class="fa-solid fa-arrow-right ml-1"></i>
+            Ver todas <i class="fa-solid fa-arrow-right ml-1"></i>
           </a>
         </div>
         <!--
@@ -546,42 +565,78 @@
         -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 overflow-y-auto custom-scrollbar" style="max-height:300px;">
           {% for aula in proximas_aulas %}
-          <div class="aula-card">
-            <div class="flex justify-between items-start mb-2">
-              <span class="text-[10px] font-bold px-2 py-0.5 rounded-md font-mono"
-                    style="background:#4f46e5;color:#fff">{{ aula.data_hora|date:"H:i" }}</span>
+          <div class="aula-card" id="aula-card-{{ aula.id }}" style="
+            border-left: 3px solid {% if aula.concluida %}#818cf8{% elif aula.is_confirmada %}#10b981{% else %}#f59e0b{% endif %};
+            {% if aula.concluida %}opacity:.7;{% endif %}
+            position:relative;overflow:hidden;">
+
+            {# Linha topo: horário + badge #}
+            <div class="flex justify-between items-start mb-2.5">
+              <div class="flex items-center gap-2">
+                <span class="text-[11px] font-black px-2.5 py-1 rounded-lg font-mono"
+                      style="background:#4f46e5;color:#fff;letter-spacing:.04em">
+                  {{ aula.data_hora|date:"H:i" }}
+                </span>
+                {% if aula.instrutor %}
+                <span class="text-[9px]" style="color:var(--text-muted)">
+                  Prof. {{ aula.instrutor.user.first_name }}
+                </span>
+                {% endif %}
+              </div>
               {% if aula.concluida %}
-                <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(99,102,241,0.15);color:#818cf8;font-size:8px;font-weight:900;text-transform:uppercase;padding:2px 8px;border-radius:99px;">
+                <span style="display:inline-flex;align-items:center;gap:3px;background:rgba(99,102,241,0.15);color:#818cf8;font-size:8px;font-weight:900;text-transform:uppercase;padding:2px 7px;border-radius:99px;">
                   <i class="fa-solid fa-flag-checkered"></i> Concluída
                 </span>
-              {% elif aula.confirmacao %}
-                <span style="display:inline-flex;align-items:center;gap:4px;background:#10b981;color:#fff;font-size:8px;font-weight:900;text-transform:uppercase;padding:2px 8px;border-radius:99px;">
+              {% elif aula.is_confirmada %}
+                <span style="display:inline-flex;align-items:center;gap:3px;background:rgba(16,185,129,0.15);color:#10b981;font-size:8px;font-weight:900;text-transform:uppercase;padding:2px 7px;border-radius:99px;">
                   <i class="fa-solid fa-circle-check"></i> Confirmada
                 </span>
               {% else %}
-                <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(245,158,11,0.15);color:#d97706;border:1px solid rgba(245,158,11,0.4);font-size:8px;font-weight:900;text-transform:uppercase;padding:2px 8px;border-radius:99px;">
-                  <i class="fa-solid fa-clock"></i> Aguardando
+                <span style="display:inline-flex;align-items:center;gap:3px;background:rgba(245,158,11,0.12);color:#d97706;border:1px solid rgba(245,158,11,0.3);font-size:8px;font-weight:900;text-transform:uppercase;padding:2px 7px;border-radius:99px;">
+                  <i class="fa-solid fa-hourglass-half"></i> Aguardando
                 </span>
               {% endif %}
             </div>
-            <p class="text-sm font-bold" style="color:var(--text-strong)">{{ aula.aluno.nome }}</p>
-            <p class="text-[11px] mt-0.5 flex items-center gap-1" style="color:var(--indigo-text)">
-              <i class="fa-solid fa-horse text-[9px]"></i> {{ aula.cavalo.nome }}
+
+            {# Aluno + Cavalo #}
+            <p class="text-[13px] font-bold leading-tight" style="color:var(--text-strong)">{{ aula.aluno.nome }}</p>
+            <p class="text-[10px] mt-0.5 flex items-center gap-1" style="color:var(--indigo-text)">
+              <i class="fa-solid fa-horse text-[9px]"></i>
+              <strong>{{ aula.cavalo.nome }}</strong>
+              {% if aula.cavalo.baia %}<span style="color:var(--text-muted)">· Baia {{ aula.cavalo.baia.numero }}</span>{% endif %}
             </p>
-            <div class="flex justify-between items-center mt-2.5 pt-2.5" style="border-top:1px solid var(--border)">
-              <div>
+
+            {# Linha equipamento + ações #}
+            <div class="flex justify-between items-center mt-2.5 pt-2" style="border-top:1px solid var(--border)">
+              <div class="text-[8px] space-y-0.5">
                 {% if aula.cavalo.tipo_sela %}
-                <p class="text-[8px]" style="color:var(--text-muted)">Sela: <span style="color:var(--text-main)">{{ aula.cavalo.tipo_sela }}</span></p>
+                  <p style="color:var(--text-muted)">Sela: <span style="color:var(--text-main)">{{ aula.cavalo.tipo_sela|truncatechars:18 }}</span></p>
                 {% endif %}
-                <p class="text-[8px] {% if aula.cavalo.material_proprio %}font-bold{% endif %}"
-                   style="color:{% if aula.cavalo.material_proprio %}var(--amber-text){% else %}var(--text-muted){% endif %}">
-                  {% if aula.cavalo.material_proprio %}⚠️ Material Próprio{% else %}Material Escola{% endif %}
-                </p>
+                {% if aula.cavalo.material_proprio %}
+                  <p class="font-bold" style="color:var(--amber-text)">⚠ Mat. Próprio</p>
+                {% endif %}
               </div>
-              <form action="{% url 'concluir_aula' aula.id %}" method="post">
-                {% csrf_token %}
-                <button type="submit" class="btn-fin"><i class="fa-solid fa-check mr-1"></i> Finalizar</button>
-              </form>
+              <div class="flex items-center gap-1.5">
+                {% if not aula.is_confirmada and not aula.concluida %}
+                <form action="{% url 'confirmar_presenca_dashboard' aula.id %}" method="post">
+                  {% csrf_token %}
+                  <button type="submit" class="btn-fin"
+                          style="background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.25);"
+                          title="Confirmar presença">
+                    <i class="fa-solid fa-circle-check"></i>
+                  </button>
+                </form>
+                {% endif %}
+                {% if not aula.concluida %}
+                <form action="{% url 'concluir_aula' aula.id %}" method="post"
+                      onsubmit="marcarConcluida({{ aula.id }}, this)">
+                  {% csrf_token %}
+                  <button type="submit" class="btn-fin" id="btn-fin-{{ aula.id }}">
+                    <i class="fa-solid fa-check mr-1"></i>Finalizar
+                  </button>
+                </form>
+                {% endif %}
+              </div>
             </div>
           </div>
           {% empty %}
@@ -791,7 +846,7 @@
         </div>
       </div>
 
-      <!-- ── Inadimplência do Mês ── -->
+      <!-- ── Inadimplência ── -->
       <div class="card-static p-4" style="border-left:3px solid #ef4444;">
         <div class="flex items-center justify-between mb-3">
           <div class="flex items-center gap-2">
@@ -800,7 +855,7 @@
             </div>
             <div>
               <p class="text-[11px] font-bold uppercase tracking-wide" style="color:var(--text-strong)">Inadimplência</p>
-              <p class="text-[9px]" style="color:var(--text-muted)">{{ hoje|date:"F Y" }}</p>
+              <p class="text-[9px]" style="color:var(--text-muted)">Acumulado em aberto</p>
             </div>
           </div>
           <span class="text-[11px] font-bold px-2 py-0.5 rounded-full"
@@ -817,7 +872,7 @@
           </div>
           <div class="flex-1 space-y-1.5">
             <div class="flex justify-between text-[10px]">
-              <span style="color:var(--text-muted)"><span class="w-2 h-2 rounded-full bg-emerald-500 inline-block mr-1"></span>Pagas</span>
+              <span style="color:var(--text-muted)"><span class="w-2 h-2 rounded-full bg-emerald-500 inline-block mr-1"></span>Recebido mês</span>
               <strong style="color:var(--emerald-text)">{{ faturas_pagas }}</strong>
             </div>
             <div class="flex justify-between text-[10px]">
@@ -825,12 +880,94 @@
               <strong style="color:#ef4444">{{ faturas_vencidas }}</strong>
             </div>
             <div class="flex justify-between text-[10px]">
-              <span style="color:var(--text-muted)"><span class="w-2 h-2 rounded-full inline-block mr-1" style="background:var(--border)"></span>Total</span>
+              <span style="color:var(--text-muted)"><span class="w-2 h-2 rounded-full inline-block mr-1" style="background:var(--border)"></span>Total mês</span>
               <strong style="color:var(--text-main)">{{ total_faturas }}</strong>
             </div>
           </div>
         </div>
       </div>
+
+      <!-- ── 🟡 Alunos Inativos 14-29 dias ── -->
+      {% if alunos_inativos %}
+      <div class="card-static overflow-hidden" style="border-left:3px solid #f59e0b;">
+        <div class="px-4 py-3">
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-2">
+              <div class="w-7 h-7 rounded-lg flex items-center justify-center" style="background:rgba(245,158,11,0.12);">
+                <i class="fa-solid fa-user-clock" style="color:#f59e0b;font-size:12px"></i>
+              </div>
+              <div>
+                <p class="text-[11px] font-bold uppercase" style="color:#f59e0b">Alunos Inativos</p>
+                <p class="text-[9px]" style="color:var(--text-muted)">Sem aula há 14–29 dias</p>
+              </div>
+            </div>
+            <span class="text-[9px] font-bold px-2 py-0.5 rounded-full"
+                  style="background:rgba(245,158,11,0.12);color:#f59e0b;">
+              {{ alunos_inativos|length }}
+            </span>
+          </div>
+          {% for al in alunos_inativos %}
+          <div class="flex items-center justify-between px-2 py-1.5 rounded-lg mb-1"
+               style="background:var(--card-alt);">
+            <div>
+              <span class="text-[11px] font-bold" style="color:var(--text-main)">{{ al.nome|truncatechars:22 }}</span>
+              {% if al.dias_inativo %}
+              <span class="text-[9px] ml-1" style="color:var(--text-muted)">{{ al.dias_inativo }}d</span>
+              {% endif %}
+            </div>
+            {% if al.telefone %}
+            <a href="https://wa.me/55{{ al.telefone|cut:' '|cut:'-'|cut:'('|cut:')' }}?text=Ol%C3%A1%2C+{{ al.nome|urlencode }}!+Sentimos+sua+falta+nas+aulas+%F0%9F%90%8E+Que+tal+agendar+um+hor%C3%A1rio%3F+Estamos+te+esperando+na+h%C3%ADpica%21"
+               target="_blank"
+               style="font-size:9px;padding:2px 7px;border-radius:5px;background:rgba(16,185,129,0.1);color:#10b981;">
+              <i class="fa-brands fa-whatsapp"></i>
+            </a>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- ── 🔴 Risco de Perda 30+ dias ── -->
+      {% if alunos_risco %}
+      <div class="card-static overflow-hidden" style="border-left:3px solid #ef4444;">
+        <div class="px-4 py-3">
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-2">
+              <div class="w-7 h-7 rounded-lg flex items-center justify-center" style="background:rgba(239,68,68,0.12);">
+                <i class="fa-solid fa-user-xmark" style="color:#ef4444;font-size:12px"></i>
+              </div>
+              <div>
+                <p class="text-[11px] font-bold uppercase" style="color:#ef4444">Risco de Perda</p>
+                <p class="text-[9px]" style="color:var(--text-muted)">Sem aula há 30+ dias</p>
+              </div>
+            </div>
+            <span class="text-[9px] font-bold px-2 py-0.5 rounded-full"
+                  style="background:rgba(239,68,68,0.12);color:#ef4444;">
+              {{ alunos_risco|length }}
+            </span>
+          </div>
+          {% for al in alunos_risco %}
+          <div class="flex items-center justify-between px-2 py-1.5 rounded-lg mb-1"
+               style="background:var(--card-alt);">
+            <div>
+              <span class="text-[11px] font-bold" style="color:var(--text-main)">{{ al.nome|truncatechars:22 }}</span>
+              {% if al.dias_inativo %}
+              <span class="text-[9px] ml-1 font-bold" style="color:#ef4444">{{ al.dias_inativo }}d</span>
+              {% endif %}
+            </div>
+            {% if al.telefone %}
+            <a href="https://wa.me/55{{ al.telefone|cut:' '|cut:'-'|cut:'('|cut:')' }}?text=Ol%C3%A1%2C+{{ al.nome|urlencode }}!+Estamos+com+saudades+de+te+ver+por+aqui+%F0%9F%90%8E+Sabemos+que+a+vida+fica+corrida%2C+mas+seu+cavalo+est%C3%A1+te+esperando%21+Podemos+marcar+um+hor%C3%A1rio%3F"
+               target="_blank"
+               style="font-size:9px;padding:2px 7px;border-radius:5px;background:rgba(239,68,68,0.1);color:#ef4444;">
+              <i class="fa-brands fa-whatsapp"></i>
+            </a>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
 
       <!-- ── Contas a Receber ── -->
       <div class="card-static overflow-hidden" style="border-left: 3px solid #ef4444;">
@@ -1093,6 +1230,38 @@
   }
 
   buildCharts();
+
+  /* ── Feedback visual imediato ao Finalizar ── */
+  function marcarConcluida(aulaId, form) {
+    const card = document.getElementById('aula-card-' + aulaId);
+    const btn  = document.getElementById('btn-fin-' + aulaId);
+    if (!card) return true; // deixa o form submeter normalmente
+
+    // Muda badge para "Concluída" imediatamente
+    const badgeArea = card.querySelector('.flex.justify-between.items-start');
+    if (badgeArea) {
+      const badges = badgeArea.querySelectorAll('span');
+      badges.forEach(b => b.remove());
+      const novo = document.createElement('span');
+      novo.innerHTML = '<i class="fa-solid fa-flag-checkered"></i> Concluída';
+      novo.style.cssText = 'display:inline-flex;align-items:center;gap:4px;background:rgba(99,102,241,0.15);color:#818cf8;font-size:8px;font-weight:900;text-transform:uppercase;padding:2px 8px;border-radius:99px;';
+      badgeArea.appendChild(novo);
+    }
+
+    // Esconde botão confirmar e muda texto do finalizar
+    const formConf = card.querySelector('form[action*="confirmar"]');
+    if (formConf) formConf.style.display = 'none';
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-circle-check mr-1"></i> Salvo';
+      btn.style.background = 'rgba(99,102,241,0.15)';
+      btn.style.color = '#818cf8';
+    }
+
+    // Submete o form normalmente após pequeno delay visual
+    setTimeout(() => form.submit(), 300);
+    return false;
+  }
 </script>
 </body>
 </html>

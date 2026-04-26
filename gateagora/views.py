@@ -236,18 +236,22 @@ def dashboard(request):
     
 
     # ── 1) Aulas de hoje — inclui concluídas para não sumirem da lista ─────────
-    proximas_aulas = (
+    proximas_aulas = list(
         Aula.objects
         .filter(empresa=empresa, data_hora__date=hoje)
         .select_related('aluno', 'cavalo')
-        .prefetch_related('confirmacao')
         .order_by('data_hora')
     )
+    # Mapeamento seguro — evita RelatedObjectDoesNotExist no descriptor OneToOne
+    _conf_map = {
+        c.aula_id: c
+        for c in ConfirmacaoPresenca.objects.filter(
+            aula_id__in=[a.id for a in proximas_aulas]
+        )
+    }
     for _a in proximas_aulas:
-        try:
-            _ = _a.confirmacao
-        except Exception:
-            _a.confirmacao = None
+        _a.confirmacao    = _conf_map.get(_a.id)  # objeto ou None
+        _a.is_confirmada  = _a.id in _conf_map     # bool seguro para o template
 
     # ── 2) Alertas e Estoque Unificado ────────────────────────────────────────
     
@@ -532,13 +536,14 @@ def dashboard(request):
             )
         ),
         receita_periodo=Coalesce(
+            # Soma valor_aula do aluno por treino concluído — evita inflar com
+            # outros itens da fatura (hotelaria, vet, etc.)
             Sum(
-                'itemfatura__valor',
+                'aulas__aluno__valor_aula',
                 filter=Q(
-                    itemfatura__tipo='AULA',
-                    itemfatura__fatura__empresa=empresa,
-                    itemfatura__data__gte=data_inicio,
-                    itemfatura__data__lte=hoje,
+                    aulas__concluida=True,
+                    aulas__data_hora__date__gte=data_inicio,
+                    aulas__data_hora__date__lte=hoje,
                 )
             ),
             Value(0, output_field=DecimalField())
@@ -614,7 +619,69 @@ def dashboard(request):
         receita_por_tipo_labels  = ["Sem dados no período"]
         receita_por_tipo_valores = [0]
 
-    # ── 9) Contexto final ─────────────────────────────────────────────────────
+    # ── 9) Taxa de confirmação do dia ────────────────────────────────────────
+    total_aulas_hoje       = len(proximas_aulas)
+    aulas_confirmadas_hoje = sum(1 for a in proximas_aulas if a.is_confirmada)
+    aulas_concluidas_hoje  = sum(1 for a in proximas_aulas if a.concluida)
+
+    # ── 10) Alunos inativos 14-29 dias (alerta) e 30+ dias (risco de perda) ─────
+    trinta_dias    = hoje - timedelta(days=30)
+    quatorze_dias  = hoje - timedelta(days=14)
+
+    # Quem teve aula concluída nos últimos 14 dias — está ativo
+    ativos_recentes = set(
+        Aula.objects
+        .filter(empresa=empresa, concluida=True, data_hora__date__gte=quatorze_dias)
+        .values_list('aluno_id', flat=True)
+        .distinct()
+    )
+    # Quem teve aula entre 14-29 dias — inativo mas ainda recuperável
+    ativos_14_30 = set(
+        Aula.objects
+        .filter(
+            empresa=empresa, concluida=True,
+            data_hora__date__gte=trinta_dias,
+            data_hora__date__lt=quatorze_dias,
+        )
+        .values_list('aluno_id', flat=True)
+        .distinct()
+    )
+
+    alunos_base = list(
+        Aluno.objects
+        .filter(empresa=empresa, ativo=True)
+        .exclude(id__in=ativos_recentes)
+        .order_by('nome')
+    )
+
+    # Separa os dois grupos e calcula dias desde a última aula
+    alunos_inativos   = []  # 14-29 dias
+    alunos_risco      = []  # 30+ dias
+
+    aula_ids = [a.id for a in alunos_base]
+    # Última aula concluída de cada aluno
+    from django.db.models import Max
+    ultima_aula_map = dict(
+        Aula.objects
+        .filter(empresa=empresa, concluida=True, aluno_id__in=aula_ids)
+        .values('aluno_id')
+        .annotate(ultima=Max('data_hora__date'))
+        .values_list('aluno_id', 'ultima')
+    )
+
+    for al in alunos_base:
+        ultima = ultima_aula_map.get(al.id)
+        dias = (hoje - ultima).days if ultima else None
+        al.dias_inativo = dias
+        if al.id in ativos_14_30:
+            alunos_inativos.append(al)
+        else:
+            alunos_risco.append(al)
+
+    alunos_inativos = sorted(alunos_inativos, key=lambda x: x.dias_inativo or 0, reverse=True)[:8]
+    alunos_risco    = sorted(alunos_risco,    key=lambda x: x.dias_inativo or 0, reverse=True)[:8]
+
+    # ── 11) Contexto final ────────────────────────────────────────────────────
     context = {
         "brand_name":               BRAND_NAME,
         "empresa":                  empresa,
@@ -654,9 +721,41 @@ def dashboard(request):
         "faturas_pagas":            faturas_pagas_mes,
         "faturas_vencidas":         faturas_vencidas_mes,
         "indice_inadimplencia":     indice_inadimplencia,
+        # Taxa de confirmação
+        "total_aulas_hoje":         total_aulas_hoje,
+        "aulas_confirmadas_hoje":   aulas_confirmadas_hoje,
+        "aulas_concluidas_hoje":    aulas_concluidas_hoje,
+        # Retenção / churn
+        "alunos_inativos":          alunos_inativos,
+        "alunos_risco":             alunos_risco,
     }
 
     return render(request, "gateagora/dashboard.html", context)
+
+# ── Confirmar Presença pelo Dashboard (Gestor) ───────────────────────────────
+
+@login_required
+@require_POST
+def confirmar_presenca_dashboard(request, aula_id):
+    # Gestor ou instrutor confirma presenca de aluno direto pelo dashboard
+    try:
+        perfil = request.user.perfil
+    except Exception:
+        return redirect("login")
+
+    if perfil.cargo not in ("Gestor", "Instrutor", "Admin"):
+        return redirect("dashboard")
+
+    aula = get_object_or_404(Aula, id=aula_id, empresa=perfil.empresa)
+    _, criado = ConfirmacaoPresenca.objects.get_or_create(aula=aula, aluno=aula.aluno)
+
+    if criado:
+        messages.success(request, f"Presenca de {aula.aluno.nome} confirmada.")
+    else:
+        messages.info(request, f"{aula.aluno.nome} ja estava confirmado.")
+
+    return redirect("dashboard")
+
 
 # ── Concluir Aula ─────────────────────────────────────────────────────────────
 
@@ -1006,33 +1105,29 @@ def _get_aulas_encilhamento(empresa, data_str):
     except (ValueError, TypeError):
         data = timezone.localdate()
 
-    aulas = (
+    aulas = list(
         Aula.objects
         .filter(empresa=empresa, data_hora__date=data)
         .select_related(
             'aluno', 'cavalo', 'cavalo__baia',
             'cavalo__piquete', 'instrutor', 'instrutor__user'
         )
-        .prefetch_related('confirmacao')
         .order_by('data_hora')
     )
-    # ... código do queryset (aulas = ...)
-
-    # Loop para definir o estado visual
+    _conf_enc = {
+        c.aula_id
+        for c in ConfirmacaoPresenca.objects.filter(
+            aula_id__in=[a.id for a in aulas]
+        )
+    }
     for aula in aulas:
-        try:
-            # Verifica se existe o registro na tabela ConfirmacaoPresenca
-            # Use o nome correto do related_name (confirmacao)
-            tem_confirmacao = hasattr(aula, 'confirmacao') and aula.confirmacao is not None
-        except:
-            tem_confirmacao = False
-        
+        aula.is_confirmada = aula.id in _conf_enc
         if aula.concluida:
             aula.ui_estado = "concluida"
-        elif tem_confirmacao:
-            aula.ui_estado = "confirmada"     # LUÍSA (Aceso)
+        elif aula.is_confirmada:
+            aula.ui_estado = "confirmada"
         else:
-            aula.ui_estado = "nao_confirmada" # OUTROS (Apagado)
+            aula.ui_estado = "nao_confirmada" 
 
     return aulas, data
 
@@ -1082,7 +1177,7 @@ def encilhamento(request):
         "brand_name":            BRAND_NAME,
         "empresa":               empresa,
         "aulas":                 aulas,
-        "total_aulas":           aulas.count(),
+        "total_aulas":           len(aulas),
         "data_selecionada":      data_selecionada,
         "contatos_funcionarios": contatos_funcionarios,
         "contatos_clientes":     contatos_clientes,
@@ -1106,32 +1201,52 @@ def encilhamento_whatsapp(request):
 
     data_fmt = data_selecionada.strftime('%d de %B de %Y').capitalize()
 
+    # Separa confirmadas das pendentes para mostrar resumo
+    total  = len(aulas)
+    conf   = sum(1 for a in aulas if getattr(a, 'is_confirmada', False))
+    pend   = total - conf
+
     linhas = [
         f"🐎 *{empresa.nome.upper()}*",
-        f"📋 *Ordem de Encilhamento*",
-        f"📅 {data_fmt}",
-        "━━━━━━━━━━━━━━━━━━━━━━",
+        f"📋 *Guia de Encilhamento — {data_fmt}*",
+        f"",
+        f"📊 Resumo: {total} aula{'s' if total != 1 else ''} | "
+        f"✅ {conf} confirmada{'s' if conf != 1 else ''} | "
+        f"⏳ {pend} aguardando",
+        "━━━━━━━━━━━━━━━━━━━━━━━━",
     ]
 
-    for aula in aulas:
-        hora = timezone.localtime(aula.data_hora).strftime('%H:%M')
-        c    = aula.cavalo
-        local    = f"Baia {c.baia.numero}" if c.baia else (c.piquete.nome if c.piquete else "—")
-        material = "⚠️ *Material PRÓPRIO*" if c.material_proprio else "✅ Material da Escola"
+    for i, aula in enumerate(aulas, 1):
+        hora  = timezone.localtime(aula.data_hora).strftime('%H:%M')
+        c     = aula.cavalo
+        local = f"Baia {c.baia.numero}" if getattr(c,'baia',None)                 else (c.piquete.nome if getattr(c,'piquete',None) else "—")
+
+        confirmada = getattr(aula, 'is_confirmada', False)
+        status_icon = "✅" if confirmada else "⏳"
+        material = "⚠️ *MATERIAL PRÓPRIO — nao usar equipamento da escola*"                    if getattr(c,'material_proprio',False) else "Material da Escola"
+
+        sela     = getattr(c,'tipo_sela',None)     or "Padrao escola"
+        cabecada = getattr(c,'tipo_cabecada',None)  or "Padrao escola"
 
         linhas += [
-            f"🕒 *{hora}* — {aula.get_local_display() or 'Picadeiro'}",
-            f"👤 *Aluno:* {aula.aluno.nome}",
-            f"🐴 *Cavalo:* {c.nome} ({local})",
-            f"🪑 *Sela:* {c.tipo_sela or 'Padrão escola'}",
-            f"🔗 *Cabeçada:* {c.tipo_cabecada or 'Padrão escola'}",
-            f"{material}",
+            f"",
+            f"{status_icon} *AULA {i} — {hora}*  |  {aula.get_local_display() or 'Picadeiro'}",
+            f"👤 {aula.aluno.nome}",
+            f"🐴 *{c.nome}*  ({local})",
+            f"   Sela: {sela}",
+            f"   Cabecada: {cabecada}",
+            f"   {material}",
         ]
+        if aula.instrutor:
+            linhas.append(f"   Prof. {aula.instrutor.user.get_full_name()}")
         if aula.relatorio_treino:
-            linhas.append(f"📝 Obs: {aula.relatorio_treino}")
-        linhas.append("─" * 25)
+            linhas.append(f"📝 _{aula.relatorio_treino}_")
+        linhas.append("─" * 26)
 
-    linhas.append(MSG_RODAPE)
+    linhas += [
+        f"",
+        MSG_RODAPE,
+    ]
 
     texto = "\n".join(linhas)
     tel = "".join(filter(str.isdigit, telefone))
@@ -1186,73 +1301,107 @@ def encilhamento_pdf(request):
     largura = width - 2 * margem_x
 
     for aula in aulas:
-        if y < 140:
+        hora = timezone.localtime(aula.data_hora).strftime('%H:%M')
+        c    = aula.cavalo
+
+        local    = f"Baia {c.baia.numero}" if getattr(c, 'baia', None) else                    (f"Piquete: {c.piquete.nome}" if getattr(c, 'piquete', None) else "N/D")
+        sela      = getattr(c, 'tipo_sela', None)     or "Padrao escola"
+        cabecada  = getattr(c, 'tipo_cabecada', None)  or "Padrao escola"
+        tem_obs   = bool(getattr(aula, 'relatorio_treino', None))
+        material_proprio = getattr(c, 'material_proprio', False)
+
+        # Altura dinamica: base 130 + 14 por obs
+        card_altura = 144 if tem_obs else 130
+        espaco_necessario = card_altura + 16
+
+        if y - espaco_necessario < 60:
             p.showPage()
             pagina += 1
             y = desenhar_cabecalho(pagina)
 
-        hora = timezone.localtime(aula.data_hora).strftime('%H:%M')
-        c = aula.cavalo
-
-        local = f"Baia {c.baia.numero}" if getattr(c, 'baia', None) else \
-                (f"Piquete: {c.piquete.nome}" if getattr(c, 'piquete', None) else "N/D")
-
-        material = "⚠️ MATERIAL PRÓPRIO" if getattr(c, 'material_proprio', False) else "Material da Escola"
-
-        # Card compacto
-        card_altura = 118
-
+        # Fundo do card
         p.setStrokeColor(COR_BORDA)
+        p.setLineWidth(0.8)
         p.setFillColor(colors.white)
         p.roundRect(margem_x, y - card_altura, largura, card_altura, 8, fill=1, stroke=1)
 
-        # Borda azul apenas no horário (sem fundo)
-        p.setStrokeColor(COR_PRIMARIA)
-        p.setLineWidth(2)
-        p.roundRect(margem_x + 6, y - 32, 78, 24, 6, fill=0, stroke=1)
+        # Faixa colorida lateral: verde=confirmada, ambar=pendente
+        confirmada = getattr(aula, 'is_confirmada', False)
+        cor_faixa  = colors.HexColor('#10b981') if confirmada else colors.HexColor('#f59e0b')
+        p.setFillColor(cor_faixa)
+        p.roundRect(margem_x, y - card_altura, 5, card_altura, 2, fill=1, stroke=0)
 
-        # Hora
+        # Pill horario
         p.setFillColor(COR_PRIMARIA)
-        p.setFont("Helvetica-Bold", 13)
-        p.drawString(margem_x + 14, y - 22, f"{hora}")
-
-        # Aluno (mais escuro)
-        p.setFillColor(COR_TEXTO)
+        p.roundRect(margem_x + 12, y - 28, 62, 20, 5, fill=1, stroke=0)
+        p.setFillColor(colors.white)
         p.setFont("Helvetica-Bold", 12)
-        nome_aluno = aula.aluno.nome[:38] + "..." if len(aula.aluno.nome) > 38 else aula.aluno.nome
-        p.drawString(margem_x + 15, y - 48, f"👤 {nome_aluno.upper()}")
+        p.drawCentredString(margem_x + 43, y - 21, hora)
 
-        # Cavalo
+        # Badge status
+        badge_txt = "CONFIRMADA" if confirmada else "AGUARDANDO"
+        badge_cor = colors.HexColor('#10b981') if confirmada else colors.HexColor('#f59e0b')
+        p.setFillColor(badge_cor)
+        p.roundRect(margem_x + largura - 95, y - 28, 88, 18, 4, fill=1, stroke=0)
+        p.setFillColor(colors.white)
+        p.setFont("Helvetica-Bold", 7.5)
+        p.drawCentredString(margem_x + largura - 51, y - 21, badge_txt)
+
+        # Nome do aluno
         p.setFillColor(COR_TEXTO)
-        p.setFont("Helvetica-Bold", 10.5)
-        p.drawString(margem_x + 15, y - 65, f"🐴 {c.nome}")
+        p.setFont("Helvetica-Bold", 11.5)
+        nome_aluno = (aula.aluno.nome[:40] + "...") if len(aula.aluno.nome) > 40 else aula.aluno.nome
+        p.drawString(margem_x + 12, y - 47, nome_aluno.upper())
 
-        # Demais informações - agora com cinza mais escuro
-        p.setFillColor(COR_SUB)          # ← Aqui está o ajuste principal
-        p.setFont("Helvetica", 9.8)
+        # Tipo de aula e instrutor
+        p.setFillColor(COR_SUB)
+        p.setFont("Helvetica", 9)
+        tipo_inst = aula.get_tipo_display()
+        if aula.instrutor:
+            tipo_inst += f"  |  Prof. {aula.instrutor.user.first_name}"
+        p.drawString(margem_x + 12, y - 59, tipo_inst)
 
-        p.drawString(margem_x + 15, y - 79, f"📍 {local} • {aula.get_local_display() or 'Picadeiro'}")
-        p.drawString(margem_x + 15, y - 92, f"🪑 Sela:     {getattr(c, 'tipo_sela', 'Padrão')}")
-        p.drawString(margem_x + 15, y - 104, f"🔗 Cabeçada: {getattr(c, 'tipo_cabecada', 'Padrão')}")
+        # Separador fino
+        p.setStrokeColor(COR_BORDA)
+        p.setLineWidth(0.4)
+        p.line(margem_x + 12, y - 65, margem_x + largura - 12, y - 65)
+
+        # Cavalo + local
+        p.setFillColor(COR_TEXTO)
+        p.setFont("Helvetica-Bold", 10)
+        nome_cav = (c.nome[:30] + "...") if len(c.nome) > 30 else c.nome
+        p.drawString(margem_x + 12, y - 79, f"Cavalo: {nome_cav}")
+        p.setFillColor(COR_SUB)
+        p.setFont("Helvetica", 9)
+        p.drawRightString(margem_x + largura - 12, y - 79, f"{local}  |  {aula.get_local_display() or 'Picadeiro'}")
+
+        # Sela + Cabecada
+        p.setFillColor(COR_SUB)
+        p.setFont("Helvetica", 9)
+        sela_txt = (sela[:35] + "...") if len(sela) > 35 else sela
+        cab_txt  = (cabecada[:35] + "...") if len(cabecada) > 35 else cabecada
+        p.drawString(margem_x + 12, y - 93,  f"Sela:      {sela_txt}")
+        p.drawString(margem_x + 12, y - 106, f"Cabecada: {cab_txt}")
 
         # Material
-        if getattr(c, 'material_proprio', False):
-            p.setFillColor(colors.red)
+        if material_proprio:
+            p.setFillColor(colors.HexColor('#dc2626'))
             p.setFont("Helvetica-Bold", 9)
-            p.drawString(margem_x + 15, y - 117, material)
+            p.drawString(margem_x + 12, y - 120, "** MATERIAL PROPRIO — NAO USAR EQUIPAMENTO DA ESCOLA **")
         else:
             p.setFillColor(COR_SUB)
             p.setFont("Helvetica", 9)
-            p.drawString(margem_x + 15, y - 117, material)
+            p.drawString(margem_x + 12, y - 120, "Material da Escola")
 
-        # Observação (se houver)
-        if getattr(aula, 'relatorio_treino', None):
-            p.setFillColor(colors.darkgreen)
-            p.setFont("Helvetica", 9)
-            obs = aula.relatorio_treino[:85] + "..." if len(aula.relatorio_treino) > 85 else aula.relatorio_treino
-            p.drawString(margem_x + 15, y - 130, f"📝 {obs}")
+        # Observacao (se houver)
+        if tem_obs:
+            obs = aula.relatorio_treino
+            obs_txt = (obs[:90] + "...") if len(obs) > 90 else obs
+            p.setFillColor(colors.HexColor('#166534'))
+            p.setFont("Helvetica-Oblique", 8.5)
+            p.drawString(margem_x + 12, y - 134, f"Obs: {obs_txt}")
 
-        y -= (card_altura + 12)
+        y -= espaco_necessario
 
     p.save()
     return response
@@ -1729,7 +1878,7 @@ def minhas_aulas(request):
     trinta_dias_atras = agora - timezone.timedelta(days=30)
 
     # 4. Aulas do aluno — futuras + últimos 30 dias
-    aulas = (
+    aulas = list(
         Aula.objects
         .filter(
             aluno=aluno,
@@ -1740,15 +1889,20 @@ def minhas_aulas(request):
             "cavalo", "cavalo__baia", "cavalo__piquete",
             "instrutor", "instrutor__user",
         )
-        .prefetch_related("confirmacao")
         .order_by("data_hora")
     )
+    _conf_ma = {
+        c.aula_id: c
+        for c in ConfirmacaoPresenca.objects.filter(
+            aula_id__in=[a.id for a in aulas]
+        )
+    }
 
     proximas = []
     historico = []
 
     for aula in aulas:
-        confirmacao = getattr(aula, "confirmacao", None)
+        confirmacao = _conf_ma.get(aula.id)
         aula_passada = aula.data_hora < agora
         pode_confirmar = (
             not aula_passada

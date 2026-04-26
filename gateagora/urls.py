@@ -28,6 +28,9 @@ urlpatterns = [
     path('minhas-aulas/confirmar/<int:aula_id>/', views.confirmar_presenca,    name='confirmar_presenca'),
     path('minhas-aulas/cancelar/<int:aula_id>/',  views.desconfirmar_presenca, name='desconfirmar_presenca'),
 
+    # Confirmação manual pelo gestor (dashboard)
+    path('aula/confirmar/<int:aula_id>/', views.confirmar_presenca_dashboard, name='confirmar_presenca_dashboard'),
+
     # Manejo em massa
     path('manejo-em-massa/', views.manejo_em_massa, name='manejo_em_massa'),
 
