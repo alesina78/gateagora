@@ -665,7 +665,7 @@
 
             {# Turma ou Aluno Individual #}
             {% if aula.nome_turma %}
-              <div class="flex items-center gap-2 mb-0.5">
+              <div class="flex items-center gap-2 mb-0.5 flex-wrap">
                 <p class="text-[13px] font-bold leading-tight" style="color:var(--text-strong)">{{ aula.nome_turma }}</p>
                 {% if aula.vagas_maximas %}
                   {% with total_inscritos=aula.inscricoes.count %}
@@ -679,9 +679,29 @@
                   {% endwith %}
                 {% endif %}
               </div>
-              <p class="text-[9px] mt-0.5" style="color:var(--text-muted)">
-                <i class="fa-solid fa-user text-[8px]"></i> {{ aula.aluno.nome }}
-              </p>
+              {# Selos por aluno inscrito — verde=confirmado, âmbar=pendente #}
+              <div class="flex flex-wrap gap-1 mt-1">
+                {% for insc in aula.inscricoes.all %}
+                  <span style="display:inline-flex;align-items:center;gap:3px;
+                               padding:2px 6px;border-radius:99px;font-size:8px;font-weight:700;
+                               {% if insc.aluno_id in aula.conf_alunos %}
+                                 background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.25);
+                               {% else %}
+                                 background:rgba(245,158,11,0.08);color:#d97706;border:1px solid rgba(245,158,11,0.2);
+                               {% endif %}">
+                    {% if insc.aluno_id in aula.conf_alunos %}
+                      <i class="fa-solid fa-circle-check text-[7px]"></i>
+                    {% else %}
+                      <i class="fa-solid fa-hourglass-half text-[7px]"></i>
+                    {% endif %}
+                    {{ insc.aluno.nome|truncatechars:14 }}
+                  </span>
+                {% empty %}
+                  <p class="text-[9px]" style="color:var(--text-muted)">
+                    <i class="fa-solid fa-user text-[8px]"></i> {{ aula.aluno.nome }}
+                  </p>
+                {% endfor %}
+              </div>
             {% else %}
               <p class="text-[13px] font-bold leading-tight" style="color:var(--text-strong)">{{ aula.aluno.nome }}</p>
             {% endif %}
@@ -702,15 +722,29 @@
                 {% endif %}
               </div>
               <div class="flex items-center gap-1.5">
-                {% if not aula.is_confirmada and not aula.concluida %}
-                <form action="{% url 'confirmar_presenca_dashboard' aula.id %}" method="post">
-                  {% csrf_token %}
-                  <button type="submit" class="btn-fin"
-                          style="background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.25);"
-                          title="Confirmar presença">
-                    <i class="fa-solid fa-circle-check"></i>
-                  </button>
-                </form>
+                {% if not aula.concluida %}
+                  {% if aula.nome_turma %}
+                    {# Turma: botão confirma todos os inscritos de uma vez #}
+                    <form action="{% url 'confirmar_presenca_turma' aula.id %}" method="post">
+                      {% csrf_token %}
+                      <button type="submit" class="btn-fin"
+                              style="background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.25);"
+                              title="Confirmar toda a turma">
+                        <i class="fa-solid fa-users-line text-[9px]"></i>
+                        <i class="fa-solid fa-circle-check text-[9px]"></i>
+                      </button>
+                    </form>
+                  {% elif not aula.is_confirmada %}
+                    {# Individual: confirma só este aluno #}
+                    <form action="{% url 'confirmar_presenca_dashboard' aula.id %}" method="post">
+                      {% csrf_token %}
+                      <button type="submit" class="btn-fin"
+                              style="background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.25);"
+                              title="Confirmar presença">
+                        <i class="fa-solid fa-circle-check"></i>
+                      </button>
+                    </form>
+                  {% endif %}
                 {% endif %}
                 {% if not aula.concluida %}
                 <form action="{% url 'concluir_aula' aula.id %}" method="post"

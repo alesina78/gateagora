@@ -357,12 +357,15 @@ class Aula(models.Model):
 
 class ConfirmacaoPresenca(models.Model):
     """
-    Registra que um aluno confirmou presença em uma aula específica.
+    Registra que um aluno confirmou presença em uma aula.
+    Para aulas individuais: 1 registro por aula.
+    Para turmas: 1 registro por aluno inscrito.
+    A unicidade é garantida por unique_together (aula + aluno).
     """
-    aula = models.OneToOneField(
+    aula = models.ForeignKey(
         'Aula',
         on_delete=models.CASCADE,
-        related_name='confirmacao'
+        related_name='confirmacoes_presenca'
     )
     aluno = models.ForeignKey(
         'Aluno',
@@ -372,8 +375,10 @@ class ConfirmacaoPresenca(models.Model):
     confirmado_em = models.DateTimeField(auto_now_add=True)
 
     class Meta:
+        unique_together     = ('aula', 'aluno')
         verbose_name        = "Confirmação de Presença"
         verbose_name_plural = "Confirmações de Presença"
+        indexes             = [models.Index(fields=['aula', 'aluno'])]
 
     def __str__(self):
         return f"✅ {self.aluno.nome} confirmou {self.aula}"

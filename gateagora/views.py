@@ -31,7 +31,8 @@ from django.views.decorators.http import require_POST
 from .models import (
     Empresa, Perfil, Aluno, Cavalo, Baia, Piquete, Aula,
     ItemEstoque, MovimentacaoFinanceira, MovimentacaoEstoque, DocumentoCavalo,
-    ConfigPrazoManejo, ConfigPrecoManejo, Fatura, ItemFatura, ConfirmacaoPresenca
+    ConfigPrazoManejo, ConfigPrecoManejo, Fatura, ItemFatura, ConfirmacaoPresenca,
+    RegistroOcorrencia
 )
 
 BRAND_NAME = "Gate 4"
@@ -243,15 +244,21 @@ def dashboard(request):
         .order_by('data_hora')
     )
     # Mapeamento seguro — evita RelatedObjectDoesNotExist no descriptor OneToOne
-    _conf_map = {
-        c.aula_id: c
-        for c in ConfirmacaoPresenca.objects.filter(
-            aula_id__in=[a.id for a in proximas_aulas]
-        )
-    }
+    # Para turmas: múltiplas confirmações por aula — guardamos set de aula_ids
+    # Para individual: comportamento idêntico ao anterior
+    _conf_qs   = ConfirmacaoPresenca.objects.filter(
+        aula_id__in=[a.id for a in proximas_aulas]
+    ).values('aula_id', 'aluno_id')
+    # aula_id → set de aluno_ids confirmados
+    _conf_map  = {}
+    for row in _conf_qs:
+        _conf_map.setdefault(row['aula_id'], set()).add(row['aluno_id'])
     for _a in proximas_aulas:
-        _a.confirmacao    = _conf_map.get(_a.id)  # objeto ou None
-        _a.is_confirmada  = _a.id in _conf_map     # bool seguro para o template
+        _conf_alunos      = _conf_map.get(_a.id, set())
+        _a.conf_alunos    = _conf_alunos          # set de aluno_ids confirmados
+        _a.is_confirmada  = bool(_conf_alunos)    # True se ao menos 1 confirmou
+        # Para aulas individuais: compatibilidade com template antigo
+        _a.confirmacao    = bool(_conf_alunos)
 
     # ── 2) Alertas e Estoque Unificado ────────────────────────────────────────
     
@@ -693,7 +700,7 @@ def dashboard(request):
             InscricaoAula.objects
             .filter(aula_id__in=_ids_turmas)
             .values('aula_id')
-            .annotate(total=models.Count('id'))
+            .annotate(total=Count('id'))
         ):
             _contagem[row['aula_id']] = row['total']
 
@@ -794,6 +801,50 @@ def confirmar_presenca_dashboard(request, aula_id):
         messages.success(request, f"Presenca de {aula.aluno.nome} confirmada.")
     else:
         messages.info(request, f"{aula.aluno.nome} ja estava confirmado.")
+
+    return redirect("dashboard")
+
+
+# ── Confirmar Presença de Turma (Gestor) ─────────────────────────────────────
+
+@login_required
+@require_POST
+def confirmar_presenca_turma(request, aula_id):
+    # Confirma todos os alunos inscritos na turma de uma vez
+    try:
+        perfil = request.user.perfil
+    except Exception:
+        return redirect("login")
+
+    if perfil.cargo not in ("Gestor", "Instrutor", "Admin"):
+        return redirect("dashboard")
+
+    from gateagora.models import InscricaoAula
+    aula = get_object_or_404(Aula, id=aula_id, empresa=perfil.empresa)
+
+    if aula.nome_turma:
+        # Turma: confirma todos os inscritos
+        inscritos = InscricaoAula.objects.filter(aula=aula).select_related('aluno')
+        confirmados = 0
+        for insc in inscritos:
+            _, criado = ConfirmacaoPresenca.objects.get_or_create(
+                aula=aula, aluno=insc.aluno
+            )
+            if criado:
+                confirmados += 1
+        if confirmados:
+            messages.success(request, f"{confirmados} aluno(s) de '{aula.nome_turma}' confirmados.")
+        else:
+            messages.info(request, f"Todos os alunos de '{aula.nome_turma}' já estavam confirmados.")
+    else:
+        # Aula individual: confirma o aluno da aula
+        _, criado = ConfirmacaoPresenca.objects.get_or_create(
+            aula=aula, aluno=aula.aluno
+        )
+        if criado:
+            messages.success(request, f"Presença de {aula.aluno.nome} confirmada.")
+        else:
+            messages.info(request, f"{aula.aluno.nome} já estava confirmado.")
 
     return redirect("dashboard")
 
@@ -1155,12 +1206,12 @@ def _get_aulas_encilhamento(empresa, data_str):
         )
         .order_by('data_hora')
     )
-    _conf_enc = {
-        c.aula_id
-        for c in ConfirmacaoPresenca.objects.filter(
-            aula_id__in=[a.id for a in aulas]
-        )
-    }
+    _conf_enc = set(
+        ConfirmacaoPresenca.objects
+        .filter(aula_id__in=[a.id for a in aulas])
+        .values_list('aula_id', flat=True)
+        .distinct()
+    )
     for aula in aulas:
         aula.is_confirmada = aula.id in _conf_enc
         if aula.concluida:
@@ -1935,7 +1986,8 @@ def minhas_aulas(request):
     _conf_ma = {
         c.aula_id: c
         for c in ConfirmacaoPresenca.objects.filter(
-            aula_id__in=[a.id for a in aulas]
+            aula_id__in=[a.id for a in aulas],
+            aluno=aluno,
         )
     }
 
@@ -1982,6 +2034,15 @@ def minhas_aulas(request):
         cavalo    = historico[0]['aula'].cavalo
         instrutor = historico[0]['aula'].instrutor
 
+    # ── Histórico de manejo do cavalo (aba Meu Cavalo) ────────────────────────
+    historico_manejo = []
+    if cavalo:
+        historico_manejo = list(
+            RegistroOcorrencia.objects
+            .filter(cavalo=cavalo)
+            .order_by('-data')[:10]
+        )
+
     return render(
         request,
         "gateagora/minhas_aulas.html",
@@ -1996,6 +2057,7 @@ def minhas_aulas(request):
             "aulas_semana":     aulas_semana,
             "cavalo":           cavalo,
             "instrutor":        instrutor,
+            "historico_manejo": historico_manejo,
         }
     )
 
