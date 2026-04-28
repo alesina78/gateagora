@@ -105,6 +105,66 @@
           <span style="font-size:9px;font-weight:700;text-transform:uppercase;padding:2px 8px;border-radius:99px;background-color:var(--indigo-soft);color:var(--indigo-text);display:inline-block;margin-top:4px">Confirme até {{ prazo_horas }}h antes</span>
         {% endif %}
       </div>
+
+      {# ── Streak / Gamificação ──────────────────────────────────────────── #}
+      {% if streak_atual > 0 or melhor_streak > 0 %}
+      <div style="margin-bottom:16px;background:linear-gradient(135deg,rgba(99,102,241,.1),rgba(99,102,241,.04));
+                  border:1px solid rgba(99,102,241,.2);border-radius:1.25rem;padding:14px 16px;
+                  display:flex;align-items:center;gap:14px;">
+
+        {# Ícone do selo #}
+        <div style="width:52px;height:52px;flex-shrink:0;border-radius:50%;
+                    display:flex;align-items:center;justify-content:center;font-size:22px;
+                    {% if selo_streak %}
+                      background:linear-gradient(135deg,{{ selo_streak.2 }}22,{{ selo_streak.2 }}11);
+                      border:2px solid {{ selo_streak.2 }}55;
+                    {% else %}
+                      background:rgba(99,102,241,.1);border:2px solid rgba(99,102,241,.2);
+                    {% endif %}">
+          {% if selo_streak %}
+            <i class="fa-solid {{ selo_streak.1 }}" style="color:{{ selo_streak.2 }}"></i>
+          {% else %}
+            <i class="fa-solid fa-fire" style="color:var(--indigo-text)"></i>
+          {% endif %}
+        </div>
+
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:2px;">
+            <span style="font-size:26px;font-weight:800;color:var(--text-strong);line-height:1;">{{ streak_atual }}</span>
+            <span style="font-size:11px;font-weight:600;color:var(--text-muted)">semana{{ streak_atual|pluralize }} seguida{{ streak_atual|pluralize }}</span>
+          </div>
+
+          {% if selo_streak %}
+            <span style="display:inline-flex;align-items:center;gap:4px;
+                         font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;
+                         padding:3px 9px;border-radius:99px;
+                         background:{{ selo_streak.2 }}22;color:{{ selo_streak.2 }};
+                         border:1px solid {{ selo_streak.2 }}44;">
+              <i class="fa-solid {{ selo_streak.1 }} text-[8px]"></i>
+              {{ selo_streak.0 }}
+            </span>
+          {% else %}
+            <span style="font-size:10px;color:var(--text-muted);">
+              Mantenha o ritmo — faltam <strong style="color:var(--indigo-text)">{{ 5|add:"-"|add:streak_atual }} </strong> para Bronze!
+            </span>
+          {% endif %}
+
+          {% if melhor_streak > streak_atual %}
+          <p style="font-size:9px;color:var(--text-muted);margin:4px 0 0;">
+            Recorde pessoal: <strong style="color:var(--text-main)">{{ melhor_streak }} semanas</strong>
+          </p>
+          {% endif %}
+        </div>
+
+        {# Mini barra de progresso para próximo selo #}
+        {% if not selo_streak %}
+          {% with pct=streak_atual|add:0 %}
+          <div style="position:absolute;display:none"></div>
+          {% endwith %}
+        {% endif %}
+
+      </div>
+      {% endif %}
     {% endif %}
     {% if messages %}{% for msg in messages %}
       <div class="django-msg {% if msg.tags == 'success' %}success{% elif msg.tags == 'warning' %}warning{% elif msg.tags == 'error' %}error{% else %}info{% endif %}">{{ msg }}</div>

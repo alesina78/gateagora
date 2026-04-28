@@ -244,21 +244,22 @@ def dashboard(request):
         .order_by('data_hora')
     )
     # Mapeamento seguro — evita RelatedObjectDoesNotExist no descriptor OneToOne
-    # Para turmas: múltiplas confirmações por aula — guardamos set de aula_ids
+    # Para turmas: múltiplas confirmações por aula
     # Para individual: comportamento idêntico ao anterior
-    _conf_qs   = ConfirmacaoPresenca.objects.filter(
-        aula_id__in=[a.id for a in proximas_aulas]
-    ).values('aula_id', 'aluno_id')
+    _conf_qs = list(
+        ConfirmacaoPresenca.objects
+        .filter(aula_id__in=[a.id for a in proximas_aulas])
+        .values('aula_id', 'aluno_id')
+    )
     # aula_id → set de aluno_ids confirmados
-    _conf_map  = {}
+    _conf_map = {}
     for row in _conf_qs:
         _conf_map.setdefault(row['aula_id'], set()).add(row['aluno_id'])
     for _a in proximas_aulas:
-        _conf_alunos      = _conf_map.get(_a.id, set())
-        _a.conf_alunos    = _conf_alunos          # set de aluno_ids confirmados
-        _a.is_confirmada  = bool(_conf_alunos)    # True se ao menos 1 confirmou
-        # Para aulas individuais: compatibilidade com template antigo
-        _a.confirmacao    = bool(_conf_alunos)
+        _conf_alunos     = _conf_map.get(_a.id, set())
+        _a.conf_alunos   = _conf_alunos        # set de aluno_ids — sempre existe
+        _a.is_confirmada = bool(_conf_alunos)  # True se ao menos 1 confirmou
+        # NÃO atribuir _a.confirmacao — descriptor OneToOne lança ValueError com bool
 
     # ── 2) Alertas e Estoque Unificado ────────────────────────────────────────
     
@@ -568,6 +569,24 @@ def dashboard(request):
     LIMITE_TREINOS_MES = 20
     limite = LIMITE_TREINOS_MES if periodo in ('mes', '30') else LIMITE_TREINOS_MES * 3
 
+    # ── 7) Ranking de aulas por aluno (gamificação) ───────────────────────────
+    ranking_alunos = list(
+        Aluno.objects
+        .filter(empresa=empresa, ativo=True)
+        .annotate(
+            aulas_periodo=Count(
+                'aulas',
+                filter=Q(
+                    aulas__concluida=True,
+                    aulas__data_hora__date__gte=data_inicio,
+                    aulas__data_hora__date__lte=hoje,
+                )
+            )
+        )
+        .filter(aulas_periodo__gt=0)
+        .order_by('-streak_atual', '-aulas_periodo', 'nome')[:10]
+    )
+
     # ── 7) Relatório completo de inadimplência (todas as faturas abertas) ─────
     faturas_abertas = (
         Fatura.objects
@@ -688,29 +707,40 @@ def dashboard(request):
     alunos_inativos = sorted(alunos_inativos, key=lambda x: x.dias_inativo or 0, reverse=True)[:8]
     alunos_risco    = sorted(alunos_risco,    key=lambda x: x.dias_inativo or 0, reverse=True)[:8]
 
-    # ── 11) Capacity Utilization (turmas de hoje) ───────────────────────────
-    # Só considera aulas que têm vagas_maximas definido (são turmas)
+    # ── 11) Capacity Utilization — baseado em confirmações reais (recalculado a cada request)
     turmas_hoje = [a for a in proximas_aulas if a.vagas_maximas]
     if turmas_hoje:
-        # Busca inscrições de todas as turmas de hoje num único hit ao banco
         from gateagora.models import InscricaoAula
         _ids_turmas = [a.id for a in turmas_hoje]
-        _contagem = {}
+
+        # Conta confirmações reais (não apenas inscrições)
+        _confs_turma = {}
+        for row in (
+            ConfirmacaoPresenca.objects
+            .filter(aula_id__in=_ids_turmas)
+            .values('aula_id')
+            .annotate(total=Count('id'))
+        ):
+            _confs_turma[row['aula_id']] = row['total']
+
+        # Fallback: inscrições quando não há confirmações ainda
+        _inscricoes = {}
         for row in (
             InscricaoAula.objects
             .filter(aula_id__in=_ids_turmas)
             .values('aula_id')
             .annotate(total=Count('id'))
         ):
-            _contagem[row['aula_id']] = row['total']
+            _inscricoes[row['aula_id']] = row['total']
 
-        taxas = []
-        for a in turmas_hoje:
-            inscritos = _contagem.get(a.id, 0)
-            taxas.append(inscritos / a.vagas_maximas)
-        capacity_utilization = round(sum(taxas) / len(taxas) * 100, 1)
+        total_vagas     = sum(a.vagas_maximas for a in turmas_hoje)
+        total_ocupados  = sum(
+            _confs_turma.get(a.id) or _inscricoes.get(a.id, 0)
+            for a in turmas_hoje
+        )
+        capacity_utilization = round(total_ocupados / total_vagas * 100, 1) if total_vagas else None
     else:
-        capacity_utilization = None  # sem turmas hoje — não exibe o card
+        capacity_utilization = None
 
     # ── 12) Equine Workload — cavalos com 3+ aulas hoje ──────────────────────
     from django.db.models import Count as _Count
@@ -751,6 +781,7 @@ def dashboard(request):
         "dados_despesa":            json.dumps(dados_despesa),
         "dados_lucro":              json.dumps(dados_lucro),
         "ranking_cavalos_labels":   json.dumps(ranking_labels, ensure_ascii=False),
+        "ranking_alunos":           ranking_alunos,
         "ranking_cavalos_dados":    json.dumps(ranking_dados),
         "ranking_receita":          json.dumps(ranking_receita),
         "cavalos_sem_treino":       sem_treino,
@@ -779,6 +810,78 @@ def dashboard(request):
     }
 
     return render(request, "gateagora/dashboard.html", context)
+
+# ── Streak / Gamificação ─────────────────────────────────────────────────────
+
+def _atualizar_streak(aluno):
+    """
+    Recalcula streak_atual do aluno com base no histórico de aulas concluídas.
+    Regra: semana com aula concluída = +1; semana sem aula = reset para 0.
+    Atualiza melhor_streak se necessário. Salva o aluno.
+    """
+    from django.utils import timezone as tz
+    hoje     = tz.localdate()
+    # Pega as últimas 52 semanas de aulas concluídas
+    aulas_ok = list(
+        Aula.objects
+        .filter(aluno=aluno, concluida=True, data_hora__date__lte=hoje)
+        .order_by('-data_hora')
+        .values_list('data_hora', flat=True)[:200]
+    )
+
+    if not aulas_ok:
+        aluno.streak_atual = 0
+        aluno.save(update_fields=['streak_atual', 'melhor_streak'])
+        return
+
+    # Converte para números de semana ISO (ano * 100 + semana)
+    semanas_com_aula = set()
+    for dt in aulas_ok:
+        iso = dt.isocalendar()
+        semanas_com_aula.add(iso[0] * 100 + iso[1])
+
+    # Conta semanas consecutivas a partir da semana atual / última semana
+    semana_ref = hoje.isocalendar()
+    semana_key = semana_ref[0] * 100 + semana_ref[1]
+
+    # Aceita também semana passada como "ainda ativa"
+    from datetime import date, timedelta
+    semana_passada = (hoje - timedelta(days=7)).isocalendar()
+    semana_pass_key = semana_passada[0] * 100 + semana_passada[1]
+
+    if semana_key not in semanas_com_aula and semana_pass_key not in semanas_com_aula:
+        aluno.streak_atual = 0
+        aluno.save(update_fields=['streak_atual', 'melhor_streak'])
+        return
+
+    # Conta para trás semana a semana
+    streak = 0
+    check = hoje
+    for _ in range(52):
+        iso   = check.isocalendar()
+        key   = iso[0] * 100 + iso[1]
+        if key in semanas_com_aula:
+            streak += 1
+            check  -= timedelta(days=7)
+        else:
+            break
+
+    aluno.streak_atual = streak
+    if streak > aluno.melhor_streak:
+        aluno.melhor_streak = streak
+    aluno.save(update_fields=['streak_atual', 'melhor_streak'])
+
+
+def _selo_streak(semanas):
+    """Retorna (nome_selo, icone, cor) baseado no streak atual."""
+    if semanas >= 20:
+        return ('Cavaleiro de Ouro',   'fa-crown',          '#f59e0b')
+    if semanas >= 10:
+        return ('Cavaleiro de Prata',  'fa-shield-halved',  '#94a3b8')
+    if semanas >= 5:
+        return ('Cavaleiro de Bronze', 'fa-medal',          '#b45309')
+    return None
+
 
 # ── Confirmar Presença pelo Dashboard (Gestor) ───────────────────────────────
 
@@ -2058,6 +2161,10 @@ def minhas_aulas(request):
             "cavalo":           cavalo,
             "instrutor":        instrutor,
             "historico_manejo": historico_manejo,
+            # Gamificação
+            "streak_atual":     aluno.streak_atual,
+            "melhor_streak":    aluno.melhor_streak,
+            "selo_streak":      _selo_streak(aluno.streak_atual),
         }
     )
 
@@ -2093,6 +2200,7 @@ def confirmar_presenca(request, aula_id):
     _, criado = ConfirmacaoPresenca.objects.get_or_create(aula=aula, aluno=aluno)
 
     if criado:
+        _atualizar_streak(aluno)
         messages.success(request, f"✅ Presença confirmada para {aula.data_hora.strftime('%d/%m às %H:%M')}!")
     else:
         messages.info(request, "Você já havia confirmado esta aula.")

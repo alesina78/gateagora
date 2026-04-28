@@ -107,6 +107,10 @@ class Aluno(models.Model):
         help_text="Perfil de acesso do aluno ao sistema"
     )
 
+    # ── Gamificação / Streaks ─────────────────────────────────────────────────
+    streak_atual  = models.PositiveSmallIntegerField(default=0, verbose_name="Semanas Seguidas")
+    melhor_streak = models.PositiveSmallIntegerField(default=0, verbose_name="Melhor Streak")
+
 
 class Baia(models.Model):
     empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE)
@@ -311,20 +315,10 @@ class Aula(models.Model):
     tipo = models.CharField(max_length=15, choices=TIPO_AULA_CHOICES, default='NORMAL')
     concluida = models.BooleanField(default=False)
     relatorio_treino = models.TextField(blank=True)
-
-    # ── Turmas (opcional) ─────────────────────────────────────────────────────
-    # Quando preenchido, a aula é tratada como turma em vez de aula individual.
-    # O campo aluno continua obrigatório — use o aluno principal ou o "responsável"
-    # da turma (ex: o próprio gestor/escola) para aulas sem aluno fixo.
-    nome_turma = models.CharField(
-        max_length=100,
-        blank=True,
-        help_text="Preencha apenas para aulas em grupo (ex: 'Turma Iniciantes Sábado')"
-    )
-    vagas_maximas = models.PositiveSmallIntegerField(
-        null=True, blank=True,
-        help_text="Capacidade máxima da turma. Deixe em branco para aulas individuais."
-    )
+    nome_turma = models.CharField(max_length=100, blank=True,
+        help_text="Preencha apenas para aulas em grupo")
+    vagas_maximas = models.PositiveSmallIntegerField(null=True, blank=True,
+        help_text="Capacidade máxima da turma. Deixe em branco para aulas individuais.")
 
     class Meta:
         ordering = ["data_hora"]
@@ -358,9 +352,8 @@ class Aula(models.Model):
 class ConfirmacaoPresenca(models.Model):
     """
     Registra que um aluno confirmou presença em uma aula.
-    Para aulas individuais: 1 registro por aula.
-    Para turmas: 1 registro por aluno inscrito.
-    A unicidade é garantida por unique_together (aula + aluno).
+    OneToOne para aulas individuais; múltiplos registros para turmas.
+    Unicidade garantida por unique_together(aula, aluno).
     """
     aula = models.ForeignKey(
         'Aula',
@@ -385,21 +378,9 @@ class ConfirmacaoPresenca(models.Model):
 
 
 class InscricaoAula(models.Model):
-    """
-    Inscrição de um aluno em uma aula de turma.
-    Usado APENAS quando Aula.nome_turma estiver preenchido.
-    Para aulas individuais, continua usando Aula.aluno diretamente.
-    """
-    aula  = models.ForeignKey(
-        'Aula',
-        on_delete=models.CASCADE,
-        related_name='inscricoes'
-    )
-    aluno = models.ForeignKey(
-        'Aluno',
-        on_delete=models.CASCADE,
-        related_name='inscricoes'
-    )
+    """Inscrição de aluno em turma. Usado apenas quando Aula.nome_turma estiver preenchido."""
+    aula  = models.ForeignKey('Aula',  on_delete=models.CASCADE, related_name='inscricoes')
+    aluno = models.ForeignKey('Aluno', on_delete=models.CASCADE, related_name='inscricoes')
     inscrito_em = models.DateTimeField(auto_now_add=True)
 
     class Meta:
