@@ -894,6 +894,7 @@
         </div>
 
         {% if ranking_alunos %}
+          <div style="max-height:200px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border) transparent;padding-right:4px;">
           {% for al in ranking_alunos %}
           {% with pos=forloop.counter %}
           <div style="display:flex;align-items:center;gap:10px;padding:8px 0;
@@ -928,28 +929,28 @@
                   {{ al.nome|truncatechars:20 }}
                 </span>
                 {# Selo de streak #}
-                {% if al.streak_atual >= 20 %}
-                  <span title="Cavaleiro de Ouro — {{ al.streak_atual }} semanas"
+                {% if al.streak_dinamico >= 20 %}
+                  <span title="Cavaleiro de Ouro — {{ al.streak_dinamico }} semanas"
                         style="font-size:13px;cursor:default">👑</span>
-                {% elif al.streak_atual >= 10 %}
-                  <span title="Cavaleiro de Prata — {{ al.streak_atual }} semanas"
+                {% elif al.streak_dinamico >= 10 %}
+                  <span title="Cavaleiro de Prata — {{ al.streak_dinamico }} semanas"
                         style="font-size:13px;cursor:default">🛡️</span>
-                {% elif al.streak_atual >= 5 %}
-                  <span title="Cavaleiro de Bronze — {{ al.streak_atual }} semanas"
+                {% elif al.streak_dinamico >= 5 %}
+                  <span title="Cavaleiro de Bronze — {{ al.streak_dinamico }} semanas"
                         style="font-size:13px;cursor:default">🥉</span>
                 {% endif %}
               </div>
               {# Streak bar #}
-              {% if al.streak_atual > 0 %}
+              {% if al.streak_dinamico > 0 %}
               <div style="display:flex;align-items:center;gap:5px;margin-top:3px;">
                 <div style="flex:1;height:3px;background:var(--border);border-radius:99px;overflow:hidden;max-width:80px;">
                   <div style="height:100%;border-radius:99px;
-                              background:{% if al.streak_atual >= 20 %}#f59e0b{% elif al.streak_atual >= 10 %}#94a3b8{% elif al.streak_atual >= 5 %}#b45309{% else %}#6366f1{% endif %};
-                              width:{% widthratio al.streak_atual 20 100 %}%;
+                              background:{% if al.streak_dinamico >= 20 %}#f59e0b{% elif al.streak_dinamico >= 10 %}#94a3b8{% elif al.streak_dinamico >= 5 %}#b45309{% else %}#6366f1{% endif %};
+                              width:{% widthratio al.streak_dinamico 20 100 %}%;
                               max-width:100%;"></div>
                 </div>
                 <span style="font-size:9px;color:var(--text-muted);white-space:nowrap;">
-                  🔥 {{ al.streak_atual }}sem
+                  🔥 {{ al.streak_dinamico }}sem
                 </span>
               </div>
               {% endif %}
@@ -968,6 +969,7 @@
           </div>
           {% endwith %}
           {% endfor %}
+          </div>
         {% else %}
           <div style="text-align:center;padding:24px 0;">
             <span style="font-size:28px">🐎</span>
@@ -1129,6 +1131,7 @@
               {{ alunos_inativos|length }}
             </span>
           </div>
+          <div style="max-height:160px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border) transparent;padding-right:4px;">
           {% for al in alunos_inativos %}
           <div class="flex items-center justify-between px-2 py-1.5 rounded-lg mb-1"
                style="background:var(--card-alt);">
@@ -1147,6 +1150,7 @@
             {% endif %}
           </div>
           {% endfor %}
+          </div>
         </div>
       </div>
       {% endif %}
@@ -1170,6 +1174,7 @@
               {{ alunos_risco|length }}
             </span>
           </div>
+          <div style="max-height:160px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border) transparent;padding-right:4px;">
           {% for al in alunos_risco %}
           <div class="flex items-center justify-between px-2 py-1.5 rounded-lg mb-1"
                style="background:var(--card-alt);">
@@ -1188,6 +1193,7 @@
             {% endif %}
           </div>
           {% endfor %}
+          </div>
         </div>
       </div>
       {% endif %}

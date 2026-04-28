@@ -569,8 +569,9 @@ def dashboard(request):
     LIMITE_TREINOS_MES = 20
     limite = LIMITE_TREINOS_MES if periodo in ('mes', '30') else LIMITE_TREINOS_MES * 3
 
-    # ── 7) Ranking de aulas por aluno (gamificação) ───────────────────────────
-    ranking_alunos = list(
+    # ── 7) Ranking de alunos — streak dinâmico + aulas no período ───────────────
+    # Busca todos os alunos com pelo menos 1 aula concluída no período
+    candidatos = list(
         Aluno.objects
         .filter(empresa=empresa, ativo=True)
         .annotate(
@@ -584,8 +585,65 @@ def dashboard(request):
             )
         )
         .filter(aulas_periodo__gt=0)
-        .order_by('-streak_atual', '-aulas_periodo', 'nome')[:10]
+        .order_by('-aulas_periodo', 'nome')
     )
+
+    # Recalcula streak de cada candidato dinamicamente (sem depender do campo salvo)
+    # Usa datas de aulas concluídas dos últimos 90 dias para ser eficiente
+    noventa_dias = hoje - timedelta(days=90)
+    ids_candidatos = [a.id for a in candidatos]
+    aulas_historico = list(
+        Aula.objects
+        .filter(
+            aluno_id__in=ids_candidatos,
+            concluida=True,
+            data_hora__date__gte=noventa_dias,
+            data_hora__date__lte=hoje,
+        )
+        .values('aluno_id', 'data_hora')
+    )
+    # Monta dict aluno_id → set de semanas ISO com aula
+    from datetime import timedelta as _td
+    semanas_por_aluno = {}
+    for row in aulas_historico:
+        iso = row['data_hora'].isocalendar()
+        key = iso[0] * 100 + iso[1]
+        semanas_por_aluno.setdefault(row['aluno_id'], set()).add(key)
+
+    def _calc_streak_dinamico(aluno_id):
+        semanas = semanas_por_aluno.get(aluno_id, set())
+        if not semanas:
+            return 0
+        streak = 0
+        check  = hoje
+        for _ in range(13):  # até 13 semanas = 90 dias
+            iso = check.isocalendar()
+            key = iso[0] * 100 + iso[1]
+            if key in semanas:
+                streak += 1
+                check  -= _td(days=7)
+            else:
+                # Tolera a semana atual se ainda não acabou
+                if streak == 0:
+                    check -= _td(days=7)
+                    continue
+                break
+        return streak
+
+    for al in candidatos:
+        al.streak_dinamico = _calc_streak_dinamico(al.id)
+        # Sincroniza o campo salvo se divergir (mantém app e dashboard iguais)
+        if al.streak_dinamico != al.streak_atual:
+            al.streak_atual = al.streak_dinamico
+            if al.streak_dinamico > al.melhor_streak:
+                al.melhor_streak = al.streak_dinamico
+            al.save(update_fields=['streak_atual', 'melhor_streak'])
+
+    # Ordena: streak primeiro (consistência), aulas_periodo como desempate
+    ranking_alunos = sorted(
+        candidatos,
+        key=lambda a: (-a.streak_dinamico, -a.aulas_periodo, a.nome)
+    )[:10]
 
     # ── 7) Relatório completo de inadimplência (todas as faturas abertas) ─────
     faturas_abertas = (
@@ -2165,6 +2223,7 @@ def minhas_aulas(request):
             "streak_atual":     aluno.streak_atual,
             "melhor_streak":    aluno.melhor_streak,
             "selo_streak":      _selo_streak(aluno.streak_atual),
+            "faltam_bronze":    max(0, 5 - aluno.streak_atual),
         }
     )
 
