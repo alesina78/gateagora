@@ -529,6 +529,14 @@ class PerfilInline(TabularInline):
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == "empresa":
+            if not request.user.is_superuser and hasattr(request.user, "perfil"):
+                kwargs["queryset"] = Empresa.objects.filter(
+                    id=request.user.perfil.empresa_id
+                )
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == "empresa":
             if not request.user.is_superuser and hasattr(request.user, 'perfil'):
                 # Gestor só pode vincular à própria empresa
                 kwargs["queryset"] = Empresa.objects.filter(
