@@ -2204,6 +2204,78 @@ def minhas_aulas(request):
             .order_by('-data')[:10]
         )
 
+    # ── Ranking gamificação — mesmo cálculo do dashboard ─────────────────────
+    from datetime import timedelta as _td2
+    hoje_ma      = agora.date()
+    noventa_ma   = hoje_ma - _td2(days=90)
+
+    candidatos_ma = list(
+        Aluno.objects
+        .filter(empresa=perfil.empresa, ativo=True)
+        .annotate(
+            aulas_mes=Count(
+                'aulas',
+                filter=Q(
+                    aulas__concluida=True,
+                    aulas__data_hora__date__year=hoje_ma.year,
+                    aulas__data_hora__date__month=hoje_ma.month,
+                )
+            )
+        )
+        .filter(aulas_mes__gt=0)
+        .order_by('-aulas_mes', 'nome')
+    )
+
+    # Streaks dinâmicos para todos os candidatos
+    hist_ma = list(
+        Aula.objects
+        .filter(
+            aluno_id__in=[a.id for a in candidatos_ma],
+            concluida=True,
+            data_hora__date__gte=noventa_ma,
+            data_hora__date__lte=hoje_ma,
+        )
+        .values('aluno_id', 'data_hora')
+    )
+    semanas_ma = {}
+    for row in hist_ma:
+        iso = row['data_hora'].isocalendar()
+        key = iso[0] * 100 + iso[1]
+        semanas_ma.setdefault(row['aluno_id'], set()).add(key)
+
+    def _streak_ma(aluno_id):
+        semanas = semanas_ma.get(aluno_id, set())
+        if not semanas:
+            return 0
+        streak = 0
+        check  = hoje_ma
+        for _ in range(13):
+            iso = check.isocalendar()
+            key = iso[0] * 100 + iso[1]
+            if key in semanas:
+                streak += 1
+                check  -= _td2(days=7)
+            else:
+                if streak == 0:
+                    check -= _td2(days=7)
+                    continue
+                break
+        return streak
+
+    for al in candidatos_ma:
+        al.streak_dinamico = _streak_ma(al.id)
+
+    ranking_app = sorted(
+        candidatos_ma,
+        key=lambda a: (-a.streak_dinamico, -a.aulas_mes, a.nome)
+    )[:10]
+
+    # Posição do aluno atual no ranking
+    posicao_aluno = next(
+        (i + 1 for i, a in enumerate(ranking_app) if a.id == aluno.id),
+        None
+    )
+
     return render(
         request,
         "gateagora/minhas_aulas.html",
@@ -2224,6 +2296,8 @@ def minhas_aulas(request):
             "melhor_streak":    aluno.melhor_streak,
             "selo_streak":      _selo_streak(aluno.streak_atual),
             "faltam_bronze":    max(0, 5 - aluno.streak_atual),
+            "ranking_app":      ranking_app,
+            "posicao_aluno":    posicao_aluno,
         }
     )
 

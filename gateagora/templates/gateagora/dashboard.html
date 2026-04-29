@@ -882,7 +882,7 @@
               <span style="font-size:18px">🏆</span> Ranking de Alunos
             </h3>
             <p class="text-[9px] mt-0.5" style="color:var(--text-muted)">
-              Engajamento · {{ periodo_label }}
+              Aulas: {{ periodo_label }} &nbsp;·&nbsp; 🔥 Streak: últimas 13 semanas
             </p>
           </div>
           <div class="flex rounded-lg overflow-hidden text-[9px] font-bold uppercase" style="border:1px solid var(--border)">
@@ -962,7 +962,7 @@
                 {{ al.aulas_periodo }}
               </span>
               <span style="font-size:9px;color:var(--text-muted);display:block;margin-top:-1px;">
-                aula{{ al.aulas_periodo|pluralize }}
+                aula{{ al.aulas_periodo|pluralize }} ({{ periodo_label }})
               </span>
             </div>
 

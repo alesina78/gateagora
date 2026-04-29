@@ -181,7 +181,10 @@ class EmpresaAdmin(ModelAdmin):
         return request.user.is_superuser
 
     def has_view_permission(self, request, obj=None):
-        return request.user.is_superuser
+        # Superuser vê tudo; gestor só vê a própria empresa (sem editar)
+        if request.user.is_superuser:
+            return True
+        return hasattr(request.user, 'perfil') and bool(request.user.perfil.empresa)
 
 
 @admin.register(Perfil)
@@ -212,6 +215,16 @@ class PerfilAdmin(ModelAdmin):
         if obj and obj.user == request.user:
             return True
         return False
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        # Gestor não pode escolher empresa diferente da sua
+        if db_field.name == "empresa":
+            if not request.user.is_superuser and hasattr(request.user, 'perfil'):
+                kwargs["queryset"] = Empresa.objects.filter(
+                    id=request.user.perfil.empresa_id
+                )
+                kwargs["widget"] = forms.HiddenInput()
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 
 @admin.register(Aluno)
@@ -514,12 +527,38 @@ class PerfilInline(TabularInline):
     can_delete = False
     extra = 0
 
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == "empresa":
+            if not request.user.is_superuser and hasattr(request.user, 'perfil'):
+                # Gestor só pode vincular à própria empresa
+                kwargs["queryset"] = Empresa.objects.filter(
+                    id=request.user.perfil.empresa_id
+                )
+                kwargs["widget"] = forms.HiddenInput()
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
 
 class CustomUserAdmin(BaseUserAdmin, UnfoldModelAdmin):
     inlines = [PerfilInline]
     list_display = ("username", "email", "get_telefone", "is_active", "is_staff")
     search_fields = ("username", "email")
     ordering = ("username",)
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        if request.user.is_superuser:
+            return qs
+        # Gestor vê apenas usuários da própria empresa
+        if hasattr(request.user, 'perfil') and request.user.perfil.empresa:
+            return qs.filter(perfil__empresa=request.user.perfil.empresa)
+        return qs.none()
+
+    def has_add_permission(self, request):
+        # Apenas superuser cria usuários pelo admin
+        return request.user.is_superuser
+
+    def has_delete_permission(self, request, obj=None):
+        return request.user.is_superuser
 
     def get_telefone(self, obj):
         perfil = getattr(obj, 'perfil', None)
