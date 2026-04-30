@@ -480,7 +480,7 @@ class ItemFaturaAdmin(ModelAdmin):
 
 
 @admin.register(ItemEstoque)
-class ItemEstoqueAdmin(ModelAdmin):
+class ItemEstoqueAdmin(BaseEmpresaAdmin):
     list_display = ('id', 'nome', 'quantidade_atual', 'alerta_minimo', 'status_estoque')
     list_filter = ["nome"]
 
