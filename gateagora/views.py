@@ -2375,3 +2375,244 @@ def desconfirmar_presenca(request, aula_id):
         messages.info(request, f"Confirmação cancelada para {aula.data_hora.strftime('%d/%m às %H:%M')}.")
 
     return redirect('minhas_aulas')
+
+
+# ── Relatórios ────────────────────────────────────────────────────────────────
+
+@login_required
+def relatorios(request):
+    """Página principal de relatórios financeiros."""
+    empresa = request.empresa
+    if not empresa:
+        return redirect('dashboard')
+
+    from datetime import date
+    import calendar as _cal
+
+    hoje = timezone.localdate()
+    mes  = int(request.GET.get('mes',  hoje.month))
+    ano  = int(request.GET.get('ano',  hoje.year))
+    tipo = request.GET.get('tipo', 'faturamento')
+
+    inicio   = date(ano, mes, 1)
+    ultimo   = _cal.monthrange(ano, mes)[1]
+    fim      = date(ano, mes, ultimo)
+
+    faturas = (
+        Fatura.objects
+        .filter(empresa=empresa, data_vencimento__range=(inicio, fim))
+        .select_related('aluno')
+        .order_by('status', 'data_vencimento')
+    )
+    total_previsto = faturas.aggregate(t=Sum('valor'))['t'] or Decimal('0')
+    total_recebido = faturas.filter(status='PAGO').aggregate(t=Sum('valor'))['t'] or Decimal('0')
+    total_pendente = faturas.filter(status='PENDENTE').aggregate(t=Sum('valor'))['t'] or Decimal('0')
+    total_atrasado = faturas.filter(status='ATRASADO').aggregate(t=Sum('valor'))['t'] or Decimal('0')
+
+    freq_alunos = list(
+        Aluno.objects
+        .filter(empresa=empresa, ativo=True)
+        .annotate(
+            aulas_realizadas=Count(
+                'aulas',
+                filter=Q(aulas__concluida=True,
+                         aulas__data_hora__date__range=(inicio, fim))
+            )
+        )
+        .filter(aulas_realizadas__gt=0)
+        .order_by('-aulas_realizadas')
+    )
+
+    instrutores = list(
+        Perfil.objects
+        .filter(empresa=empresa, cargo='Instrutor')
+        .annotate(
+            aulas_dadas=Count(
+                'user__aulas_instrutor',
+                filter=Q(user__aulas_instrutor__concluida=True,
+                         user__aulas_instrutor__data_hora__date__range=(inicio, fim))
+            )
+        )
+        .select_related('user')
+        .order_by('-aulas_dadas')
+    )
+
+    # Estoque com validade próxima ou vencida
+    from django.utils import timezone as _tz
+    estoque_validade = list(
+        ItemEstoque.objects
+        .filter(empresa=empresa, data_validade__isnull=False)
+        .order_by('data_validade')
+    )
+
+    meses_pt = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho',
+                'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
+
+    return render(request, 'gateagora/relatorios.html', {
+        'empresa':          empresa,
+        'mes':              mes,
+        'ano':              ano,
+        'tipo':             tipo,
+        'mes_nome':         meses_pt[mes],
+        'inicio':           inicio,
+        'fim':              fim,
+        'faturas':          faturas,
+        'total_previsto':   total_previsto,
+        'total_recebido':   total_recebido,
+        'total_pendente':   total_pendente,
+        'total_atrasado':   total_atrasado,
+        'freq_alunos':      freq_alunos,
+        'instrutores':      instrutores,
+        'estoque_validade': estoque_validade,
+        'meses_opcoes':     [(m, meses_pt[m]) for m in range(1, 13)],
+        'anos_opcoes':      list(range(hoje.year - 2, hoje.year + 1)),
+        'inadimplencia_pct': round(
+            float(total_atrasado + total_pendente) / float(total_previsto) * 100, 1
+        ) if total_previsto else 0,
+    })
+
+
+@login_required
+def relatorio_pdf(request):
+    """Gera PDF do relatório financeiro do mês."""
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.units import cm
+    from reportlab.lib.enums import TA_CENTER
+    from datetime import date
+    import calendar as _cal
+
+    empresa = request.empresa
+    if not empresa:
+        return redirect('dashboard')
+
+    hoje = timezone.localdate()
+    mes  = int(request.GET.get('mes', hoje.month))
+    ano  = int(request.GET.get('ano', hoje.year))
+
+    meses_pt = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho',
+                'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
+
+    inicio = date(ano, mes, 1)
+    fim    = date(ano, mes, _cal.monthrange(ano, mes)[1])
+
+    faturas = (
+        Fatura.objects
+        .filter(empresa=empresa, data_vencimento__range=(inicio, fim))
+        .select_related('aluno')
+        .order_by('status', 'data_vencimento')
+    )
+    total_previsto = faturas.aggregate(t=Sum('valor'))['t'] or Decimal('0')
+    total_recebido = faturas.filter(status='PAGO').aggregate(t=Sum('valor'))['t'] or Decimal('0')
+    total_atrasado = faturas.filter(status__in=['PENDENTE','ATRASADO']).aggregate(t=Sum('valor'))['t'] or Decimal('0')
+
+    freq_alunos = list(
+        Aluno.objects.filter(empresa=empresa, ativo=True)
+        .annotate(aulas_realizadas=Count(
+            'aulas', filter=Q(aulas__concluida=True,
+                              aulas__data_hora__date__range=(inicio, fim))))
+        .filter(aulas_realizadas__gt=0).order_by('-aulas_realizadas')
+    )
+
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="relatorio_{mes:02d}_{ano}.pdf"'
+
+    doc    = SimpleDocTemplate(response, pagesize=A4,
+                                leftMargin=2*cm, rightMargin=2*cm,
+                                topMargin=2*cm, bottomMargin=2*cm)
+    styles = getSampleStyleSheet()
+    story  = []
+
+    COR_P  = HexColor('#4f46e5')
+    COR_V  = HexColor('#10b981')
+    COR_R  = HexColor('#ef4444')
+    COR_CZ = HexColor('#f1f5f9')
+    COR_TX = HexColor('#1e293b')
+
+    def fmt(valor):
+        return f"R$ {valor:,.2f}".replace(',','X').replace('.',',').replace('X','.')
+
+    story.append(Paragraph(f"Relatório Financeiro — {meses_pt[mes]}/{ano}",
+        ParagraphStyle('t', fontSize=18, fontName='Helvetica-Bold', textColor=COR_P, spaceAfter=4)))
+    story.append(Paragraph(empresa.nome,
+        ParagraphStyle('s', fontSize=10, textColor=HexColor('#64748b'), spaceAfter=16)))
+
+    # Resumo
+    res = Table(
+        [['PREVISTO','RECEBIDO','INADIMPLENTE'],
+         [fmt(total_previsto), fmt(total_recebido), fmt(total_atrasado)]],
+        colWidths=[5.5*cm, 5.5*cm, 5.5*cm]
+    )
+    res.setStyle(TableStyle([
+        ('BACKGROUND',(0,0),(-1,0),COR_P), ('TEXTCOLOR',(0,0),(-1,0),colors.white),
+        ('FONTNAME',(0,0),(-1,0),'Helvetica-Bold'), ('FONTSIZE',(0,0),(-1,-1),9),
+        ('ALIGN',(0,0),(-1,-1),'CENTER'),
+        ('FONTNAME',(0,1),(-1,1),'Helvetica-Bold'), ('FONTSIZE',(0,1),(-1,1),13),
+        ('TEXTCOLOR',(1,1),(1,1),COR_V), ('TEXTCOLOR',(2,1),(2,1),COR_R),
+        ('BACKGROUND',(0,1),(-1,1),COR_CZ),
+        ('BOX',(0,0),(-1,-1),0.5,HexColor('#e2e8f0')),
+        ('INNERGRID',(0,0),(-1,-1),0.5,HexColor('#e2e8f0')),
+        ('TOPPADDING',(0,0),(-1,-1),8),('BOTTOMPADDING',(0,0),(-1,-1),8),
+    ]))
+    story.append(res)
+    story.append(Spacer(1, 0.5*cm))
+
+    # Faturas
+    story.append(Paragraph("Faturas do Período",
+        ParagraphStyle('sec', fontSize=12, fontName='Helvetica-Bold',
+                       textColor=COR_TX, spaceBefore=12, spaceAfter=6)))
+    fd = [['Aluno','Vencimento','Valor','Status']]
+    for f in faturas:
+        fd.append([
+            (f.aluno.nome[:35] if f.aluno else '-'),
+            f.data_vencimento.strftime('%d/%m/%Y'),
+            fmt(f.valor),
+            {'PAGO':'Pago','PENDENTE':'Pendente','ATRASADO':'Atrasado'}.get(f.status, f.status),
+        ])
+    ft = Table(fd, colWidths=[7*cm, 3*cm, 3.5*cm, 3*cm])
+    fts = TableStyle([
+        ('BACKGROUND',(0,0),(-1,0),COR_P),('TEXTCOLOR',(0,0),(-1,0),colors.white),
+        ('FONTNAME',(0,0),(-1,0),'Helvetica-Bold'),('FONTSIZE',(0,0),(-1,-1),8),
+        ('ALIGN',(1,0),(-1,-1),'CENTER'),
+        ('ROWBACKGROUNDS',(0,1),(-1,-1),[colors.white,COR_CZ]),
+        ('BOX',(0,0),(-1,-1),0.5,HexColor('#e2e8f0')),
+        ('INNERGRID',(0,0),(-1,-1),0.3,HexColor('#e2e8f0')),
+        ('TOPPADDING',(0,0),(-1,-1),5),('BOTTOMPADDING',(0,0),(-1,-1),5),
+    ])
+    for i, f in enumerate(faturas, 1):
+        if f.status == 'PAGO':
+            fts.add('TEXTCOLOR',(3,i),(3,i),COR_V)
+        elif f.status in ('PENDENTE','ATRASADO'):
+            fts.add('TEXTCOLOR',(3,i),(3,i),COR_R)
+    ft.setStyle(fts)
+    story.append(ft)
+
+    # Frequência
+    if freq_alunos:
+        story.append(Spacer(1, 0.5*cm))
+        story.append(Paragraph("Frequência de Alunos",
+            ParagraphStyle('sec2', fontSize=12, fontName='Helvetica-Bold',
+                           textColor=COR_TX, spaceBefore=12, spaceAfter=6)))
+        frd = [['Aluno','Aulas','Streak']]
+        for al in freq_alunos:
+            frd.append([al.nome[:35], str(al.aulas_realizadas), f"{al.streak_atual} sem"])
+        frt = Table(frd, colWidths=[9*cm, 3.5*cm, 4*cm])
+        frt.setStyle(TableStyle([
+            ('BACKGROUND',(0,0),(-1,0),COR_P),('TEXTCOLOR',(0,0),(-1,0),colors.white),
+            ('FONTNAME',(0,0),(-1,0),'Helvetica-Bold'),('FONTSIZE',(0,0),(-1,-1),8),
+            ('ALIGN',(1,0),(-1,-1),'CENTER'),
+            ('ROWBACKGROUNDS',(0,1),(-1,-1),[colors.white,COR_CZ]),
+            ('BOX',(0,0),(-1,-1),0.5,HexColor('#e2e8f0')),
+            ('INNERGRID',(0,0),(-1,-1),0.3,HexColor('#e2e8f0')),
+            ('TOPPADDING',(0,0),(-1,-1),5),('BOTTOMPADDING',(0,0),(-1,-1),5),
+        ]))
+        story.append(frt)
+
+    story.append(Spacer(1, 1*cm))
+    story.append(Paragraph(
+        f"Gerado em {hoje.strftime('%d/%m/%Y')} · Gate 4 — Gestão de Haras e Hípicas",
+        ParagraphStyle('rod', fontSize=7, textColor=HexColor('#94a3b8'), alignment=TA_CENTER)
+    ))
+    doc.build(story)
+    return response
+

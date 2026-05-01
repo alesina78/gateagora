@@ -1,0 +1,296 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Relatórios — {{ empresa.nome }}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link rel="stylesheet" href="{% static 'css/themes.css' %}">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
+    body { font-family:'Inter',sans-serif; background-color:var(--bg-main); color:var(--text-main); }
+    .card { background-color:var(--card-bg); border:1px solid var(--border); border-radius:1rem; }
+    .glass { background-color:var(--card-bg); border-bottom:1px solid var(--border); backdrop-filter:blur(10px); }
+    .kpi { background-color:var(--card-bg); border:1px solid var(--border); border-radius:1rem; padding:1.25rem; }
+    .tab-btn { padding:8px 16px; border-radius:.5rem; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; cursor:pointer; border:none; transition:all .2s; }
+    .tab-btn.active { background:#4f46e5; color:#fff; }
+    .tab-btn:not(.active) { background-color:var(--card-alt); color:var(--text-muted); }
+    .badge-pago { background:rgba(16,185,129,.12); color:#10b981; padding:2px 8px; border-radius:99px; font-size:9px; font-weight:700; }
+    .badge-pendente { background:rgba(245,158,11,.12); color:#f59e0b; padding:2px 8px; border-radius:99px; font-size:9px; font-weight:700; }
+    .badge-atrasado { background:rgba(239,68,68,.12); color:#ef4444; padding:2px 8px; border-radius:99px; font-size:9px; font-weight:700; }
+  </style>
+</head>
+<script>
+(function(){
+  const t=localStorage.getItem("gate-theme")||"zaino";
+  if(t==="tordilho") document.documentElement.setAttribute("data-theme","tordilho");
+  else document.documentElement.removeAttribute("data-theme");
+})();
+</script>
+<body class="pb-16">
+
+<nav class="glass sticky top-0 z-50 px-6 py-3">
+  <div class="max-w-5xl mx-auto flex justify-between items-center">
+    <div class="flex items-center gap-3">
+      <a href="{% url 'dashboard' %}" class="bg-indigo-600 p-2 rounded-xl">
+        <i class="fa-solid fa-arrow-left text-white text-sm"></i>
+      </a>
+      <div>
+        <h1 class="text-base font-black uppercase tracking-tight" style="color:var(--text-strong)">Relatórios</h1>
+        <p class="text-[9px] font-bold uppercase tracking-widest" style="color:var(--text-muted)">{{ empresa.nome }}</p>
+      </div>
+    </div>
+    <!-- Filtro de período -->
+    <form method="get" class="flex items-center gap-2">
+      <input type="hidden" name="tipo" value="{{ tipo }}">
+      <select name="mes" onchange="this.form.submit()"
+              class="text-xs font-bold px-3 py-2 rounded-xl border"
+              style="background:var(--card-bg);color:var(--text-main);border-color:var(--border);">
+        {% for num, nome in meses_opcoes %}
+          <option value="{{ num }}" {% if num == mes %}selected{% endif %}>{{ nome }}</option>
+        {% endfor %}
+      </select>
+      <select name="ano" onchange="this.form.submit()"
+              class="text-xs font-bold px-3 py-2 rounded-xl border"
+              style="background:var(--card-bg);color:var(--text-main);border-color:var(--border);">
+        {% for a in anos_opcoes %}
+          <option value="{{ a }}" {% if a == ano %}selected{% endif %}>{{ a }}</option>
+        {% endfor %}
+      </select>
+      <a href="{% url 'relatorio_pdf' %}?mes={{ mes }}&ano={{ ano }}"
+         class="flex items-center gap-2 px-3 py-2 rounded-xl text-[10px] font-black uppercase"
+         style="background:rgba(239,68,68,.1);color:#ef4444;">
+        <i class="fa-solid fa-file-pdf"></i> PDF
+      </a>
+    </form>
+  </div>
+</nav>
+
+<div class="max-w-5xl mx-auto px-4 py-6">
+
+  <!-- Título do período -->
+  <div class="mb-6">
+    <h2 class="text-2xl font-black uppercase" style="color:var(--text-strong)">
+      {{ mes_nome }} / {{ ano }}
+    </h2>
+    <p class="text-sm mt-1" style="color:var(--text-muted)">
+      {{ inicio|date:"d/m/Y" }} até {{ fim|date:"d/m/Y" }}
+    </p>
+  </div>
+
+  <!-- KPIs -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+    <div class="kpi" style="border-left:3px solid #6366f1;">
+      <p class="text-[9px] font-bold uppercase tracking-widest mb-1" style="color:var(--text-muted)">Previsto</p>
+      <p class="text-xl font-black" style="color:var(--text-strong)">R$ {{ total_previsto|floatformat:2 }}</p>
+      <p class="text-[9px] mt-1" style="color:var(--text-muted)">{{ faturas|length }} fatura{{ faturas|length|pluralize }}</p>
+    </div>
+    <div class="kpi" style="border-left:3px solid #10b981;">
+      <p class="text-[9px] font-bold uppercase tracking-widest mb-1" style="color:var(--text-muted)">Recebido</p>
+      <p class="text-xl font-black" style="color:#10b981;">R$ {{ total_recebido|floatformat:2 }}</p>
+      <p class="text-[9px] mt-1" style="color:var(--text-muted)">{{ faturas.count }} pagas</p>
+    </div>
+    <div class="kpi" style="border-left:3px solid #f59e0b;">
+      <p class="text-[9px] font-bold uppercase tracking-widest mb-1" style="color:var(--text-muted)">Pendente</p>
+      <p class="text-xl font-black" style="color:#f59e0b;">R$ {{ total_pendente|floatformat:2 }}</p>
+    </div>
+    <div class="kpi" style="border-left:3px solid #ef4444;">
+      <p class="text-[9px] font-bold uppercase tracking-widest mb-1" style="color:var(--text-muted)">Atrasado</p>
+      <p class="text-xl font-black" style="color:#ef4444;">R$ {{ total_atrasado|floatformat:2 }}</p>
+      <p class="text-[9px] mt-1" style="color:#ef4444;">{{ inadimplencia_pct }}% inadimplência</p>
+    </div>
+  </div>
+
+  <!-- Abas -->
+  <div class="flex gap-2 mb-6">
+    <a href="?tipo=faturamento&mes={{ mes }}&ano={{ ano }}">
+      <button class="tab-btn {% if tipo == 'faturamento' %}active{% endif %}">
+        <i class="fa-solid fa-file-invoice-dollar mr-1"></i>Faturamento
+      </button>
+    </a>
+    <a href="?tipo=frequencia&mes={{ mes }}&ano={{ ano }}">
+      <button class="tab-btn {% if tipo == 'frequencia' %}active{% endif %}">
+        <i class="fa-solid fa-calendar-check mr-1"></i>Frequência
+      </button>
+    </a>
+    <a href="?tipo=instrutores&mes={{ mes }}&ano={{ ano }}">
+      <button class="tab-btn {% if tipo == 'instrutores' %}active{% endif %}">
+        <i class="fa-solid fa-chalkboard-teacher mr-1"></i>Instrutores
+      </button>
+    </a>
+    <a href="?tipo=estoque&mes={{ mes }}&ano={{ ano }}">
+      <button class="tab-btn {% if tipo == 'estoque' %}active{% endif %}">
+        <i class="fa-solid fa-boxes-stacked mr-1"></i>Validades
+      </button>
+    </a>
+  </div>
+
+  <!-- Faturamento -->
+  {% if tipo == 'faturamento' %}
+  <div class="card overflow-hidden">
+    <div class="px-5 py-3 flex items-center justify-between" style="border-bottom:1px solid var(--border);">
+      <p class="text-sm font-bold" style="color:var(--text-strong)">Faturas do Período</p>
+      <p class="text-[9px]" style="color:var(--text-muted)">{{ faturas|length }} registro{{ faturas|length|pluralize }}</p>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-xs">
+        <thead>
+          <tr style="background:var(--card-alt);">
+            <th class="px-4 py-3 text-left font-bold uppercase text-[9px] tracking-wide" style="color:var(--text-muted)">Aluno</th>
+            <th class="px-4 py-3 text-center font-bold uppercase text-[9px] tracking-wide" style="color:var(--text-muted)">Vencimento</th>
+            <th class="px-4 py-3 text-right font-bold uppercase text-[9px] tracking-wide" style="color:var(--text-muted)">Valor</th>
+            <th class="px-4 py-3 text-center font-bold uppercase text-[9px] tracking-wide" style="color:var(--text-muted)">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for f in faturas %}
+          <tr style="border-top:1px solid var(--border);">
+            <td class="px-4 py-3 font-semibold" style="color:var(--text-main)">{{ f.aluno.nome }}</td>
+            <td class="px-4 py-3 text-center" style="color:var(--text-muted)">{{ f.data_vencimento|date:"d/m/Y" }}</td>
+            <td class="px-4 py-3 text-right font-bold" style="color:var(--text-strong)">R$ {{ f.valor|floatformat:2 }}</td>
+            <td class="px-4 py-3 text-center">
+              {% if f.status == 'PAGO' %}
+                <span class="badge-pago">Pago</span>
+              {% elif f.status == 'PENDENTE' %}
+                <span class="badge-pendente">Pendente</span>
+              {% else %}
+                <span class="badge-atrasado">Atrasado</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" class="px-4 py-8 text-center" style="color:var(--text-muted)">Nenhuma fatura no período</td></tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr style="background:var(--card-alt);border-top:2px solid var(--border);">
+            <td colspan="2" class="px-4 py-3 font-black text-[10px] uppercase" style="color:var(--text-muted)">Total</td>
+            <td class="px-4 py-3 text-right font-black" style="color:var(--text-strong)">R$ {{ total_previsto|floatformat:2 }}</td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Frequência -->
+  {% if tipo == 'frequencia' %}
+  <div class="card overflow-hidden">
+    <div class="px-5 py-3" style="border-bottom:1px solid var(--border);">
+      <p class="text-sm font-bold" style="color:var(--text-strong)">Frequência de Alunos</p>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-xs">
+        <thead>
+          <tr style="background:var(--card-alt);">
+            <th class="px-4 py-3 text-left font-bold uppercase text-[9px] tracking-wide" style="color:var(--text-muted)">#</th>
+            <th class="px-4 py-3 text-left font-bold uppercase text-[9px] tracking-wide" style="color:var(--text-muted)">Aluno</th>
+            <th class="px-4 py-3 text-center font-bold uppercase text-[9px] tracking-wide" style="color:var(--text-muted)">Aulas</th>
+            <th class="px-4 py-3 text-center font-bold uppercase text-[9px] tracking-wide" style="color:var(--text-muted)">Streak</th>
+            <th class="px-4 py-3 text-center font-bold uppercase text-[9px] tracking-wide" style="color:var(--text-muted)">Selo</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for al in freq_alunos %}
+          <tr style="border-top:1px solid var(--border);">
+            <td class="px-4 py-3 font-black" style="color:var(--text-muted)">{{ forloop.counter }}</td>
+            <td class="px-4 py-3 font-semibold" style="color:var(--text-main)">{{ al.nome }}</td>
+            <td class="px-4 py-3 text-center font-black" style="color:#6366f1;">{{ al.aulas_realizadas }}</td>
+            <td class="px-4 py-3 text-center" style="color:var(--text-muted)">🔥 {{ al.streak_atual }}sem</td>
+            <td class="px-4 py-3 text-center">
+              {% if al.streak_atual >= 20 %}👑
+              {% elif al.streak_atual >= 10 %}🛡️
+              {% elif al.streak_atual >= 5 %}🥉
+              {% else %}-{% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="px-4 py-8 text-center" style="color:var(--text-muted)">Nenhuma aula concluída no período</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Instrutores -->
+  {% if tipo == 'instrutores' %}
+  <div class="card overflow-hidden">
+    <div class="px-5 py-3" style="border-bottom:1px solid var(--border);">
+      <p class="text-sm font-bold" style="color:var(--text-strong)">Desempenho por Instrutor</p>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-xs">
+        <thead>
+          <tr style="background:var(--card-alt);">
+            <th class="px-4 py-3 text-left font-bold uppercase text-[9px] tracking-wide" style="color:var(--text-muted)">Instrutor</th>
+            <th class="px-4 py-3 text-center font-bold uppercase text-[9px] tracking-wide" style="color:var(--text-muted)">Aulas Dadas</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for inst in instrutores %}
+          <tr style="border-top:1px solid var(--border);">
+            <td class="px-4 py-3 font-semibold" style="color:var(--text-main)">{{ inst.user.get_full_name }}</td>
+            <td class="px-4 py-3 text-center font-black" style="color:#6366f1;">{{ inst.aulas_dadas }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="2" class="px-4 py-8 text-center" style="color:var(--text-muted)">Nenhum dado no período</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Validades de Estoque -->
+  {% if tipo == 'estoque' %}
+  <div class="card overflow-hidden">
+    <div class="px-5 py-3" style="border-bottom:1px solid var(--border);">
+      <p class="text-sm font-bold" style="color:var(--text-strong)">Controle de Validade — Estoque</p>
+      <p class="text-[9px] mt-0.5" style="color:var(--text-muted)">Produtos com data de validade cadastrada</p>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-xs">
+        <thead>
+          <tr style="background:var(--card-alt);">
+            <th class="px-4 py-3 text-left font-bold uppercase text-[9px] tracking-wide" style="color:var(--text-muted)">Produto</th>
+            <th class="px-4 py-3 text-center font-bold uppercase text-[9px] tracking-wide" style="color:var(--text-muted)">Lote</th>
+            <th class="px-4 py-3 text-center font-bold uppercase text-[9px] tracking-wide" style="color:var(--text-muted)">Qtd.</th>
+            <th class="px-4 py-3 text-center font-bold uppercase text-[9px] tracking-wide" style="color:var(--text-muted)">Validade</th>
+            <th class="px-4 py-3 text-center font-bold uppercase text-[9px] tracking-wide" style="color:var(--text-muted)">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in estoque_validade %}
+          <tr style="border-top:1px solid var(--border);">
+            <td class="px-4 py-3 font-semibold" style="color:var(--text-main)">{{ item.nome }}</td>
+            <td class="px-4 py-3 text-center" style="color:var(--text-muted)">{{ item.lote|default:"—" }}</td>
+            <td class="px-4 py-3 text-center font-bold" style="color:var(--text-strong)">{{ item.quantidade_atual }} {{ item.unidade }}</td>
+            <td class="px-4 py-3 text-center" style="color:var(--text-muted)">{{ item.data_validade|date:"d/m/Y" }}</td>
+            <td class="px-4 py-3 text-center">
+              {% if item.status_validade == 'vencido' %}
+                <span class="badge-atrasado"><i class="fa-solid fa-triangle-exclamation mr-1"></i>Vencido</span>
+              {% elif item.status_validade == 'alerta' %}
+                <span class="badge-pendente"><i class="fa-solid fa-clock mr-1"></i>{{ item.dias_para_vencer }}d restantes</span>
+              {% else %}
+                <span class="badge-pago"><i class="fa-solid fa-circle-check mr-1"></i>{{ item.dias_para_vencer }}d</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="px-4 py-8 text-center" style="color:var(--text-muted)">
+            Nenhum produto com data de validade cadastrada
+          </td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+</body>
+</html>

@@ -44,6 +44,10 @@ urlpatterns = [
     # Baixa de faturas
     path('fatura/baixar/<int:fatura_id>/', views.dar_baixa_fatura, name='dar_baixa_fatura'),
 
+    # Relatórios
+    path('relatorios/', views.relatorios, name='relatorios'),
+    path('relatorios/pdf/', views.relatorio_pdf, name='relatorio_pdf'),
+
     # Estoque
     path('estoque/movimentar/',        views.movimentar_estoque, name='movimentar_estoque'),
     path('estoque/fechamento/',        views.fechamento_dia,     name='fechamento_dia'),

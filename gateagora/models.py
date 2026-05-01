@@ -107,10 +107,6 @@ class Aluno(models.Model):
         help_text="Perfil de acesso do aluno ao sistema"
     )
 
-    # ── Gamificação / Streaks ─────────────────────────────────────────────────
-    streak_atual  = models.PositiveSmallIntegerField(default=0, verbose_name="Semanas Seguidas")
-    melhor_streak = models.PositiveSmallIntegerField(default=0, verbose_name="Melhor Streak")
-
 
 class Baia(models.Model):
     empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE)
@@ -315,10 +311,6 @@ class Aula(models.Model):
     tipo = models.CharField(max_length=15, choices=TIPO_AULA_CHOICES, default='NORMAL')
     concluida = models.BooleanField(default=False)
     relatorio_treino = models.TextField(blank=True)
-    nome_turma = models.CharField(max_length=100, blank=True,
-        help_text="Preencha apenas para aulas em grupo")
-    vagas_maximas = models.PositiveSmallIntegerField(null=True, blank=True,
-        help_text="Capacidade máxima da turma. Deixe em branco para aulas individuais.")
 
     class Meta:
         ordering = ["data_hora"]
@@ -351,14 +343,12 @@ class Aula(models.Model):
 
 class ConfirmacaoPresenca(models.Model):
     """
-    Registra que um aluno confirmou presença em uma aula.
-    OneToOne para aulas individuais; múltiplos registros para turmas.
-    Unicidade garantida por unique_together(aula, aluno).
+    Registra que um aluno confirmou presença em uma aula específica.
     """
-    aula = models.ForeignKey(
+    aula = models.OneToOneField(
         'Aula',
         on_delete=models.CASCADE,
-        related_name='confirmacoes_presenca'
+        related_name='confirmacao'
     )
     aluno = models.ForeignKey(
         'Aluno',
@@ -368,29 +358,11 @@ class ConfirmacaoPresenca(models.Model):
     confirmado_em = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together     = ('aula', 'aluno')
         verbose_name        = "Confirmação de Presença"
         verbose_name_plural = "Confirmações de Presença"
-        indexes             = [models.Index(fields=['aula', 'aluno'])]
 
     def __str__(self):
         return f"✅ {self.aluno.nome} confirmou {self.aula}"
-
-
-class InscricaoAula(models.Model):
-    """Inscrição de aluno em turma. Usado apenas quando Aula.nome_turma estiver preenchido."""
-    aula  = models.ForeignKey('Aula',  on_delete=models.CASCADE, related_name='inscricoes')
-    aluno = models.ForeignKey('Aluno', on_delete=models.CASCADE, related_name='inscricoes')
-    inscrito_em = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        unique_together = ('aula', 'aluno')
-        verbose_name        = "Inscrição em Aula"
-        verbose_name_plural = "Inscrições em Aulas"
-        indexes = [models.Index(fields=['aula', 'aluno'])]
-
-    def __str__(self):
-        return f"{self.aluno.nome} → {self.aula}"
 
 
 class ItemEstoque(models.Model):
@@ -407,11 +379,22 @@ class ItemEstoque(models.Model):
         blank=True,
         help_text="Consumo médio por dia (deixe em branco se não aplicável)"
     )
+    data_validade = models.DateField(
+        null=True,
+        blank=True,
+        help_text="Data de validade do produto (opcional). Deixe em branco se não aplicável."
+    )
+    lote = models.CharField(
+        max_length=50,
+        blank=True,
+        help_text="Número do lote (opcional)"
+    )
 
     class Meta:
         indexes = [
             models.Index(fields=["empresa", "nome"]),
             models.Index(fields=["empresa", "quantidade_atual"]),
+            models.Index(fields=["empresa", "data_validade"]),
         ]
 
     def __str__(self):
@@ -426,6 +409,26 @@ class ItemEstoque(models.Model):
             return int(Decimal(str(self.quantidade_atual)) / self.consumo_diario)
         except Exception:
             return None
+
+    @property
+    def dias_para_vencer(self):
+        """Retorna dias até a data de validade. Negativo = já venceu."""
+        if not self.data_validade:
+            return None
+        from django.utils import timezone
+        return (self.data_validade - timezone.localdate()).days
+
+    @property
+    def status_validade(self):
+        """Retorna 'vencido', 'alerta' (<=30 dias), 'ok' ou None."""
+        dias = self.dias_para_vencer
+        if dias is None:
+            return None
+        if dias < 0:
+            return 'vencido'
+        if dias <= 30:
+            return 'alerta'
+        return 'ok'
 
 class MovimentacaoFinanceira(models.Model):
     empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE)
