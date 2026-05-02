@@ -2616,3 +2616,147 @@ def relatorio_pdf(request):
     doc.build(story)
     return response
 
+
+# ── Relatório PDF de Estoque / Validades ─────────────────────────────────────
+
+@login_required
+def relatorio_estoque_pdf(request):
+    """Gera PDF do estoque com controle de validade."""
+    from reportlab.pdfgen import canvas as rl_canvas
+    from reportlab.lib.pagesizes import A4
+    from datetime import date
+
+    empresa = request.empresa
+    if not empresa:
+        return redirect('dashboard')
+
+    hoje = timezone.localdate()
+
+    itens = list(
+        ItemEstoque.objects
+        .filter(empresa=empresa)
+        .order_by('data_validade', 'nome')
+    )
+
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = (
+        f'attachment; filename="estoque_validade_{hoje.strftime("%Y%m%d")}.pdf"'
+    )
+
+    w, h   = A4
+    c      = rl_canvas.Canvas(response, pagesize=A4)
+    margem = 2.5 * 28.35  # 2.5cm em pontos
+
+    COR_PRIMARIA = HexColor('#4f46e5')
+    COR_VERDE    = HexColor('#10b981')
+    COR_AMBAR    = HexColor('#f59e0b')
+    COR_VERMELHO = HexColor('#ef4444')
+    COR_CINZA    = HexColor('#f8fafc')
+    COR_TEXTO    = HexColor('#1e293b')
+    COR_MUTED    = HexColor('#64748b')
+
+    def nova_pagina(pagina):
+        if pagina > 1:
+            c.showPage()
+        # Cabeçalho
+        c.setFillColor(COR_PRIMARIA)
+        c.rect(0, h - 60, w, 60, fill=1, stroke=0)
+        c.setFillColor(colors.white)
+        c.setFont('Helvetica-Bold', 14)
+        c.drawString(margem, h - 30, 'Relatório de Estoque — Controle de Validade')
+        c.setFont('Helvetica', 9)
+        c.drawString(margem, h - 47, f'{empresa.nome}   ·   Gerado em {hoje.strftime("%d/%m/%Y")}')
+        if pagina > 1:
+            c.setFont('Helvetica', 8)
+            c.drawRightString(w - margem, h - 47, f'Página {pagina}')
+        return h - 80
+
+    def linha_tabela(y, cols, bg=None, bold=False, cor_status=None):
+        """Desenha uma linha da tabela."""
+        altl = 20
+        if bg:
+            c.setFillColor(bg)
+            c.rect(margem, y - altl + 4, w - 2 * margem, altl, fill=1, stroke=0)
+
+        font = 'Helvetica-Bold' if bold else 'Helvetica'
+        larguras = [180, 70, 60, 80, 90]  # Nome, Qtd, Unid, Lote, Validade, Status
+        x = margem + 4
+
+        for i, (txt, larg) in enumerate(zip(cols, larguras)):
+            if i == 5 and cor_status:
+                c.setFillColor(cor_status)
+            else:
+                c.setFillColor(COR_TEXTO if not bold else colors.white)
+            c.setFont(font, 8 if not bold else 7.5)
+            c.drawString(x, y - 10, str(txt)[:30])
+            x += larg
+
+        # Linha separadora
+        c.setStrokeColor(HexColor('#e2e8f0'))
+        c.setLineWidth(0.3)
+        c.line(margem, y - altl + 4, w - margem, y - altl + 4)
+        return y - altl
+
+    # ── Início do PDF ────────────────────────────────────────────────────────
+    pagina = 1
+    y = nova_pagina(pagina)
+
+    # Resumo rápido
+    vencidos = sum(1 for i in itens if i.status_validade == 'vencido')
+    alertas  = sum(1 for i in itens if i.status_validade == 'alerta')
+    c.setFont('Helvetica-Bold', 9)
+    c.setFillColor(COR_TEXTO)
+    c.drawString(margem, y, f'Total de itens: {len(itens)}')
+    c.setFillColor(COR_VERMELHO)
+    c.drawString(margem + 130, y, f'Vencidos: {vencidos}')
+    c.setFillColor(COR_AMBAR)
+    c.drawString(margem + 240, y, f'A vencer em 30 dias: {alertas}')
+    y -= 20
+
+    # Cabeçalho da tabela
+    y = linha_tabela(y,
+        ['PRODUTO', 'QTDE', 'UNID', 'LOTE', 'VALIDADE', 'STATUS'],
+        bg=COR_PRIMARIA, bold=True
+    )
+
+    # Linhas de dados
+    for i, item in enumerate(itens):
+        if y < 60:
+            pagina += 1
+            y = nova_pagina(pagina)
+            y = linha_tabela(y,
+                ['PRODUTO', 'QTDE', 'UNID', 'LOTE', 'VALIDADE', 'STATUS'],
+                bg=COR_PRIMARIA, bold=True
+            )
+
+        sv  = item.status_validade
+        val_txt = item.data_validade.strftime('%d/%m/%Y') if item.data_validade else '—'
+        if sv == 'vencido':
+            status_txt = 'VENCIDO'
+            cor_s      = COR_VERMELHO
+        elif sv == 'alerta':
+            status_txt = f'{item.dias_para_vencer}d p/ vencer'
+            cor_s      = COR_AMBAR
+        elif sv == 'ok':
+            status_txt = f'{item.dias_para_vencer}d'
+            cor_s      = COR_VERDE
+        else:
+            status_txt = '—'
+            cor_s      = COR_MUTED
+
+        bg_linha = COR_CINZA if i % 2 == 0 else None
+        y = linha_tabela(y,
+            [item.nome, str(item.quantidade_atual), item.unidade,
+             item.lote or '—', val_txt, status_txt],
+            bg=bg_linha, cor_status=cor_s
+        )
+
+    # Rodapé
+    c.setFillColor(COR_MUTED)
+    c.setFont('Helvetica', 7)
+    c.drawCentredString(w / 2, 30,
+        'Gate 4 — Gestão de Haras e Hípicas  ·  Este relatório é confidencial')
+
+    c.save()
+    return response
+

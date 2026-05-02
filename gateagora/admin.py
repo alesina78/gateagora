@@ -481,19 +481,39 @@ class ItemFaturaAdmin(ModelAdmin):
 
 @admin.register(ItemEstoque)
 class ItemEstoqueAdmin(BaseEmpresaAdmin):
-    list_display = ('id', 'nome', 'quantidade_atual', 'alerta_minimo', 'status_estoque')
-    list_filter = ["nome"]
+    list_display = ('nome', 'quantidade_atual', 'unidade', 'lote',
+                    'data_validade', 'status_validade_colorido', 'status_estoque')
+    list_filter  = ('data_validade', 'empresa')
+    search_fields = ('nome', 'lote')
 
-    @display(description="Status", label=True)
+    @display(description="Estoque", label=True)
     def status_estoque(self, obj):
         if obj.quantidade_atual <= obj.alerta_minimo:
             return format_html(
-                '<span class="text-red-600">{}</span>',
-                "CRÍTICO"
+                '<span style="color:#ef4444;font-weight:700">CRÍTICO</span>'
             )
         return format_html(
-            '<span class="text-green-600">{}</span>',
-            "OK"
+            '<span style="color:#10b981;font-weight:700">OK</span>'
+        )
+
+    @display(description="Validade")
+    def status_validade_colorido(self, obj):
+        sv = obj.status_validade
+        if sv is None:
+            return format_html('<span style="color:#94a3b8">—</span>')
+        if sv == 'vencido':
+            return format_html(
+                '<span style="color:#ef4444;font-weight:700">'
+                '⚠ VENCIDO</span>'
+            )
+        if sv == 'alerta':
+            return format_html(
+                '<span style="color:#f59e0b;font-weight:700">'
+                '⏳ {}d restantes</span>', obj.dias_para_vencer
+            )
+        return format_html(
+            '<span style="color:#10b981;font-weight:700">'
+            '✓ {}d</span>', obj.dias_para_vencer
         )
 
 
@@ -526,14 +546,6 @@ class PerfilInline(TabularInline):
     fields = ["empresa", "cargo", "telefone"]
     can_delete = False
     extra = 0
-
-    def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        if db_field.name == "empresa":
-            if not request.user.is_superuser and hasattr(request.user, "perfil"):
-                kwargs["queryset"] = Empresa.objects.filter(
-                    id=request.user.perfil.empresa_id
-                )
-        return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == "empresa":

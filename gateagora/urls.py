@@ -48,6 +48,11 @@ urlpatterns = [
     path('relatorios/', views.relatorios, name='relatorios'),
     path('relatorios/pdf/', views.relatorio_pdf, name='relatorio_pdf'),
 
+    # Relatórios
+    path('relatorios/', views.relatorios, name='relatorios'),
+    path('relatorios/pdf/', views.relatorio_pdf, name='relatorio_pdf'),
+    path('estoque/relatorio/pdf/', views.relatorio_estoque_pdf, name='relatorio_estoque_pdf'),
+
     # Estoque
     path('estoque/movimentar/',        views.movimentar_estoque, name='movimentar_estoque'),
     path('estoque/fechamento/',        views.fechamento_dia,     name='fechamento_dia'),
