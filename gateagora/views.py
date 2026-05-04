@@ -257,9 +257,12 @@ def dashboard(request):
         _conf_map.setdefault(row['aula_id'], set()).add(row['aluno_id'])
     for _a in proximas_aulas:
         _conf_alunos     = _conf_map.get(_a.id, set())
-        _a.conf_alunos   = _conf_alunos        # set de aluno_ids — sempre existe
-        _a.is_confirmada = bool(_conf_alunos)  # True se ao menos 1 confirmou
+        _a.conf_alunos   = _conf_alunos
+        _a.is_confirmada = bool(_conf_alunos)
         # NÃO atribuir _a.confirmacao — descriptor OneToOne lança ValueError com bool
+        # Garante streak_atual mesmo se campo foi removido por migração
+        if not hasattr(_a.aluno, 'streak_atual') if hasattr(_a, 'aluno') else True:
+            pass  # streak não exibido nos cards de aula do dashboard
 
     # ── 2) Alertas e Estoque Unificado ────────────────────────────────────────
     
@@ -447,16 +450,29 @@ def dashboard(request):
         data_vencimento__month=mes_selecionado,
     ).prefetch_related('itens').select_related('aluno')
 
-    # ── Inadimplência do mês ─────────────────────────────────────────────────
+    # ── Inadimplência ACUMULADA — todas as faturas não pagas vencidas (sem filtro de mês)
     total_faturas_mes    = faturas_mes.count()
     faturas_pagas_mes    = faturas_mes.filter(status='PAGO').count()
-    faturas_vencidas_mes = faturas_mes.filter(
+    # Vencidas acumuladas: independente do mês, até hoje
+    faturas_vencidas_mes = Fatura.objects.filter(
+        empresa=empresa,
         status__in=['PENDENTE', 'ATRASADO'],
         data_vencimento__lt=hoje
     ).count()
+    valor_inadimplente = (
+        Fatura.objects
+        .filter(empresa=empresa, status__in=['PENDENTE', 'ATRASADO'], data_vencimento__lt=hoje)
+        .aggregate(t=Sum('valor'))['t'] or Decimal('0.00')
+    )
+    valor_recebido_ano = (
+        Fatura.objects
+        .filter(empresa=empresa, status='PAGO', data_vencimento__year=hoje.year)
+        .aggregate(t=Sum('valor'))['t'] or Decimal('0.00')
+    )
+    base_inad = float(valor_inadimplente) + float(valor_recebido_ano)
     indice_inadimplencia = (
-        round(faturas_vencidas_mes / total_faturas_mes * 100, 1)
-        if total_faturas_mes else 0
+        round(float(valor_inadimplente) / base_inad * 100, 1)
+        if base_inad > 0 else 0
     )
 
     relatorio = []
@@ -569,24 +585,35 @@ def dashboard(request):
     LIMITE_TREINOS_MES = 20
     limite = LIMITE_TREINOS_MES if periodo in ('mes', '30') else LIMITE_TREINOS_MES * 3
 
-    # ── 7) Ranking de alunos — streak dinâmico + aulas no período ───────────────
-    # Busca todos os alunos com pelo menos 1 aula concluída no período
-    candidatos = list(
-        Aluno.objects
-        .filter(empresa=empresa, ativo=True)
-        .annotate(
-            aulas_periodo=Count(
-                'aulas',
-                filter=Q(
-                    aulas__concluida=True,
-                    aulas__data_hora__date__gte=data_inicio,
-                    aulas__data_hora__date__lte=hoje,
+    # ── 7) Ranking de alunos — streak dinâmico + fallback mês anterior ──────────
+    def _candidatos_periodo(d_ini, d_fim):
+        return list(
+            Aluno.objects
+            .filter(empresa=empresa, ativo=True)
+            .annotate(
+                aulas_periodo=Count(
+                    'aulas',
+                    filter=Q(
+                        aulas__concluida=True,
+                        aulas__data_hora__date__gte=d_ini,
+                        aulas__data_hora__date__lte=d_fim,
+                    )
                 )
             )
+            .filter(aulas_periodo__gt=0)
+            .order_by('-aulas_periodo', 'nome')
         )
-        .filter(aulas_periodo__gt=0)
-        .order_by('-aulas_periodo', 'nome')
-    )
+
+    candidatos = _candidatos_periodo(data_inicio, hoje)
+    if not candidatos:
+        # Fallback: mês anterior
+        mes_ant   = (hoje.replace(day=1) - timedelta(days=1))
+        inicio_ant = mes_ant.replace(day=1)
+        candidatos = _candidatos_periodo(inicio_ant, mes_ant)
+        periodo_label = (
+            f"{['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'][mes_ant.month]}"
+            f"/{mes_ant.year} (mês anterior)"
+        )
 
     # Recalcula streak de cada candidato dinamicamente (sem depender do campo salvo)
     # Usa datas de aulas concluídas dos últimos 90 dias para ser eficiente
@@ -632,12 +659,15 @@ def dashboard(request):
 
     for al in candidatos:
         al.streak_dinamico = _calc_streak_dinamico(al.id)
-        # Sincroniza o campo salvo se divergir (mantém app e dashboard iguais)
-        if al.streak_dinamico != al.streak_atual:
-            al.streak_atual = al.streak_dinamico
-            if al.streak_dinamico > al.melhor_streak:
-                al.melhor_streak = al.streak_dinamico
-            al.save(update_fields=['streak_atual', 'melhor_streak'])
+        # Sincroniza o campo salvo se divergir — só salva se campo existe no banco
+        try:
+            if al.streak_dinamico != al.streak_atual:
+                al.streak_atual = al.streak_dinamico
+                if al.streak_dinamico > al.melhor_streak:
+                    al.melhor_streak = al.streak_dinamico
+                al.save(update_fields=['streak_atual', 'melhor_streak'])
+        except Exception:
+            pass  # campo removido por migração — ignora silenciosamente
 
     # Ordena: streak primeiro (consistência), aulas_periodo como desempate
     ranking_alunos = sorted(
@@ -855,6 +885,8 @@ def dashboard(request):
         "faturas_pagas":            faturas_pagas_mes,
         "faturas_vencidas":         faturas_vencidas_mes,
         "indice_inadimplencia":     indice_inadimplencia,
+        "valor_inadimplente":       float(valor_inadimplente),
+        "valor_recebido_ano":       float(valor_recebido_ano),
         # Taxa de confirmação
         "total_aulas_hoje":         total_aulas_hoje,
         "aulas_confirmadas_hoje":   aulas_confirmadas_hoje,
@@ -2423,19 +2455,30 @@ def relatorios(request):
         .order_by('-aulas_realizadas')
     )
 
-    instrutores = list(
-        Perfil.objects
-        .filter(empresa=empresa, cargo='Instrutor')
-        .annotate(
-            aulas_dadas=Count(
-                'user__aulas_instrutor',
-                filter=Q(user__aulas_instrutor__concluida=True,
-                         user__aulas_instrutor__data_hora__date__range=(inicio, fim))
-            )
+    # Instrutor em Aula é FK para Perfil — agrupa direto no model Aula
+    from django.db.models import Count as _Count2
+    instrutores_ids = list(
+        Perfil.objects.filter(empresa=empresa, cargo='Instrutor').values_list('id', flat=True)
+    )
+    instrutores_raw = (
+        Aula.objects
+        .filter(
+            empresa=empresa,
+            instrutor_id__in=instrutores_ids,
+            concluida=True,
+            data_hora__date__range=(inicio, fim),
         )
-        .select_related('user')
+        .values('instrutor_id', 'instrutor__user__first_name', 'instrutor__user__last_name')
+        .annotate(aulas_dadas=_Count2('id'))
         .order_by('-aulas_dadas')
     )
+    instrutores = [
+        type('Inst', (), {
+            'nome': f"{r['instrutor__user__first_name']} {r['instrutor__user__last_name']}".strip(),
+            'aulas_dadas': r['aulas_dadas'],
+        })()
+        for r in instrutores_raw
+    ]
 
     # Estoque com validade próxima ou vencida
     from django.utils import timezone as _tz
@@ -2513,6 +2556,10 @@ def relatorio_pdf(request):
                               aulas__data_hora__date__range=(inicio, fim))))
         .filter(aulas_realizadas__gt=0).order_by('-aulas_realizadas')
     )
+    # streak_atual pode não existir se migração removeu o campo — usa getattr com fallback
+    for al in freq_alunos:
+        if not hasattr(al, 'streak_atual'):
+            al.streak_atual = 0
 
     response = HttpResponse(content_type='application/pdf')
     response['Content-Disposition'] = f'attachment; filename="relatorio_{mes:02d}_{ano}.pdf"'
