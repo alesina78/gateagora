@@ -532,8 +532,11 @@
                 <p class="text-[11px] font-bold" style="color:var(--text-main)">{{ item.nome }}</p>
               </div>
               <span class="text-[10px] font-bold font-mono"
-                    style="color:{% if item.prioridade == 0 %}var(--red-text){% else %}var(--amber-text){% endif %}">
-                {{ item.quantidade_atual }} {{ item.unidade }}
+                    style="color:{% if item.prioridade == 0 %}#ef4444{% elif item.prioridade == 1 %}#f59e0b{% else %}#10b981{% endif %}">
+                {{ item.estoque_disponivel }} {{ item.unidade }}
+                {% if item.dias_para_vencer is not None %}
+                  · <span>{{ item.dias_para_vencer }}d</span>
+                {% endif %}
               </span>
             </div>
             <div class="flex items-center justify-between">
@@ -556,7 +559,7 @@
             {% if item.alerta_minimo > 0 %}
             <div class="stock-bar-wrap mt-1.5">
               <div class="stock-bar"
-                   style="width:{% widthratio item.quantidade_atual item.alerta_minimo 50 %}%;
+                   style="width:{% widthratio item.estoque_disponivel item.alerta_minimo 50 %}%;
                           background:{% if item.prioridade == 0 %}#ef4444{% else %}#f59e0b{% endif %};">
               </div>
             </div>

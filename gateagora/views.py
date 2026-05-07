@@ -56,18 +56,15 @@ EMOJIS_TIPO_FATURA = {
 
 class CustomLoginView(LoginView):
     template_name = "gateagora/login.html"
-    form_class    = AuthenticationForm
+    form_class = AuthenticationForm
     redirect_authenticated_user = True
+
 
     def get_success_url(self):
         user = self.request.user
-        # Se o perfil for Aluno, vai direto para minhas aulas
-        try:
-            if user.perfil.cargo == 'Aluno':
-                return '/minhas-aulas/'
-        except:
-            pass
-        return '/'  # demais cargos vão para o dashboard
+        if hasattr(user, 'perfil') and user.perfil.cargo == 'Aluno':
+            return '/minhas-aulas/'
+        return '/'
 
 def get_pdf_colors(request):
     # SEMPRE LIGHT PARA ECONOMIZAR TINTA
@@ -157,9 +154,9 @@ def _montar_msg_fatura_whatsapp(fatura, empresa):
 
 # ── Dashboard ─────────────────────────────────────────────────────────────────
 
+
 @login_required
 def dashboard(request):
-    # 1. Identifica a empresa (vinda do middleware)
     empresa = request.empresa
     hoje = date.today()
     mes_selecionado = int(request.GET.get('mes', hoje.month))
@@ -167,20 +164,13 @@ def dashboard(request):
 
     print(f"DEBUG: Filtrando para o mês {mes_selecionado} de {ano_selecionado}")
 
-    # 2. Verificação de Segurança
     if not empresa and not request.user.is_superuser:
         try:
             return redirect('/admin/gateagora/perfil/add/')
         except:
             return redirect('/admin/')
 
-    # 3. Fluxo normal do sistema
-    hoje = timezone.localdate()
-
-    # --- INÍCIO DO BLOCO CORRIGIDO ---
     # 1. CÁLCULOS PARA OS GRÁFICOS DO DASHBOARD
-    hoje = timezone.localdate()
-    
     # Soma o valor das faturas PAGAS no mês atual
     faturas_pagas = Fatura.objects.filter(
         empresa=empresa,
@@ -265,34 +255,70 @@ def dashboard(request):
             pass  # streak não exibido nos cards de aula do dashboard
 
     # ── 2) Alertas e Estoque Unificado ────────────────────────────────────────
-    
-    # 1. Busca TODOS os itens, classificando por prioridade
     estoque_todos = list(
         ItemEstoque.objects
         .filter(empresa=empresa)
-        .annotate(
-            prioridade=Case(
-                When(quantidade_atual__lte=F('alerta_minimo'), then=Value(0)),      # CRÍTICO (Vermelho)
-                When(quantidade_atual__lte=F('alerta_minimo') * 2, then=Value(1)),  # ATENÇÃO (Amarelo)
-                default=Value(2),                                                  # OK (Verde)
-                output_field=IntegerField(),
-            )
-        )
-        .order_by('prioridade', 'quantidade_atual')
+        .prefetch_related('lotes')
+        .order_by('nome')
     )
 
-    # Gera link WhatsApp para fornecedor com mensagem padrão Gate 4
+    # Anota cada item com a quantidade efetivamente disponível para uso
+    # e a quantidade perdida por vencimento.
+    for item in estoque_todos:
+        vencido = item.status_validade == 'vencido'
+
+        # Estoque útil: zero quando vencido — produto vencido não existe para uso.
+        item._estoque_disponivel = 0 if vencido else item.quantidade_valida
+
+        # Perda contabilizável: só faz sentido quando vencido e havia estoque.
+        item.quantidade_descarte = (item.quantidade_atual - item.quantidade_valida) if vencido else 0
+
+        # Prioridade de alerta (menor = mais urgente):
+        #   0 → vencido (descarte obrigatório) ou abaixo do mínimo
+        #   1 → vence em ≤ 5 dias (alerta_critico)
+        #   2 → vence em ≤ 30 dias (alerta)
+        #   3 → tudo ok
+        if vencido or item._estoque_disponivel <= item.alerta_minimo:
+            item.prioridade = 0
+        elif item.status_validade == 'alerta_critico':
+            item.prioridade = 1
+        elif item.status_validade == 'alerta':
+            item.prioridade = 2
+        else:
+            item.prioridade = 3
+
+    # Ordena por prioridade, depois nome
+    estoque_todos.sort(key=lambda x: (x.prioridade, x.nome))
+
+    # Itens que aparecem no painel de alertas
+    estoque_alerta = [item for item in estoque_todos if item.prioridade <= 2]
+
+    # Badge de críticos: vencidos + abaixo do mínimo
+    estoque_baixo_count = sum(1 for item in estoque_todos if item.prioridade == 0)
+
+    # Gera link WhatsApp para fornecedor
     for _item in estoque_todos:
         if _item.fornecedor_contato:
             tel = "".join(filter(str.isdigit, str(_item.fornecedor_contato)))
             if not tel.startswith("55"):
                 tel = f"55{tel}"
+
+            # Informa ao fornecedor o estoque *disponível* (não o bruto)
+            aviso_vencido = (
+                f"⚠️ *Atenção: lote atual VENCIDO* — {_item.quantidade_descarte} {_item.unidade} para descarte.\n"
+                if _item.quantidade_descarte > 0 else ""
+            )
             msg = (
-                f"📦 *Pedido de Reposição — {empresa.nome}* 🐎\n\n"
+                f"📦 *Pedido de Reposição — {_item.empresa.nome}* 🐎\n\n"
                 f"Olá! Gostaríamos de solicitar a reposição do seguinte item:\n\n"
                 f"*Produto:* {_item.nome}\n"
-                f"*Estoque atual:* {_item.quantidade_atual} {_item.unidade}\n"
+                f"*Estoque disponível (válido):* {item._estoque_disponivel} {item.unidade}\n"
                 f"*Estoque mínimo:* {_item.alerta_minimo} {_item.unidade}\n"
+                f"{aviso_vencido}"
+            )
+            if _item.dias_para_vencer is not None and _item.status_validade != 'vencido':
+                msg += f"*Validade mais próxima:* {_item.dias_para_vencer} dias\n"
+            msg += (
                 f"*Quantidade a pedir:* ??? {_item.unidade}\n\n"
                 f"Por favor, confirme disponibilidade e prazo de entrega.\n"
                 f"⚠️ Antes de qualquer alteração, envie os documentos para conferência.\n\n"
@@ -302,23 +328,23 @@ def dashboard(request):
         else:
             _item.whatsapp_fornecedor = None
 
-    # 2. Contador para o badge de alerta no topo do Dashboard
-    estoque_baixo_count = sum(1 for item in estoque_todos if item.prioridade == 0)
-
-    # 3. Preparação dos dados para o GRÁFICO (Chart.js)
+    # Dados para o gráfico (Chart.js) — usa estoque_disponivel, não quantidade_atual
     estoque_labels = []
     estoque_valores = []
     estoque_cores = []
 
     for item in estoque_todos:
         estoque_labels.append(item.nome)
-        estoque_valores.append(float(item.quantidade_atual))
+        # CORRIGIDO: gráfico reflete o estoque real disponível (vencidos = 0)
+        estoque_valores.append(float(item._estoque_disponivel))
         if item.prioridade == 0:
-            estoque_cores.append('#ef4444')
+            estoque_cores.append('#ef4444')   # vermelho — crítico / vencido
         elif item.prioridade == 1:
-            estoque_cores.append('#f59e0b')
+            estoque_cores.append('#f97316')   # laranja — vence em ≤ 5d
+        elif item.prioridade == 2:
+            estoque_cores.append('#f59e0b')   # âmbar — vence em ≤ 30d
         else:
-            estoque_cores.append('#10b981')
+            estoque_cores.append('#10b981')   # verde — ok
 
     # 4. Documentos & Procedimentos vencendo/próximos do vencimento
     janela_venc = hoje + timedelta(days=30)
@@ -353,9 +379,11 @@ def dashboard(request):
         prazo_ferrageamento = 60
         prazo_casqueamento  = 60
 
-    # docs_vencendo = apenas documentos formais (GTA, Mormo, Anemia, etc.)
-    # Procedimentos de manejo pertencem ao painel Saúde & Vet, não aqui.
-    docs_vencendo = docs_formais
+    # Separa documentos por categoria
+    TIPOS_SANITARIOS = {'GTA', 'Mormo', 'Anemia Infecciosa Equina', 'Anemia', 'AIE'}
+    docs_sanitarios   = [d for d in docs_formais if d.tipo in TIPOS_SANITARIOS]
+    docs_manejo_prev  = [d for d in docs_formais if d.tipo not in TIPOS_SANITARIOS]
+    docs_vencendo     = docs_formais  # compatibilidade com template
 
     def _dias_atraso(data_campo):
         if not data_campo:
@@ -450,43 +478,61 @@ def dashboard(request):
         data_vencimento__month=mes_selecionado,
     ).prefetch_related('itens').select_related('aluno')
 
-    # ── Inadimplência ACUMULADA — todas as faturas não pagas vencidas (sem filtro de mês)
+    # ── Inadimplência do MÊS SELECIONADO (gráfico + KPIs principais) ────────────
     total_faturas_mes    = faturas_mes.count()
     faturas_pagas_mes    = faturas_mes.filter(status='PAGO').count()
-    # Vencidas acumuladas: independente do mês, até hoje
-    faturas_vencidas_mes = Fatura.objects.filter(
-        empresa=empresa,
+    faturas_vencidas_mes = faturas_mes.filter(
         status__in=['PENDENTE', 'ATRASADO'],
         data_vencimento__lt=hoje
     ).count()
-    valor_inadimplente = (
-        Fatura.objects
-        .filter(empresa=empresa, status__in=['PENDENTE', 'ATRASADO'], data_vencimento__lt=hoje)
+    valor_recebido_mes = (
+        faturas_mes.filter(status='PAGO')
         .aggregate(t=Sum('valor'))['t'] or Decimal('0.00')
     )
+    valor_inadimplente_mes = (
+        faturas_mes.filter(status__in=['PENDENTE', 'ATRASADO'], data_vencimento__lt=hoje)
+        .aggregate(t=Sum('valor'))['t'] or Decimal('0.00')
+    )
+    base_inad_mes = float(valor_recebido_mes) + float(valor_inadimplente_mes)
+    indice_inadimplencia = (
+        round(float(valor_inadimplente_mes) / base_inad_mes * 100, 1)
+        if base_inad_mes > 0 else 0
+    )
+
+    # ── Dívida Ativa Total — acumulado histórico (KPI separado) ──────────────
+    divida_ativa_qs = Fatura.objects.filter(
+        empresa=empresa, status__in=['PENDENTE', 'ATRASADO'], data_vencimento__lt=hoje
+    )
+    divida_ativa_total = divida_ativa_qs.aggregate(t=Sum('valor'))['t'] or Decimal('0.00')
+    # Separa dívida do mês atual vs atrasos antigos
+    divida_mes_atual = (
+        divida_ativa_qs
+        .filter(data_vencimento__year=hoje.year, data_vencimento__month=hoje.month)
+        .aggregate(t=Sum('valor'))['t'] or Decimal('0.00')
+    )
+    divida_historica = divida_ativa_total - divida_mes_atual
+    # Para compatibilidade com template existente
+    valor_inadimplente = divida_ativa_total
     valor_recebido_ano = (
         Fatura.objects
         .filter(empresa=empresa, status='PAGO', data_vencimento__year=hoje.year)
         .aggregate(t=Sum('valor'))['t'] or Decimal('0.00')
     )
-    base_inad = float(valor_inadimplente) + float(valor_recebido_ano)
-    indice_inadimplencia = (
-        round(float(valor_inadimplente) / base_inad * 100, 1)
-        if base_inad > 0 else 0
-    )
 
-    relatorio = []
+    # --- NOVO BLOCO DE CÁLCULO DE RECEITA ---
+    # 1. Calcula o total real baseado na soma de todos os itens de fatura do mês selecionado
     receita_total_prevista = ItemFatura.objects.filter(
         fatura__empresa=empresa,
         fatura__data_vencimento__year=ano_selecionado,
         fatura__data_vencimento__month=mes_selecionado
     ).aggregate(total=Sum('valor'))['total'] or Decimal('0.00')
 
+    # 2. Monta a listagem para o template sem fazer somas extras (evita duplicar valores)
+    relatorio = []
     for fatura in faturas_mes:
-        # Pega APENAS a soma real dos itens detalhados desta fatura
+        # Pega o total calculado da fatura (método .total do model)
         v_fatura = fatura.total 
 
-        # Montagem do link de WhatsApp
         tel = "".join(filter(str.isdigit, str(fatura.aluno.telefone or "")))
         msg = _montar_msg_fatura_whatsapp(fatura, empresa)
         link_wa = f"https://wa.me/55{tel}?text={quote(msg)}" if tel else "#"
@@ -499,6 +545,21 @@ def dashboard(request):
     
     # IMPORTANTE: Note que NÃO existe mais a linha "receita_total_prevista += v_fatura" aqui.
     # Isso impede que o valor seja somado duas vezes ou que use valores "inventados".
+
+    # ── 4c) Receita por Cavalo — centro de custo ────────────────────────────────
+    receita_por_cavalo = list(
+        ItemFatura.objects
+        .filter(
+            fatura__empresa=empresa,
+            fatura__data_vencimento__year=ano_selecionado,
+            fatura__data_vencimento__month=mes_selecionado,
+            cavalo__isnull=False,
+        )
+        .values('cavalo__id', 'cavalo__nome')
+        .annotate(total=Sum('valor'))
+        .order_by('-total')[:10]
+        # Removido: .select_related('cavalo')
+    )
 
     # ── 5) Financeiro mensal para gráfico ─────────────────────────────────────
     financeiro_mensal = (
@@ -796,39 +857,7 @@ def dashboard(request):
     alunos_risco    = sorted(alunos_risco,    key=lambda x: x.dias_inativo or 0, reverse=True)[:8]
 
     # ── 11) Capacity Utilization — baseado em confirmações reais (recalculado a cada request)
-    turmas_hoje = [a for a in proximas_aulas if a.vagas_maximas]
-    if turmas_hoje:
-        from gateagora.models import InscricaoAula
-        _ids_turmas = [a.id for a in turmas_hoje]
-
-        # Conta confirmações reais (não apenas inscrições)
-        _confs_turma = {}
-        for row in (
-            ConfirmacaoPresenca.objects
-            .filter(aula_id__in=_ids_turmas)
-            .values('aula_id')
-            .annotate(total=Count('id'))
-        ):
-            _confs_turma[row['aula_id']] = row['total']
-
-        # Fallback: inscrições quando não há confirmações ainda
-        _inscricoes = {}
-        for row in (
-            InscricaoAula.objects
-            .filter(aula_id__in=_ids_turmas)
-            .values('aula_id')
-            .annotate(total=Count('id'))
-        ):
-            _inscricoes[row['aula_id']] = row['total']
-
-        total_vagas     = sum(a.vagas_maximas for a in turmas_hoje)
-        total_ocupados  = sum(
-            _confs_turma.get(a.id) or _inscricoes.get(a.id, 0)
-            for a in turmas_hoje
-        )
-        capacity_utilization = round(total_ocupados / total_vagas * 100, 1) if total_vagas else None
-    else:
-        capacity_utilization = None
+    capacity_utilization = None
 
     # ── 12) Equine Workload — cavalos com 3+ aulas hoje ──────────────────────
     from django.db.models import Count as _Count
@@ -885,8 +914,20 @@ def dashboard(request):
         "faturas_pagas":            faturas_pagas_mes,
         "faturas_vencidas":         faturas_vencidas_mes,
         "indice_inadimplencia":     indice_inadimplencia,
+        # Inadimplência detalhada
+        "valor_inadimplente_mes":   float(valor_inadimplente_mes),
+        "valor_recebido_mes":       float(valor_recebido_mes),
+        "divida_ativa_total":       float(divida_ativa_total),
+        "divida_mes_atual":         float(divida_mes_atual),
+        "divida_historica":         float(divida_historica),
+        # Compatibilidade
         "valor_inadimplente":       float(valor_inadimplente),
         "valor_recebido_ano":       float(valor_recebido_ano),
+        # Documentos separados
+        "docs_sanitarios":          docs_sanitarios,
+        "docs_manejo_prev":         docs_manejo_prev,
+        # Receita por cavalo
+        "receita_por_cavalo":       receita_por_cavalo,
         # Taxa de confirmação
         "total_aulas_hoje":         total_aulas_hoje,
         "aulas_confirmadas_hoje":   aulas_confirmadas_hoje,
@@ -2047,11 +2088,15 @@ def movimentar_estoque(request):
 def fechamento_dia(request):
     """Exibe a tela de fechamento diário de estoque."""
     empresa = getattr(request, "empresa", request.user.perfil.empresa)
-    hoje    = timezone.localdate()
+    hoje = timezone.localdate()
 
-    itens_qs = ItemEstoque.objects.filter(empresa=empresa)
+    itens_qs = (
+        ItemEstoque.objects
+        .filter(empresa=empresa)
+        .prefetch_related('lotes')
+    )
 
-    # Marca quais itens já tiveram ajuste hoje
+    # Itens que já tiveram ajuste hoje
     itens_com_ajuste_hoje = set(
         MovimentacaoEstoque.objects
         .filter(empresa=empresa, data=hoje, tipo="ajuste")
@@ -2059,24 +2104,64 @@ def fechamento_dia(request):
     )
 
     for item in itens_qs:
+        lotes_ativos = item.lotes.filter(ativo=True)
+
+        # ── Lote mais próximo (apenas para exibição) ───────────────────────
+        lote = (
+            lotes_ativos
+            .exclude(data_validade__isnull=True)
+            .order_by("data_validade")
+            .first()
+        )
+        item.lote_numero  = lote.numero_lote if lote else None
+        item.data_validade = lote.data_validade if lote else None
+
+        # ── FLAG: item vencido (NÃO é property) ────────────────────────────
+        item.esta_vencido = lotes_ativos.filter(
+            data_validade__lt=hoje
+        ).exists()
+
+        # ── Dias para vencer ───────────────────────────────────────────────
+        datas_futuras = lotes_ativos.filter(
+            data_validade__gte=hoje
+        ).values_list("data_validade", flat=True)
+
+        if datas_futuras:
+            item.dias_para_vencer_calc = (min(datas_futuras) - hoje).days
+        else:
+            item.dias_para_vencer_calc = None
+
+        # ── Quantidade válida (não vencida) ────────────────────────────────
+        item.quantidade_valida_calc = (
+            lotes_ativos
+            .filter(data_validade__gte=hoje)
+            .aggregate(total=Sum("quantidade"))["total"] or 0
+        )
+
+        # ── Quantidade total (inclui vencidos) ─────────────────────────────
+        item.quantidade_atual_calc = (
+            lotes_ativos
+            .aggregate(total=Sum("quantidade"))["total"] or 0
+        )
+
+        # ── Flag: ajuste feito hoje ────────────────────────────────────────
         item.ajuste_feito_hoje = item.id in itens_com_ajuste_hoje
 
-    # Ordenação inteligente:
-    # 1º — itens COM consumo_diario, ordenados por dias_restantes (menor = mais urgente)
-    # 2º — itens SEM consumo_diario, ordenados por nome
+    # ── Ordenação inteligente ─────────────────────────────────────────────
     def _sort_key(item):
-        dias = item.dias_restantes  # None se sem consumo_diario
-        if dias is not None:
-            return (0, dias, item.nome)  # grupo urgente, quanto menos dias = mais cedo
-        return (1, 9999, item.nome)      # grupo sem consumo, por nome
+        if item.esta_vencido:
+            return (0, 0, item.nome)
+        if item.dias_para_vencer_calc is not None:
+            return (1, item.dias_para_vencer_calc, item.nome)
+        return (2, 9999, item.nome)
 
     itens = sorted(itens_qs, key=_sort_key)
 
     context = {
         "brand_name": BRAND_NAME,
-        "empresa":    empresa,
-        "hoje":       hoje,
-        "itens":      itens,
+        "empresa": empresa,
+        "hoje": hoje,
+        "itens": itens,
     }
     return render(request, "gateagora/fechamento_estoque.html", context)
 
@@ -2324,10 +2409,10 @@ def minhas_aulas(request):
             "instrutor":        instrutor,
             "historico_manejo": historico_manejo,
             # Gamificação
-            "streak_atual":     aluno.streak_atual,
-            "melhor_streak":    aluno.melhor_streak,
-            "selo_streak":      _selo_streak(aluno.streak_atual),
-            "faltam_bronze":    max(0, 5 - aluno.streak_atual),
+            "streak_atual":     getattr(aluno, 'streak_atual', 0),
+            "melhor_streak":    getattr(aluno, 'melhor_streak', 0),
+            "selo_streak":      _selo_streak(getattr(aluno, 'streak_atual', 0)),
+            "faltam_bronze":    max(0, 5 - getattr(aluno, 'streak_atual', 0)),
             "ranking_app":      ranking_app,
             "posicao_aluno":    posicao_aluno,
         }
@@ -2480,13 +2565,19 @@ def relatorios(request):
         for r in instrutores_raw
     ]
 
-    # Estoque com validade próxima ou vencida
-    from django.utils import timezone as _tz
+        # Estoque com validade próxima ou vencida
     estoque_validade = list(
         ItemEstoque.objects
-        .filter(empresa=empresa, data_validade__isnull=False)
-        .order_by('data_validade')
+        .filter(empresa=empresa)
+        .prefetch_related('lotes')
+        .order_by('nome')
     )
+
+    # Não atribui nada nas properties — apenas força o cálculo
+    for item in estoque_validade:
+        _ = item.quantidade_valida      # força cache
+        _ = item.dias_para_vencer
+        _ = item.status_validade
 
     meses_pt = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho',
                 'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
@@ -2504,6 +2595,9 @@ def relatorios(request):
         'total_recebido':   total_recebido,
         'total_pendente':   total_pendente,
         'total_atrasado':   total_atrasado,
+        'total_recebido_float': float(total_recebido),
+        'total_pendente_float': float(total_pendente),
+        'total_atrasado_float': float(total_atrasado),
         'freq_alunos':      freq_alunos,
         'instrutores':      instrutores,
         'estoque_validade': estoque_validade,
@@ -2682,8 +2776,17 @@ def relatorio_estoque_pdf(request):
     itens = list(
         ItemEstoque.objects
         .filter(empresa=empresa)
-        .order_by('data_validade', 'nome')
+        .prefetch_related('lotes')
+        .order_by('nome')
     )
+
+    # Força cálculo das propriedades
+    for item in itens:
+        _ = item.quantidade_valida
+        _ = item.dias_para_vencer
+        _ = item.status_validade
+
+    # ... resto do código da função continua igual
 
     response = HttpResponse(content_type='application/pdf')
     response['Content-Disposition'] = (
@@ -2766,37 +2869,64 @@ def relatorio_estoque_pdf(request):
         bg=COR_PRIMARIA, bold=True
     )
 
-    # Linhas de dados
-    for i, item in enumerate(itens):
-        if y < 60:
-            pagina += 1
-            y = nova_pagina(pagina)
+    # Linhas de dados — itera sobre lotes ativos de cada item
+    linha_idx = 0
+    for item in itens:
+        lotes_ativos = item.lotes.filter(ativo=True).order_by('data_validade')
+        if not lotes_ativos.exists():
+            # Item sem lotes: exibe linha com dados básicos
+            if y < 60:
+                pagina += 1
+                y = nova_pagina(pagina)
+                y = linha_tabela(y,
+                    ['PRODUTO', 'QTDE', 'UNID', 'LOTE', 'VALIDADE', 'STATUS'],
+                    bg=COR_PRIMARIA, bold=True
+                )
+            bg_linha = COR_CINZA if linha_idx % 2 == 0 else None
             y = linha_tabela(y,
-                ['PRODUTO', 'QTDE', 'UNID', 'LOTE', 'VALIDADE', 'STATUS'],
-                bg=COR_PRIMARIA, bold=True
+                [item.nome, '—', item.unidade, '—', '—', '—'],
+                bg=bg_linha, cor_status=COR_MUTED
             )
+            linha_idx += 1
+            continue
 
-        sv  = item.status_validade
-        val_txt = item.data_validade.strftime('%d/%m/%Y') if item.data_validade else '—'
-        if sv == 'vencido':
-            status_txt = 'VENCIDO'
-            cor_s      = COR_VERMELHO
-        elif sv == 'alerta':
-            status_txt = f'{item.dias_para_vencer}d p/ vencer'
-            cor_s      = COR_AMBAR
-        elif sv == 'ok':
-            status_txt = f'{item.dias_para_vencer}d'
-            cor_s      = COR_VERDE
-        else:
-            status_txt = '—'
-            cor_s      = COR_MUTED
+        for lote in lotes_ativos:
+            if y < 60:
+                pagina += 1
+                y = nova_pagina(pagina)
+                y = linha_tabela(y,
+                    ['PRODUTO', 'QTDE', 'UNID', 'LOTE', 'VALIDADE', 'STATUS'],
+                    bg=COR_PRIMARIA, bold=True
+                )
 
-        bg_linha = COR_CINZA if i % 2 == 0 else None
-        y = linha_tabela(y,
-            [item.nome, str(item.quantidade_atual), item.unidade,
-             item.lote or '—', val_txt, status_txt],
-            bg=bg_linha, cor_status=cor_s
-        )
+            val_txt = lote.data_validade.strftime('%d/%m/%Y') if lote.data_validade else '—'
+
+            if lote.data_validade:
+                dias = (lote.data_validade - hoje).days
+                if dias < 0:
+                    status_txt = 'VENCIDO'
+                    cor_s      = COR_VERMELHO
+                elif dias <= 5:
+                    status_txt = f'{dias}d — CRÍTICO'
+                    cor_s      = COR_VERMELHO
+                elif dias <= 30:
+                    status_txt = f'{dias}d p/ vencer'
+                    cor_s      = COR_AMBAR
+                else:
+                    status_txt = f'{dias}d'
+                    cor_s      = COR_VERDE
+            else:
+                status_txt = '—'
+                cor_s      = COR_MUTED
+
+            bg_linha = COR_CINZA if linha_idx % 2 == 0 else None
+            qtd_txt  = str(lote.quantidade) if hasattr(lote, 'quantidade') else '—'
+            y = linha_tabela(y,
+                [item.nome, qtd_txt, item.unidade,
+                 lote.numero_lote or '—', val_txt, status_txt],
+                bg=bg_linha, cor_status=cor_s
+            )
+            linha_idx += 1
 
     # Rodapé
     c.setFillColor(COR_MUTED)

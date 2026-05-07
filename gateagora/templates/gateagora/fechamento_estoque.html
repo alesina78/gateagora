@@ -41,7 +41,6 @@
     .custom-scrollbar::-webkit-scrollbar-track { background: var(--bg-main); }
     .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
 
-    /* ── Item de estoque no fechamento ── */
     .item-fechamento {
       background-color: var(--card-bg);
       border: 1px solid var(--border);
@@ -52,8 +51,11 @@
     .item-fechamento:hover { border-color: rgba(99,102,241,0.4); }
     .item-fechamento.ajustado { border-color: rgba(16,185,129,0.5); }
     .item-fechamento.sem-consumo { opacity: 0.6; }
+    .item-fechamento.vencido {
+      border-color: rgba(239,68,68,0.4);
+      background-color: rgba(239,68,68,0.03);
+    }
 
-    /* ── Input de quantidade ── */
     input[type="number"] {
       border: 1.5px solid var(--border) !important;
       background-color: var(--card-bg) !important;
@@ -80,7 +82,6 @@
       outline: none !important;
     }
 
-    /* ── Badge de dias restantes ── */
     .badge-dias {
       font-size: 0.6rem;
       font-weight: 900;
@@ -93,7 +94,6 @@
     .badge-dias-ok       { background-color: rgba(16,185,129,0.15); color: var(--emerald-text); }
     .badge-dias-none     { background-color: var(--card-bg-alt);    color: var(--text-muted); border: 1px solid var(--border); }
 
-    /* ── Controles +/- ── */
     .btn-ajuste {
       width: 2rem;
       height: 2rem;
@@ -183,7 +183,7 @@
 
 <div class="container mx-auto px-4 py-8 max-w-4xl">
 
-  <!-- CABEÇALHO DA PÁGINA -->
+  <!-- CABEÇALHO -->
   <div class="mb-8 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
     <div>
       <p class="text-[10px] font-bold uppercase tracking-widest mb-1" style="color:var(--indigo-text)">
@@ -200,7 +200,7 @@
     </div>
   </div>
 
-  <!-- MENSAGENS DO DJANGO -->
+  <!-- MENSAGENS -->
   {% if messages %}
   <div class="mb-6 space-y-2">
     {% for msg in messages %}
@@ -220,15 +220,14 @@
   </div>
   {% endif %}
 
-  <!-- FORMULÁRIO DE FECHAMENTO -->
+  <!-- FORMULÁRIO -->
   <form action="{% url 'salvar_fechamento' %}" method="post">
     {% csrf_token %}
 
     <div class="space-y-3 mb-8">
 
       {% for item in itens %}
-      {% with dias=item.dias_restantes %}
-      <div class="item-fechamento {% if item.ajuste_feito_hoje %}ajustado{% endif %}{% if not item.consumo_diario %} sem-consumo{% endif %}"
+      <div class="item-fechamento {% if item.ajuste_feito_hoje %}ajustado{% endif %}{% if item.esta_vencido %} vencido{% endif %}"
            id="item-row-{{ item.id }}">
 
         <div class="flex flex-col md:flex-row md:items-center gap-4">
@@ -238,23 +237,36 @@
             <div class="flex items-center gap-2 flex-wrap">
               <span class="text-sm font-black uppercase" style="color:var(--text-strong)">{{ item.nome }}</span>
 
-              <!-- Badge dias restantes -->
-              {% if dias is not None %}
-                {% if dias <= 3 %}
+              {% for lote in item.lotes.all %}
+                {% if lote.ativo %}
+                  <div class="text-[10px] font-mono"
+                       style="color:{% if lote.data_validade and lote.data_validade < hoje %}#ef4444{% else %}var(--text-muted){% endif %}">
+                    Lote {{ lote.numero_lote|default:"—" }} · Validade:
+                    {{ lote.data_validade|date:"d/m/Y"|default:"—" }}
+                  </div>
+                {% endif %}
+              {% endfor %}
+
+              {% if item.esta_vencido %}
+                <span class="badge-dias badge-dias-critico">
+                  <i class="fa-solid fa-skull-crossbones mr-0.5"></i> VENCIDO — DESCARTE
+                </span>
+              {% elif item.dias_para_vencer_calc is not None %}
+                {% if item.dias_para_vencer_calc <= 5 %}
                   <span class="badge-dias badge-dias-critico">
-                    <i class="fa-solid fa-triangle-exclamation mr-0.5"></i> {{ dias }} dia{{ dias|pluralize }} restante{{ dias|pluralize }}
+                    <i class="fa-solid fa-triangle-exclamation mr-0.5"></i> VENCE EM {{ item.dias_para_vencer_calc }} DIA{{ item.dias_para_vencer_calc|pluralize:"S" }}
                   </span>
-                {% elif dias <= 7 %}
+                {% elif item.dias_para_vencer_calc <= 7 %}
                   <span class="badge-dias badge-dias-atencao">
-                    <i class="fa-solid fa-clock mr-0.5"></i> {{ dias }} dias restantes
+                    <i class="fa-solid fa-clock mr-0.5"></i> {{ item.dias_para_vencer_calc }} dias restantes
                   </span>
                 {% else %}
                   <span class="badge-dias badge-dias-ok">
-                    <i class="fa-solid fa-circle-check mr-0.5"></i> {{ dias }} dias restantes
+                    <i class="fa-solid fa-circle-check mr-0.5"></i> {{ item.dias_para_vencer_calc }} dias
                   </span>
                 {% endif %}
               {% else %}
-                <span class="badge-dias badge-dias-none">sem consumo definido</span>
+                <span class="badge-dias badge-dias-none">sem validade definida</span>
               {% endif %}
 
               {% if item.ajuste_feito_hoje %}
@@ -267,7 +279,13 @@
             <div class="flex items-center gap-3 mt-1 text-[10px]" style="color:var(--text-muted)">
               <span>
                 <i class="fa-solid fa-cubes mr-0.5"></i>
-                Atual: <strong style="color:var(--text-main)">{{ item.quantidade_atual }} {{ item.unidade }}</strong>
+                Disponível:
+                <strong style="color:{% if item.esta_vencido %}#ef4444{% else %}var(--text-main){% endif %}">
+                  {{ item.quantidade_atual }} {{ item.unidade }}
+                </strong>
+                {% if item.esta_vencido %}
+                  <span style="color:#ef4444;font-size:0.65rem;">(p/ descarte)</span>
+                {% endif %}
               </span>
               <span>
                 <i class="fa-solid fa-arrow-down mr-0.5"></i>
@@ -282,18 +300,13 @@
             </div>
           </div>
 
-          <!-- CONTROLES DE QUANTIDADE -->
+          <!-- CONTROLES -->
           <div class="flex items-center gap-3 flex-shrink-0">
-
-            <!-- Botão menos -->
-            <button type="button"
-                    class="btn-ajuste menos"
-                    onclick="ajustarQtd({{ item.id }}, -1)"
-                    title="Reduzir 1">
+            <button type="button" class="btn-ajuste menos"
+                    onclick="ajustarQtd({{ item.id }}, -1)" title="Reduzir 1">
               <i class="fa-solid fa-minus text-xs"></i>
             </button>
 
-            <!-- Input quantidade -->
             <div class="flex flex-col items-center gap-0.5">
               <input type="number"
                      id="qtd-{{ item.id }}"
@@ -306,17 +319,13 @@
               <span class="text-[8px] font-bold uppercase" style="color:var(--text-muted)">{{ item.unidade }}</span>
             </div>
 
-            <!-- Botão mais -->
-            <button type="button"
-                    class="btn-ajuste mais"
-                    onclick="ajustarQtd({{ item.id }}, 1)"
-                    title="Aumentar 1">
+            <button type="button" class="btn-ajuste mais"
+                    onclick="ajustarQtd({{ item.id }}, 1)" title="Aumentar 1">
               <i class="fa-solid fa-plus text-xs"></i>
             </button>
-
           </div>
 
-          <!-- CAMPO OBSERVAÇÃO (aparece ao alterar) -->
+          <!-- OBSERVAÇÃO -->
           <div class="flex-shrink-0 w-full md:w-48" id="obs-container-{{ item.id }}" style="display:none;">
             <input type="text"
                    id="obs-{{ item.id }}"
@@ -327,27 +336,25 @@
 
         </div>
 
-        <!-- Barra de progresso do estoque -->
+        <!-- BARRA DE PROGRESSO -->
         <div class="mt-3" id="progress-container-{{ item.id }}">
-          {% with pct=item.quantidade_atual|floatformat:0 %}
           {% if item.alerta_minimo > 0 %}
           <div class="w-full rounded-full overflow-hidden" style="height:3px;background-color:var(--border);">
             <div id="progress-bar-{{ item.id }}"
                  class="h-full rounded-full transition-all duration-300"
-                 style="width: {% widthratio item.quantidade_atual item.alerta_minimo 100 %}%;
+                 style="width: {% widthratio item.quantidade_valida item.alerta_minimo 100 %}%;
                         max-width:100%;
                         background-color:
-                          {% if item.prioridade == 0 %}#ef4444
-                          {% elif item.prioridade == 1 %}#f59e0b
+                          {% if item.esta_vencido %}#ef4444
+                          {% elif item.quantidade_valida <= item.alerta_minimo %}#ef4444
+                          {% elif item.dias_para_vencer_calc is not None and item.dias_para_vencer_calc <= 7 %}#f59e0b
                           {% else %}#10b981{% endif %};">
             </div>
           </div>
           {% endif %}
-          {% endwith %}
         </div>
 
       </div>
-      {% endwith %}
       {% empty %}
       <div class="card-static p-16 flex flex-col items-center justify-center" style="color:var(--text-muted)">
         <i class="fa-solid fa-box-open text-5xl mb-4 opacity-20"></i>
@@ -362,7 +369,6 @@
 
     </div>
 
-    <!-- RODAPÉ DO FORMULÁRIO -->
     {% if itens %}
     <div class="card-static p-6 flex flex-col md:flex-row items-center justify-between gap-4">
       <div class="text-xs" style="color:var(--text-muted)">
@@ -391,10 +397,11 @@
 
   <!-- LEGENDA -->
   <div class="mt-6 flex flex-wrap gap-3 justify-center">
-    <span class="badge-dias badge-dias-critico"><i class="fa-solid fa-triangle-exclamation mr-1"></i> 0–3 dias: crítico</span>
-    <span class="badge-dias badge-dias-atencao"><i class="fa-solid fa-clock mr-1"></i> 4–7 dias: atenção</span>
+    <span class="badge-dias badge-dias-critico"><i class="fa-solid fa-skull-crossbones mr-1"></i> Vencido: descarte</span>
+    <span class="badge-dias badge-dias-critico"><i class="fa-solid fa-triangle-exclamation mr-1"></i> 0–5 dias: crítico</span>
+    <span class="badge-dias badge-dias-atencao"><i class="fa-solid fa-clock mr-1"></i> 6–7 dias: atenção</span>
     <span class="badge-dias badge-dias-ok"><i class="fa-solid fa-circle-check mr-1"></i> 8+ dias: ok</span>
-    <span class="badge-dias badge-dias-none">sem consumo definido</span>
+    <span class="badge-dias badge-dias-none">sem validade definida</span>
   </div>
 
 </div>
@@ -404,7 +411,6 @@
 </footer>
 
 <script>
-  // Ajusta quantidade pelo botão +/-
   function ajustarQtd(itemId, delta) {
     const input = document.getElementById('qtd-' + itemId);
     if (!input) return;
@@ -415,29 +421,27 @@
     marcarAlterado(itemId, original);
   }
 
-  // Mostra campo de obs e destaca linha quando valor muda
   function marcarAlterado(itemId, valorOriginal) {
-    const input    = document.getElementById('qtd-' + itemId);
-    const obsBox   = document.getElementById('obs-container-' + itemId);
-    const row      = document.getElementById('item-row-' + itemId);
+    const input  = document.getElementById('qtd-' + itemId);
+    const obsBox = document.getElementById('obs-container-' + itemId);
+    const row    = document.getElementById('item-row-' + itemId);
     if (!input) return;
 
-    const novoVal = parseInt(input.value);
+    const novoVal  = parseInt(input.value);
     const alterado = novoVal !== parseInt(valorOriginal);
 
     if (obsBox) obsBox.style.display = alterado ? 'block' : 'none';
     if (row) {
       if (alterado) {
-        row.style.borderColor = 'rgba(99,102,241,0.6)';
-        row.style.backgroundColor = 'rgba(99,102,241,0.04)';
+        row.style.borderColor       = 'rgba(99,102,241,0.6)';
+        row.style.backgroundColor   = 'rgba(99,102,241,0.04)';
       } else {
-        row.style.borderColor = '';
-        row.style.backgroundColor = '';
+        row.style.borderColor       = '';
+        row.style.backgroundColor   = '';
       }
     }
   }
 
-  // Inicializa data-original em cada input para comparação
   document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('input[type="number"]').forEach(function(input) {
       input.setAttribute('data-original', input.value);

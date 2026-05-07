@@ -490,7 +490,19 @@
           </div>
           <div class="text-left">
             <p class="text-xs font-bold uppercase" style="color:var(--emerald-text)">Estoque</p>
-            <p class="text-[10px]" style="color:var(--text-main)">{{ estoque_baixo_count }} itens em nível crítico.</p>
+            {% if estoque_vencido_count > 0 %}
+              <p class="text-[10px] font-bold" style="color:var(--red-text)">
+                {{ estoque_vencido_count }} item(ns) VENCIDO(S)
+              </p>
+            {% elif estoque_baixo_count > 0 %}
+              <p class="text-[10px]" style="color:var(--amber-text)">
+                {{ estoque_baixo_count }} item(ns) abaixo do mínimo
+              </p>
+            {% else %}
+              <p class="text-[10px]" style="color:var(--emerald-text)">
+                Estoque regular ✅
+              </p>
+            {% endif %}
           </div>
         </div>
         {% if estoque_baixo_count == 0 %}
@@ -504,7 +516,12 @@
           {% for item in estoque_critico %}
           <div class="alerta-item alerta-item-estoque">
             <div>
-              <p class="text-[11px] font-bold" style="color:var(--emerald-text)">{{ item.nome }}</p>
+              {% if item.data_validade %}
+                <p class="text-[9px] font-mono"
+                  style="color:{% if item.status_validade == 'vencido' %}var(--red-text){% else %}var(--text-muted){% endif %}">
+                  Validade: {{ item.data_validade|date:"d/m/Y" }}
+                </p>
+              {% endif %}
               <p class="text-[9px] font-bold uppercase" style="color:var(--text-muted)">Mínimo: {{ item.alerta_minimo }} {{ item.unidade }}</p>
             </div>
             <div class="text-right">

@@ -10,6 +10,7 @@ from django.urls import reverse
 from django.http import HttpResponseRedirect
 from django.contrib import messages
 from django.utils.crypto import get_random_string
+from django.utils.safestring import mark_safe
 
 from datetime import date
 
@@ -28,6 +29,7 @@ from .models import (
     Empresa,
     EventoAgendaCavalo,
     Fatura,
+    LoteEstoque,
     ItemEstoque,
     ItemFatura,
     MovimentacaoFinanceira,
@@ -150,7 +152,16 @@ class ItemFaturaInline(TabularInline):
                 kwargs["queryset"] = Cavalo.objects.filter(empresa=request.empresa)
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
-
+class LoteEstoqueInline(TabularInline):
+    model = LoteEstoque
+    extra = 0
+    fields = (
+        'numero_lote',
+        'quantidade',
+        'data_validade',
+        'ativo',
+    )
+    
 # ── ADMINS ──────────────────────────────────────────────────────────────────
 
 @admin.register(Empresa)
@@ -481,40 +492,86 @@ class ItemFaturaAdmin(ModelAdmin):
 
 @admin.register(ItemEstoque)
 class ItemEstoqueAdmin(BaseEmpresaAdmin):
-    list_display = ('nome', 'quantidade_atual', 'unidade', 'lote',
-                    'data_validade', 'status_validade_colorido', 'status_estoque')
-    list_filter  = ('data_validade', 'empresa')
-    search_fields = ('nome', 'lote')
+    inlines = [LoteEstoqueInline]
 
-    @display(description="Estoque", label=True)
-    def status_estoque(self, obj):
-        if obj.quantidade_atual <= obj.alerta_minimo:
-            return format_html(
-                '<span style="color:#ef4444;font-weight:700">CRÍTICO</span>'
-            )
-        return format_html(
-            '<span style="color:#10b981;font-weight:700">OK</span>'
+    list_display = (
+        'nome',
+        'quantidade_valida_display',
+        'quantidade_vencida_display',
+        'unidade',
+        'status_validade_colorido',
+        'dias_restantes_display',
+        'status_estoque',
+    )
+
+    list_filter = ('empresa',)
+    search_fields = ('nome',)
+    readonly_fields = ('quantidade_valida', 'dias_para_vencer')
+
+    @admin.display(description="Estoque Válido")
+    def quantidade_valida_display(self, obj):
+        """Exibe apenas o estoque dentro do prazo — o que realmente pode ser usado."""
+        qtd = obj.quantidade_valida  # deve retornar 0 quando vencido
+        return f"{qtd} {obj.unidade}"
+
+    @admin.display(description="Vencido/Descarte")
+    def quantidade_vencida_display(self, obj):
+        """
+        Exibe quanto está perdido por vencimento.
+        Fórmula: quantidade total - quantidade válida.
+        Se não há data de validade ou não venceu, exibe '—'.
+        """
+        if obj.status_validade != 'vencido':
+            return mark_safe('<span style="color:#94a3b8">—</span>')
+        perda = obj.quantidade_atual - obj.quantidade_valida
+        if perda <= 0:
+            return mark_safe('<span style="color:#94a3b8">—</span>')
+        return mark_safe(
+            f'<span style="color:#ef4444;font-weight:700">⚠ {perda} {obj.unidade}</span>'
         )
 
-    @display(description="Validade")
+    @admin.display(description="Dias Restantes")
+    def dias_restantes_display(self, obj):
+        if obj.status_validade == 'vencido':
+            dias = obj.dias_para_vencer  # negativo ou 0
+            if dias is not None and dias < 0:
+                return mark_safe(f'<span style="color:#ef4444">Venceu há {abs(dias)}d</span>')
+            return mark_safe('<span style="color:#ef4444">Vencido</span>')
+        if obj.dias_para_vencer is None:
+            return "—"
+        return f"{obj.dias_para_vencer} dias"
+
+    @admin.display(description="Validade")
     def status_validade_colorido(self, obj):
         sv = obj.status_validade
-        if sv is None:
-            return format_html('<span style="color:#94a3b8">—</span>')
         if sv == 'vencido':
-            return format_html(
-                '<span style="color:#ef4444;font-weight:700">'
-                '⚠ VENCIDO</span>'
+            return mark_safe('<span style="color:#ef4444;font-weight:700">VENCIDO</span>')
+        elif sv == 'alerta_critico':
+            dias = obj.dias_para_vencer or 0
+            return mark_safe(f'<span style="color:#ef4444;font-weight:700">⚠️ {dias}d</span>')
+        elif sv == 'alerta':
+            dias = obj.dias_para_vencer or 0
+            return mark_safe(f'<span style="color:#f59e0b;font-weight:700">⏳ {dias}d</span>')
+        return mark_safe('<span style="color:#10b981;font-weight:700">✓ OK</span>')
+
+    @admin.display(description="Status")
+    def status_estoque(self, obj):
+        """
+        CRÍTICO se:
+          - item vencido (100% da quantidade é perda), OU
+          - estoque válido (não-vencido) está abaixo ou igual ao mínimo.
+        """
+        if obj.status_validade == 'vencido':
+            return mark_safe(
+                '<span style="color:#ef4444;font-weight:700" title="Produto vencido — descarte obrigatório">'
+                'CRÍTICO (VENCIDO)</span>'
             )
-        if sv == 'alerta':
-            return format_html(
-                '<span style="color:#f59e0b;font-weight:700">'
-                '⏳ {}d restantes</span>', obj.dias_para_vencer
+        if obj.quantidade_valida <= obj.alerta_minimo:
+            return mark_safe(
+                '<span style="color:#ef4444;font-weight:700" title="Estoque válido abaixo do mínimo">'
+                'CRÍTICO</span>'
             )
-        return format_html(
-            '<span style="color:#10b981;font-weight:700">'
-            '✓ {}d</span>', obj.dias_para_vencer
-        )
+        return mark_safe('<span style="color:#10b981;font-weight:700">OK</span>')
 
 
 @admin.register(EventoAgendaCavalo)
@@ -532,6 +589,19 @@ class ConfigPrecoManejoAdmin(BaseEmpresaAdmin):
         ("Ferrageamento", {"fields": ("cobrar_ferrageamento", "valor_ferrageamento")}),
         ("Casqueamento",  {"fields": ("cobrar_casqueamento",  "valor_casqueamento")}),
     )
+
+
+@admin.register(LoteEstoque)
+class LoteEstoqueAdmin(ModelAdmin):
+    list_display = (
+        'item',
+        'numero_lote',
+        'quantidade',
+        'data_validade',
+        'ativo',
+    )
+    list_filter = ('ativo', 'data_validade')
+    search_fields = ('numero_lote', 'item__nome')
 
 # ── USER ADMIN (registrado apenas UMA vez) ──────────────────────────────────
 

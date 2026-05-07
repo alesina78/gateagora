@@ -4,8 +4,10 @@ from django.db import models
 from django.utils import timezone
 from django.contrib.auth.models import User
 from django.db.models.signals import pre_save, post_save
+from django.db.models import Sum, Q
 from django.dispatch import receiver
 from django.core.validators import MinValueValidator, RegexValidator
+
 
 # --- 1. ESTRUTURA MULTI-EMPRESA ---
 
@@ -368,67 +370,161 @@ class ConfirmacaoPresenca(models.Model):
 class ItemEstoque(models.Model):
     empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE)
     nome = models.CharField(max_length=100)
-    quantidade_atual = models.IntegerField(default=0)
+
     alerta_minimo = models.IntegerField(default=5)
-    unidade = models.CharField(max_length=20, default="Unidade", help_text="Ex: KG, Sacos, Fardos")
+    unidade = models.CharField(
+        max_length=20,
+        default="Unidade",
+        help_text="Ex: KG, Sacos, Fardos"
+    )
     fornecedor_contato = models.CharField(max_length=20, blank=True)
+
     consumo_diario = models.DecimalField(
-        max_digits=8,
+        max_digits=6,
         decimal_places=2,
-        null=True,
-        blank=True,
-        help_text="Consumo médio por dia (deixe em branco se não aplicável)"
+        default=0,
+        help_text="Consumo médio diário (para calcular dias restantes)"
     )
-    data_validade = models.DateField(
-        null=True,
-        blank=True,
-        help_text="Data de validade do produto (opcional). Deixe em branco se não aplicável."
-    )
-    lote = models.CharField(
-        max_length=50,
-        blank=True,
-        help_text="Número do lote (opcional)"
-    )
+
+    # ⚠️ Campo legado — mantido para o formulário de fechamento do dia (input de ajuste manual).
+    # NÃO use para cálculos de disponibilidade. A fonte da verdade são os lotes.
+    quantidade_atual = models.IntegerField(default=0)
 
     class Meta:
         indexes = [
             models.Index(fields=["empresa", "nome"]),
             models.Index(fields=["empresa", "quantidade_atual"]),
-            models.Index(fields=["empresa", "data_validade"]),
         ]
 
     def __str__(self):
         return f"{self.nome} - {self.empresa.nome}"
 
     @property
+    def quantidade_valida(self):
+        """
+        Soma dos lotes ativos dentro do prazo de validade.
+
+        Regras:
+        - Lotes sem data_validade são considerados sempre válidos (ex: sal mineral).
+        - Lotes com data_validade < hoje são IGNORADOS — produto vencido não conta.
+        - Se não há NENHUM lote cadastrado, cai no fallback do campo legado
+          (quantidade_atual), pois o item não usa controle por lote.
+        """
+        hoje = timezone.localdate()
+        lotes_ativos = self.lotes.filter(ativo=True)
+
+        if not lotes_ativos.exists():
+            # Sem lotes: item gerenciado pelo campo legado (sem controle de validade por lote)
+            return Decimal(str(self.quantidade_atual))
+
+        resultado = lotes_ativos.filter(
+            Q(data_validade__isnull=True) | Q(data_validade__gte=hoje)
+        ).aggregate(total=Sum('quantidade'))['total']
+
+        return Decimal(str(resultado or 0))
+
+    @property
+    def quantidade_vencida(self):
+        """
+        Soma dos lotes ativos que já venceram — quantidade a ser descartada.
+        Retorna 0 se não há lotes vencidos.
+        """
+        hoje = timezone.localdate()
+        resultado = self.lotes.filter(
+            ativo=True,
+            data_validade__isnull=False,
+            data_validade__lt=hoje,
+        ).aggregate(total=Sum('quantidade'))['total']
+        return Decimal(str(resultado or 0))
+
+    @property
+    def estoque_disponivel(self):
+        """
+        Estoque que pode efetivamente ser usado.
+
+        Equivalente a quantidade_valida, mas explicitamente retorna 0
+        quando status_validade == 'vencido' — usado pelos templates e pela
+        view do dashboard para garantir que vencido = zero na exibição.
+
+        Diferença de quantidade_valida: quando há lotes sem data_validade
+        junto com lotes vencidos, quantidade_valida soma os sem-validade
+        normalmente (correto). estoque_disponivel faz o mesmo — ambos
+        ignoram os lotes vencidos. O status_validade é que determina
+        se o item aparece como "VENCIDO" no painel.
+        """
+        return self.quantidade_valida
+
+    @property
     def dias_restantes(self):
-        """Retorna dias até zerar o estoque com base no consumo diário."""
+        """Projeção de dias até o estoque se esgotar pelo consumo diário."""
         if not self.consumo_diario or self.consumo_diario <= 0:
             return None
-        try:
-            return int(Decimal(str(self.quantidade_atual)) / self.consumo_diario)
-        except Exception:
-            return None
+        qtd = self.quantidade_valida
+        if qtd <= 0:
+            return 0
+        return int(qtd / self.consumo_diario)
 
     @property
     def dias_para_vencer(self):
-        """Retorna dias até a data de validade. Negativo = já venceu."""
-        if not self.data_validade:
+        """
+        Dias até o lote com validade mais próxima vencer.
+
+        CORRIGIDO: busca apenas lotes com data_validade definida,
+        ordenando pelo mais próximo — seja ele já vencido (negativo)
+        ou ainda válido. Lotes sem data_validade são ignorados aqui
+        (eles nunca vencem, não fazem sentido no cálculo).
+        """
+        lote_proximo = self.lotes.filter(
+            ativo=True,
+            data_validade__isnull=False,
+        ).order_by('data_validade').first()
+
+        if not lote_proximo:
             return None
-        from django.utils import timezone
-        return (self.data_validade - timezone.localdate()).days
+        return (lote_proximo.data_validade - timezone.localdate()).days
 
     @property
     def status_validade(self):
-        """Retorna 'vencido', 'alerta' (<=30 dias), 'ok' ou None."""
-        dias = self.dias_para_vencer
-        if dias is None:
-            return None
+        """
+        Estado de validade do item baseado no lote com data mais próxima.
+
+        Retornos possíveis:
+        'ok'             → dentro do prazo (> 30 dias) ou sem data de validade
+        'alerta'         → vence em até 30 dias
+        'alerta_critico' → vence em até 5 dias
+        'vencido'        → lote mais próximo já venceu (dias < 0)
+
+        Nota:
+        - 'vencido' não significa necessariamente estoque = 0.
+        - Pode haver lotes sem data_validade ainda válidos.
+        """
+
+        hoje = timezone.localdate()
+
+        # Busca o lote ativo com validade mais próxima
+        lote = (
+            self.lotes
+            .filter(ativo=True)
+            .exclude(data_validade__isnull=True)
+            .order_by('data_validade')
+            .first()
+        )
+
+        # Sem lote com validade → considera OK
+        if not lote:
+            return 'ok'
+
+        dias = (lote.data_validade - hoje).days
+
         if dias < 0:
             return 'vencido'
+        if dias <= 5:
+            return 'alerta_critico'
         if dias <= 30:
             return 'alerta'
+
         return 'ok'
+
 
 class MovimentacaoFinanceira(models.Model):
     empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE)
@@ -490,6 +586,22 @@ class Fatura(models.Model):
     def __str__(self):
         aluno_nome = getattr(self.aluno, 'nome', 'Sem aluno')
         return f"{aluno_nome} - {self.data_vencimento} ({self.status})"
+    
+    # Adicione este método dentro da classe Fatura
+    def calcular_total_real(self):
+        """
+        Soma o valor das aulas e da hotelaria vinculadas a esta fatura.
+        Se v_total já tiver um valor manual, ele ignora a soma e usa o v_total.
+        """
+        if self.v_total and self.v_total > 0:
+            return self.v_total
+        
+        # Soma todos os itens de aula vinculados
+        total_aulas = sum(item.valor for item in self.itens_aula.all())
+        # Soma todos os itens de hotelaria vinculados
+        total_hotelaria = sum(item.valor for item in self.itens_hotelaria.all())
+        
+        return total_aulas + total_hotelaria
 
 
 class ItemFatura(models.Model):
@@ -604,8 +716,44 @@ class ConfigPrecoManejo(models.Model):
         return f"Preços de Manejo — {self.empresa.nome}"
 
 
-# --- 6. MOVIMENTAÇÃO DE ESTOQUE ---
+# -- 5.5 lote estoque
+class LoteEstoque(models.Model):
+    item = models.ForeignKey(
+        'ItemEstoque',
+        on_delete=models.CASCADE,
+        related_name='lotes',
+        verbose_name="Item de Estoque"
+    )
+    quantidade    = models.DecimalField(max_digits=10, decimal_places=2)
+    data_validade = models.DateField(null=True, blank=True)
+    data_entrada  = models.DateField(auto_now_add=True)
+    numero_lote   = models.CharField(max_length=50, blank=True)
+    ativo         = models.BooleanField(default=True)
 
+    class Meta:
+        verbose_name        = "Lote de Estoque"
+        verbose_name_plural = "Lotes de Estoque"
+        ordering            = ["data_validade", "data_entrada"]
+        indexes             = [models.Index(fields=["item", "data_validade", "ativo"])]
+
+    def __str__(self):
+        val = self.data_validade.strftime("%d/%m/%Y") if self.data_validade else "sem validade"
+        return f"{self.item.nome} — Lote {self.numero_lote or self.pk} ({val})"
+
+    @property
+    def vencido(self):
+        if not self.data_validade:
+            return False
+        return self.data_validade < timezone.localdate()
+
+    @property
+    def dias_para_vencer(self):
+        if not self.data_validade:
+            return None
+        return (self.data_validade - timezone.localdate()).days
+
+
+# --- 6. MOVIMENTAÇÃO DE ESTOQUE ---
 class MovimentacaoEstoque(models.Model):
     """Registro de entradas, saídas e ajustes de estoque por dia."""
     TIPO_CHOICES = [
