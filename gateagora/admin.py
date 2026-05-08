@@ -96,11 +96,21 @@ class GerarAulasForm(forms.Form):
         (6, 'Domingo'),
     ]
 
+    FREQUENCIA_CHOICES = [
+        ('semanal',   'Semanal — toda semana'),
+        ('quinzenal', 'Quinzenal — a cada 2 semanas'),
+    ]
+
     dias_semana = forms.MultipleChoiceField(
         choices=DIAS_CHOICES,
         widget=forms.CheckboxSelectMultiple,
         label="Dias da semana",
         help_text="Selecione um ou mais dias"
+    )
+    frequencia = forms.ChoiceField(
+        choices=FREQUENCIA_CHOICES,
+        label="Frequência",
+        initial='semanal',
     )
     horario = forms.TimeField(
         label="Horário",
@@ -119,7 +129,10 @@ class GerarAulasForm(forms.Form):
     cavalo = forms.ModelChoiceField(
         queryset=None,  # preenchido dinamicamente na action
         label="Cavalo",
-        help_text="Pode ser alterado aula a aula depois"
+        required=False,
+        empty_label="— definir depois —",
+        help_text="Pode ser alterado aula a aula depois",
+        widget=forms.Select(attrs={'required': False})
     )
     instrutor = forms.ModelChoiceField(
         queryset=None,  # preenchido dinamicamente na action
@@ -429,6 +442,7 @@ class AlunoAdmin(BaseEmpresaAdmin):
                 empresa=empresa, cargo='Professor'
             )
 
+            form.fields['cavalo'].required = False
             if form.is_valid():
                 dias     = [int(d) for d in form.cleaned_data['dias_semana']]
                 horario  = form.cleaned_data['horario']
@@ -443,9 +457,17 @@ class AlunoAdmin(BaseEmpresaAdmin):
                 aulas_bulk = []
 
                 for aluno in queryset:
+                    quinzenal = form.cleaned_data['frequencia'] == 'quinzenal'
+                    semana_contagem = 0
                     cursor = inicio
+                    semana_ref = inicio  # semana de referência para quinzenal
                     while cursor <= fim:
                         if cursor.weekday() in dias:
+                            # Para quinzenal: só gera nas semanas pares contadas desde o início
+                            semanas_desde_inicio = (cursor - inicio).days // 7
+                            if quinzenal and semanas_desde_inicio % 2 != 0:
+                                cursor += timedelta(days=1)
+                                continue
                             dt = datetime.combine(cursor, horario)
                             # Evita duplicar aula exata (mesmo aluno, mesma data_hora)
                             existe = Aula.objects.filter(
@@ -459,7 +481,7 @@ class AlunoAdmin(BaseEmpresaAdmin):
                                 aulas_bulk.append(Aula(
                                     empresa=empresa,
                                     aluno=aluno,
-                                    cavalo=cavalo,
+                                    cavalo=cavalo if cavalo else None,
                                     instrutor=instrutor,
                                     data_hora=dt,
                                     local=local,

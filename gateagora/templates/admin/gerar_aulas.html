@@ -187,6 +187,23 @@
       {% if form.dias_semana.errors %}<ul class="errorlist">{% for e in form.dias_semana.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
     </div>
 
+    <!-- Frequência -->
+    <div class="campo">
+      <label>Frequência</label>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        {% for value, label in form.frequencia.field.choices %}
+        <label id="freq-{{ value }}"
+               style="display:flex;align-items:center;gap:6px;padding:6px 14px;border-radius:99px;border:1.5px solid var(--border);font-size:0.78rem;font-weight:700;cursor:pointer;color:var(--text-muted);background:var(--card-alt);"
+               onclick="toggleFreq(this, '{{ value }}')">
+          <input type="radio" name="frequencia" value="{{ value }}"
+                 style="display:none;"
+                 {% if forloop.first %}checked{% endif %}>
+          <span>{{ label }}</span>
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+
     <!-- Horário -->
     <div class="campo">
       <label>Horário da aula</label>
@@ -213,8 +230,8 @@
     <div class="grid-2">
       <div class="campo">
         <label>Cavalo</label>
-        <select name="cavalo" required>
-          <option value="">— selecione —</option>
+        <select name="cavalo">
+          <option value="">— definir depois —</option>
           {% for cavalo in form.cavalo.field.queryset %}
             <option value="{{ cavalo.pk }}"
               {% if form.cavalo.value|stringformat:"s" == cavalo.pk|stringformat:"s" %}selected{% endif %}>
@@ -269,5 +286,26 @@
     checkbox.checked = !checkbox.checked;
     label.classList.toggle('selecionado', checkbox.checked);
   }
+
+  function toggleFreq(label, value) {
+    // Desmarca todos
+    document.querySelectorAll('[id^="freq-"]').forEach(el => {
+      el.style.background    = 'var(--card-alt)';
+      el.style.borderColor   = 'var(--border)';
+      el.style.color         = 'var(--text-muted)';
+      el.querySelector('input').checked = false;
+    });
+    // Marca o clicado
+    label.style.background  = '#4f46e5';
+    label.style.borderColor = '#4f46e5';
+    label.style.color       = '#fff';
+    label.querySelector('input').checked = true;
+  }
+
+  // Inicializa o primeiro radio como selecionado visualmente
+  document.addEventListener('DOMContentLoaded', function() {
+    const primeiro = document.querySelector('[id^="freq-"]');
+    if (primeiro) toggleFreq(primeiro, 'semanal');
+  });
 </script>
 {% endblock %}

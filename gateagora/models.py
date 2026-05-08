@@ -298,7 +298,7 @@ class Aula(models.Model):
     TIPO_AULA_CHOICES = [('NORMAL', 'Aula Normal'), ('RECUPERAR', 'Aula a Recuperar')]
 
     aluno = models.ForeignKey(Aluno, on_delete=models.CASCADE, related_name='aulas')
-    cavalo = models.ForeignKey(Cavalo, on_delete=models.CASCADE, related_name='aulas')
+    cavalo = models.ForeignKey(Cavalo, on_delete=models.SET_NULL, null=True, blank=True, related_name='aulas')
 
     instrutor = models.ForeignKey(
         Perfil,
