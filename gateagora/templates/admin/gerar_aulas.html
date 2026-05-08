@@ -1,0 +1,273 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block extrahead %}
+  {{ block.super }}
+  <link rel="stylesheet" href="{% static 'css/themes.css' %}">
+  <script>
+    (function(){
+      const t = localStorage.getItem("gate-theme") || "zaino";
+      if (t === "tordilho") document.documentElement.setAttribute("data-theme","tordilho");
+      else document.documentElement.removeAttribute("data-theme");
+    })();
+  </script>
+{% endblock %}
+
+{% block title %}Gerar Aulas por Plano Semanal{% endblock %}
+
+{% block content %}
+<style>
+  .gerar-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+    padding: 2rem;
+    max-width: 640px;
+    margin: 1.5rem 0;
+  }
+  .gerar-card h2 {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--text-strong);
+    margin-bottom: 0.25rem;
+  }
+  .gerar-card .subtitle {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-bottom: 1.5rem;
+  }
+  /* Dias da semana — estilo pill */
+  .dias-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 0.5rem 0 1.5rem;
+  }
+  .dias-grid label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 99px;
+    border: 1.5px solid var(--border);
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+    color: var(--text-muted);
+    background: var(--card-alt);
+    user-select: none;
+  }
+  .dias-grid input[type="checkbox"] { display: none; }
+  .dias-grid label.selecionado {
+    background: #4f46e5;
+    border-color: #4f46e5;
+    color: #fff;
+  }
+  /* Campos do formulário */
+  .campo {
+    margin-bottom: 1.25rem;
+  }
+  .campo label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    margin-bottom: 0.4rem;
+  }
+  .campo input,
+  .campo select {
+    width: 100%;
+    padding: 0.55rem 0.75rem;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.85rem;
+    color: var(--text-main);
+    background: var(--card-alt);
+    transition: border-color 0.2s;
+    box-sizing: border-box;
+  }
+  .campo input:focus,
+  .campo select:focus {
+    border-color: #6366f1;
+    outline: none;
+    background: var(--card-bg);
+  }
+  .campo .help {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    margin-top: 0.3rem;
+  }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  /* Alunos selecionados */
+  .alunos-lista {
+    background: var(--card-alt);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1.5rem;
+    font-size: 0.82rem;
+    color: var(--text-main);
+  }
+  .alunos-lista strong { color: var(--indigo-text); }
+  /* Botões */
+  .btn-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 1.5rem;
+  }
+  .btn-gerar {
+    background: #4f46e5;
+    color: #fff;
+    border: none;
+    padding: 0.65rem 1.5rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .btn-gerar:hover { background: #4338ca; }
+  .btn-cancelar {
+    background: var(--card-alt);
+    color: var(--text-muted);
+    border: 1.5px solid var(--border);
+    padding: 0.65rem 1.25rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+  }
+  .btn-cancelar:hover { border-color: #6366f1; color: #6366f1; }
+  /* Erros */
+  .errorlist { color: #ef4444; font-size: 0.75rem; margin-top: 0.25rem; padding: 0; list-style: none; }
+</style>
+
+<div class="gerar-card">
+  <h2>📅 Gerar Aulas por Plano Semanal</h2>
+  <p class="subtitle">As aulas serão criadas automaticamente para os alunos selecionados. Conflitos de horário são ignorados automaticamente.</p>
+
+  <!-- Alunos selecionados -->
+  <div class="alunos-lista">
+    <strong>{{ alunos.count }} aluno(s) selecionado(s):</strong>
+    {% for aluno in alunos %} {{ aluno.nome }}{% if not forloop.last %},{% endif %}{% endfor %}
+  </div>
+
+  <form method="post">
+    {% csrf_token %}
+
+    <!-- Preserva seleção do queryset -->
+    {% for aluno in alunos %}
+      <input type="hidden" name="_selected_action" value="{{ aluno.pk }}">
+    {% endfor %}
+    <input type="hidden" name="action" value="gerar_aulas_plano">
+
+    <!-- Dias da semana -->
+    <div class="campo">
+      <label>Dias da semana</label>
+      <div class="dias-grid" id="dias-grid">
+        {% for value, label in form.dias_semana.field.choices %}
+        <label id="pill-{{ value }}"
+               onclick="togglePill(this, '{{ value }}')"
+               {% if value|stringformat:"s" in form.dias_semana.value %}class="selecionado"{% endif %}>
+          <input type="checkbox"
+                 name="dias_semana"
+                 value="{{ value }}"
+                 {% if value|stringformat:"s" in form.dias_semana.value %}checked{% endif %}>
+          <span>{{ label }}</span>
+        </label>
+        {% endfor %}
+      </div>
+      {% if form.dias_semana.errors %}<ul class="errorlist">{% for e in form.dias_semana.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+    </div>
+
+    <!-- Horário -->
+    <div class="campo">
+      <label>Horário da aula</label>
+      <input type="time" name="horario" value="{{ form.horario.value|default:'' }}" required>
+      {% if form.horario.errors %}<ul class="errorlist">{% for e in form.horario.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+    </div>
+
+    <!-- Período -->
+    <div class="grid-2">
+      <div class="campo">
+        <label>Data de início</label>
+        <input type="date" name="data_inicio" value="{{ form.data_inicio.value|default:'' }}" required>
+        {% if form.data_inicio.errors %}<ul class="errorlist">{% for e in form.data_inicio.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+      </div>
+      <div class="campo">
+        <label>Data de fim</label>
+        <input type="date" name="data_fim" value="{{ form.data_fim.value|default:'' }}" required>
+        <p class="help">Máximo recomendado: 3 meses</p>
+        {% if form.data_fim.errors %}<ul class="errorlist">{% for e in form.data_fim.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+      </div>
+    </div>
+
+    <!-- Cavalo e Local -->
+    <div class="grid-2">
+      <div class="campo">
+        <label>Cavalo</label>
+        <select name="cavalo" required>
+          <option value="">— selecione —</option>
+          {% for cavalo in form.cavalo.field.queryset %}
+            <option value="{{ cavalo.pk }}"
+              {% if form.cavalo.value|stringformat:"s" == cavalo.pk|stringformat:"s" %}selected{% endif %}>
+              {{ cavalo.nome }}
+            </option>
+          {% endfor %}
+        </select>
+        <p class="help">Pode ser alterado aula a aula depois</p>
+        {% if form.cavalo.errors %}<ul class="errorlist">{% for e in form.cavalo.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+      </div>
+      <div class="campo">
+        <label>Local</label>
+        <select name="local">
+          {% for value, label in form.local.field.choices %}
+            <option value="{{ value }}"
+              {% if form.local.value == value %}selected{% endif %}>
+              {{ label }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <!-- Instrutor -->
+    <div class="campo">
+      <label>Instrutor <span style="color:#94a3b8;font-weight:400">(opcional)</span></label>
+      <select name="instrutor">
+        <option value="">— nenhum —</option>
+        {% for inst in form.instrutor.field.queryset %}
+          <option value="{{ inst.pk }}"
+            {% if form.instrutor.value|stringformat:"s" == inst.pk|stringformat:"s" %}selected{% endif %}>
+            {{ inst.user.get_full_name|default:inst.user.username }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="btn-row">
+      <button type="submit" name="aplicar" value="1" class="btn-gerar">
+        ✅ Gerar Aulas
+      </button>
+      <a href="{% url 'admin:gateagora_aluno_changelist' %}" class="btn-cancelar">
+        Cancelar
+      </a>
+    </div>
+  </form>
+</div>
+
+<script>
+  function togglePill(label, value) {
+    const checkbox = label.querySelector('input[type="checkbox"]');
+    checkbox.checked = !checkbox.checked;
+    label.classList.toggle('selecionado', checkbox.checked);
+  }
+</script>
+{% endblock %}

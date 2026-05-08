@@ -730,17 +730,29 @@ document.addEventListener('DOMContentLoaded', function() {
   Chart.defaults.font.size   = 11;
 
   // ── Dados do Django — float puro, sem conversão de string ──────────
-  const totalPago     = {{ total_recebido_float|default:0 }};
-  const totalPendente = {{ total_pendente_float|default:0 }};
-  const totalAtrasado = {{ total_atrasado_float|default:0 }};
+  const totalPago     = {{ total_recebido_float|default:0 }} / 100;
+  const totalPendente = {{ total_pendente_float|default:0 }} / 100;
+  const totalAtrasado = {{ total_atrasado_float|default:0 }} / 100;
 
-  const labelsInstrutores = [{% for inst in instrutores %}"{{ inst.user.get_full_name }}"{% if not forloop.last %},{% endif %}{% endfor %}];
-  const dadosInstrutores  = [{% for inst in instrutores %}{{ inst.aulas_dadas }}{% if not forloop.last %},{% endif %}{% endfor %}];
+  const labelsInstrutores = [{% for inst in instrutores %}"{{ inst.user.get_full_name|escapejs }}"{% if not forloop.last %},{% endif %}{% endfor %}];
+  const dadosInstrutores  = [{% for inst in instrutores %}{{ inst.aulas_dadas|default:0 }}{% if not forloop.last %},{% endif %}{% endfor %}];
 
-  const labelsFreq = [{% for al in freq_alunos|slice:":10" %}"{{ al.nome|truncatechars:14 }}"{% if not forloop.last %},{% endif %}{% endfor %}];
-  const dadosFreq  = [{% for al in freq_alunos|slice:":10" %}{{ al.aulas_realizadas }}{% if not forloop.last %},{% endif %}{% endfor %}];
+  const labelsFreq = [{% for al in freq_alunos|slice:":10" %}"{{ al.nome|truncatechars:14|escapejs }}"{% if not forloop.last %},{% endif %}{% endfor %}];
+  const dadosFreq  = [{% for al in freq_alunos|slice:":10" %}{{ al.aulas_realizadas|default:0 }}{% if not forloop.last %},{% endif %}{% endfor %}];
 
   // ── Donut 1 (aba faturamento, mini) ─────────────────────────────
+  // Usa contagem de faturas por status como fallback quando valores são R$0
+  const qtdPago     = {{ faturas_pagas_count|default:0 }};
+  const qtdPendente = {{ faturas_pendentes_count|default:0 }};
+  const qtdAtrasado = {{ faturas_atrasadas_count|default:0 }};
+  const temValor    = totalPago + totalPendente + totalAtrasado > 0;
+  const dadosDonut  = temValor
+    ? [totalPago, totalPendente, totalAtrasado]
+    : [qtdPago, qtdPendente, qtdAtrasado];
+  const tooltipLabel = temValor
+    ? ctx => " R$ " + ctx.parsed.toFixed(2)
+    : ctx => " " + ctx.parsed + " fatura(s)";
+
   const ctxD1 = document.getElementById("chartDonut");
   if (ctxD1) {
     new Chart(ctxD1, {
@@ -748,7 +760,7 @@ document.addEventListener('DOMContentLoaded', function() {
       data: {
         labels: ["Pago", "Pendente", "Atrasado"],
         datasets: [{
-          data: [totalPago, totalPendente, totalAtrasado],
+          data: dadosDonut,
           backgroundColor: ["#10b981","#f59e0b","#ef4444"],
           borderWidth: 0,
           hoverOffset: 6,
@@ -759,7 +771,7 @@ document.addEventListener('DOMContentLoaded', function() {
         maintainAspectRatio: true,
         cutout: "70%",
         plugins: { legend: { display: false }, tooltip: {
-          callbacks: { label: ctx => " R$ " + ctx.parsed.toFixed(2) }
+          callbacks: { label: tooltipLabel }
         }}
       }
     });
@@ -773,7 +785,7 @@ document.addEventListener('DOMContentLoaded', function() {
       data: {
         labels: ["Recebido", "Pendente", "Atrasado"],
         datasets: [{
-          data: [totalPago, totalPendente, totalAtrasado],
+          data: dadosDonut,
           backgroundColor: ["#10b981","#f59e0b","#ef4444"],
           borderWidth: 0,
           hoverOffset: 8,

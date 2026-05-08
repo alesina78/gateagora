@@ -2,6 +2,9 @@
 """Admin do Gate 4"""
 
 from django.contrib import admin
+from django.utils.html import format_html
+from django.http import HttpResponseRedirect
+from django.urls import reverse
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import User
 from django.utils.html import format_html
@@ -12,7 +15,8 @@ from django.contrib import messages
 from django.utils.crypto import get_random_string
 from django.utils.safestring import mark_safe
 
-from datetime import date
+from datetime import date, timedelta
+from datetime import datetime
 
 from unfold.admin import ModelAdmin, TabularInline
 from unfold.admin import ModelAdmin as UnfoldModelAdmin
@@ -38,6 +42,100 @@ from .models import (
     Plano,
     RegistroOcorrencia,
 )
+
+# ── ACTION: DUPLICAR REGISTRO ───────────────────────────────────────────────
+
+def duplicar_registro(modeladmin, request, queryset):
+    primeiro_pk = None
+    for obj in queryset:
+        nome_modelo = obj.__class__.__name__
+        obj.pk = None
+        if nome_modelo == 'Aluno':
+            obj.nome = f"{obj.nome} (Cópia)"
+            obj.foto = None
+            obj.perfil_usuario = None
+        elif nome_modelo == 'Aula':
+            obj.data_hora = obj.data_hora + timedelta(days=7)
+            obj.concluida = False
+            obj.relatorio_treino = ""
+        elif nome_modelo == 'Baia':
+            obj.numero = "???"
+        elif nome_modelo == 'Piquete':
+            obj.nome = f"{obj.nome} (Cópia)"
+        elif nome_modelo == 'ItemEstoque':
+            obj.nome = f"{obj.nome} (Cópia)"
+        obj.save()
+        if primeiro_pk is None:
+            primeiro_pk = obj.pk
+    total = queryset.count()
+    if primeiro_pk and total == 1:
+        app  = queryset.model._meta.app_label
+        nome = queryset.model._meta.model_name
+        url  = reverse(f"admin:{app}_{nome}_change", args=[primeiro_pk])
+        modeladmin.message_user(request, "✅ Registro duplicado — revise e salve.", messages.SUCCESS)
+        return HttpResponseRedirect(url)
+    modeladmin.message_user(request, f"✅ {total} registro(s) duplicado(s).", messages.SUCCESS)
+
+duplicar_registro.short_description = "📋 Duplicar registros selecionados"
+
+
+# ── ACTION: GERAR AULAS POR PLANO ───────────────────────────────────────────
+
+class GerarAulasForm(forms.Form):
+    """
+    Formulário exibido como tela intermediária no Admin.
+    O gestor escolhe: dias da semana, horário, cavalo, período e instrutor.
+    """
+    DIAS_CHOICES = [
+        (0, 'Segunda'),
+        (1, 'Terça'),
+        (2, 'Quarta'),
+        (3, 'Quinta'),
+        (4, 'Sexta'),
+        (5, 'Sábado'),
+        (6, 'Domingo'),
+    ]
+
+    dias_semana = forms.MultipleChoiceField(
+        choices=DIAS_CHOICES,
+        widget=forms.CheckboxSelectMultiple,
+        label="Dias da semana",
+        help_text="Selecione um ou mais dias"
+    )
+    horario = forms.TimeField(
+        label="Horário",
+        widget=forms.TimeInput(attrs={'type': 'time'}),
+        help_text="Ex: 17:00"
+    )
+    data_inicio = forms.DateField(
+        label="Data de início",
+        widget=forms.DateInput(attrs={'type': 'date'}),
+    )
+    data_fim = forms.DateField(
+        label="Data de fim",
+        widget=forms.DateInput(attrs={'type': 'date'}),
+        help_text="Máximo recomendado: 3 meses"
+    )
+    cavalo = forms.ModelChoiceField(
+        queryset=None,  # preenchido dinamicamente na action
+        label="Cavalo",
+        help_text="Pode ser alterado aula a aula depois"
+    )
+    instrutor = forms.ModelChoiceField(
+        queryset=None,  # preenchido dinamicamente na action
+        label="Instrutor",
+        required=False,
+        help_text="Opcional"
+    )
+    local = forms.ChoiceField(
+        choices=[
+            ('picadeiro_1', 'Picadeiro Principal'),
+            ('picadeiro_2', 'Picadeiro Coberto'),
+            ('pista_salto', 'Pista de Salto'),
+        ],
+        label="Local",
+        initial='picadeiro_1',
+    )
 
 
 # ── BASES MULTI-EMPRESA ─────────────────────────────────────────────────────
@@ -244,7 +342,7 @@ class AlunoAdmin(BaseEmpresaAdmin):
     list_editable = ["ativo"]
     list_filter = ["ativo"]
     search_fields = ["nome", "telefone", "perfil_usuario__user__username"]
-    actions = ["criar_login_aluno"]
+    actions = ["criar_login_aluno", duplicar_registro, "gerar_aulas_plano"]
 
     fields = [
         'empresa',
@@ -316,17 +414,101 @@ class AlunoAdmin(BaseEmpresaAdmin):
             messages.warning(request, "Nenhum login foi criado.")
 
 
+    @admin.action(description="📅 Gerar aulas por plano semanal")
+    def gerar_aulas_plano(self, request, queryset):
+        from django.template.response import TemplateResponse
+        from .models import Cavalo, Perfil
+
+        empresa = getattr(request, 'empresa', None)
+
+        # ── Passo 2: formulário já submetido ────────────────────────
+        if 'aplicar' in request.POST:
+            form = GerarAulasForm(request.POST)
+            form.fields['cavalo'].queryset    = Cavalo.objects.filter(empresa=empresa)
+            form.fields['instrutor'].queryset = Perfil.objects.filter(
+                empresa=empresa, cargo='Professor'
+            )
+
+            if form.is_valid():
+                dias     = [int(d) for d in form.cleaned_data['dias_semana']]
+                horario  = form.cleaned_data['horario']
+                inicio   = form.cleaned_data['data_inicio']
+                fim      = form.cleaned_data['data_fim']
+                cavalo   = form.cleaned_data['cavalo']
+                instrutor= form.cleaned_data['instrutor']
+                local    = form.cleaned_data['local']
+
+                criadas = 0
+                puladas = 0
+                aulas_bulk = []
+
+                for aluno in queryset:
+                    cursor = inicio
+                    while cursor <= fim:
+                        if cursor.weekday() in dias:
+                            dt = datetime.combine(cursor, horario)
+                            # Evita duplicar aula exata (mesmo aluno, mesma data_hora)
+                            existe = Aula.objects.filter(
+                                empresa=empresa,
+                                aluno=aluno,
+                                data_hora=dt
+                            ).exists()
+                            if existe:
+                                puladas += 1
+                            else:
+                                aulas_bulk.append(Aula(
+                                    empresa=empresa,
+                                    aluno=aluno,
+                                    cavalo=cavalo,
+                                    instrutor=instrutor,
+                                    data_hora=dt,
+                                    local=local,
+                                    tipo='NORMAL',
+                                    concluida=False,
+                                ))
+                                criadas += 1
+                        cursor += timedelta(days=1)
+
+                Aula.objects.bulk_create(aulas_bulk)
+
+                msg = f"✅ {criadas} aula(s) criada(s)"
+                if puladas:
+                    msg += f" · {puladas} ignorada(s) por conflito"
+                self.message_user(request, msg, messages.SUCCESS)
+                return HttpResponseRedirect(
+                    reverse('admin:gateagora_aula_changelist')
+                )
+
+        # ── Passo 1: exibe o formulário ──────────────────────────────
+        else:
+            form = GerarAulasForm()
+            form.fields['cavalo'].queryset    = Cavalo.objects.filter(empresa=empresa)
+            form.fields['instrutor'].queryset = Perfil.objects.filter(
+                empresa=empresa, cargo='Professor'
+            )
+
+        return TemplateResponse(request, 'admin/gerar_aulas.html', {
+            'form':     form,
+            'alunos':   queryset,
+            'opts':     self.model._meta,
+            'title':    'Gerar Aulas por Plano Semanal',
+            **self.admin_site.each_context(request),
+        })
+
+
 @admin.register(Baia)
 class BaiaAdmin(BaseEmpresaAdmin):
     list_display = ["numero", "status", "empresa"]
     list_filter = ["status"]
     search_fields = ["numero"]
+    actions = [duplicar_registro]
 
 
 @admin.register(Piquete)
 class PiqueteAdmin(BaseEmpresaAdmin):
     list_display = ["nome", "status", "empresa"]
     list_filter = ["status"]
+    actions = [duplicar_registro]
 
 
 @admin.register(Cavalo)
@@ -390,7 +572,7 @@ class AulaAdmin(BaseEmpresaAdmin):
     list_editable = ["concluida"]
     search_fields = ["aluno__nome", "cavalo__nome"]
     date_hierarchy = "data_hora"
-    actions = ["marcar_como_concluida"]
+    actions = ["marcar_como_concluida", duplicar_registro]
 
     @admin.action(description="Marcar selecionadas como concluídas")
     def marcar_como_concluida(self, request, queryset):
@@ -493,6 +675,7 @@ class ItemFaturaAdmin(ModelAdmin):
 @admin.register(ItemEstoque)
 class ItemEstoqueAdmin(BaseEmpresaAdmin):
     inlines = [LoteEstoqueInline]
+    actions = [duplicar_registro]
 
     list_display = (
         'nome',
