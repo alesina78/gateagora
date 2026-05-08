@@ -85,13 +85,6 @@ class Aluno(models.Model):
     ativo = models.BooleanField(default=True)
     valor_aula = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('150.00'))
     
-    class Meta:
-        ordering = ['nome']
-        indexes = [models.Index(fields=["empresa", "nome"])]
-
-    def __str__(self):
-        return f"{self.nome} ({self.empresa.nome})"
-    
     plano = models.ForeignKey(
         'Plano', 
         on_delete=models.SET_NULL, 
@@ -108,6 +101,27 @@ class Aluno(models.Model):
         verbose_name="Login do Aluno",
         help_text="Perfil de acesso do aluno ao sistema"
     )
+
+    class Meta:
+        ordering = ['nome']
+        indexes = [models.Index(fields=["empresa", "nome"])]
+
+    @property
+    def telefone_limpo(self):
+        """Retorna apenas os números do telefone para o link do WhatsApp"""
+        tel = ""
+        # 1. Tenta pegar o telefone do Perfil (Login)
+        if self.perfil_usuario and self.perfil_usuario.telefone:
+            tel = self.perfil_usuario.telefone
+        # 2. Se não tiver, tenta o telefone direto do cadastro do Aluno
+        elif self.telefone:
+            tel = self.telefone
+        
+        # Remove parênteses, espaços e traços, deixando só números
+        return "".join(filter(str.isdigit, str(tel)))
+
+    def __str__(self):
+        return f"{self.nome} ({self.empresa.nome})"
 
 
 class Baia(models.Model):

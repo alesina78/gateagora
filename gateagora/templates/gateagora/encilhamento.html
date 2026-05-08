@@ -231,42 +231,52 @@
     </div>
   </div>
 
-    {% if aulas %}
+  {% if aulas %}
   <div class="grid grid-cols-1 gap-4">
     {% for aula in aulas %}
-    <div class="aula-card card p-5 flex gap-5 {% if aula.is_confirmada %}aula-confirmada{% else %}aula-nao-confirmada{% endif %}">
-
-      <!-- Faixa de pendência no canto superior direito (só aparece se não confirmado) -->
-      {% if not aula.is_confirmada %}
-        <div class="ribbon-pendente">
-          <i class="fa-solid fa-triangle-exclamation mr-1"></i> Sem confirmação
-        </div>
-      {% endif %}
-
-      <div class="flex flex-col items-center">
-        <span class="{% if aula.is_confirmada %}bg-emerald-600{% else %}bg-indigo-600{% endif %} text-white text-sm font-black px-3 py-1 rounded-lg shadow-lg">
-          {{ aula.data_hora|date:"H:i" }}
-        </span>
-      </div>
-
+    <div class="card p-4 mb-4 shadow-sm border border-slate-200">
       <div class="flex-1">
         <div class="flex justify-between items-start mb-3">
           <div>
-            <h3 class="font-black text-slate-900 text-base uppercase leading-tight">{{ aula.aluno.nome }}</h3>
+            <div class="flex items-center gap-2">
+              <h3 class="font-black text-slate-900 text-base uppercase leading-tight">
+                  {{ aula.aluno.nome }}
+              </h3>
+
+              {% if not aula.is_confirmada %}
+                  <a
+                      href="https://wa.me/55{{ aula.aluno.telefone_limpo }}?text={% filter urlencode %}Olá, {{ aula.aluno.nome }}! 😊
+
+          Passando para lembrar da sua aula no {{ empresa.nome }}.
+
+          📅 Data: {{ aula.data_hora|date:'d/m' }}
+          ⏰ Horário: {{ aula.data_hora|date:'H:i' }}
+          🐴 Cavalo: {{ aula.cavalo.nome }}
+
+          Sua confirmação é muito importante para organizarmos o encilhamento.
+          Pode confirmar pelo link abaixo?
+
+          https://tinyurl.com/Gate4login
+
+          Contamos com você! ✨{% endfilter %}"
+                      target="_blank"
+                      class="text-emerald-600 hover:text-emerald-700 transition-colors"
+                      title="Enviar lembrete pelo WhatsApp"
+                  >
+                      <i class="fa-brands fa-whatsapp text-xl"></i>
+                  </a>
+              {% endif %}
+          </div>
             <p class="text-[10px] text-slate-500 font-bold uppercase">
-                {{ aula.get_tipo_display }} {% if aula.instrutor %}· Prof. {{ aula.instrutor.user.first_name }}{% endif %}
+              {{ aula.get_tipo_display }} {% if aula.instrutor %}· Prof. {{ aula.instrutor.user.first_name }}{% endif %}
             </p>
           </div>
 
           <div class="flex items-center gap-2 flex-wrap justify-end">
             {% if aula.is_confirmada %}
-              <span class="badge-confirmado">
-                <i class="fa-solid fa-circle-check"></i> Confirmada
-              </span>
+              <span class="badge-confirmado"><i class="fa-solid fa-circle-check"></i> Confirmada</span>
             {% else %}
-              <span class="badge-pendente">
-                <i class="fa-solid fa-clock"></i> Aguardando
-              </span>
+              <span class="badge-pendente"><i class="fa-solid fa-clock"></i> Aguardando</span>
             {% endif %}
             <span class="text-[9px] font-black px-3 py-1 rounded-full uppercase bg-slate-700 text-slate-300">
               {{ aula.get_local_display }}
@@ -278,37 +288,35 @@
           <div class="flex items-center gap-3 p-3 bg-slate-800 rounded-xl border border-slate-700">
             <i class="fa-solid fa-horse text-indigo-400"></i>
             <div>
-                <p class="text-[9px] text-slate-400 font-black uppercase leading-none">Cavalo</p>
-                <p class="text-xs font-bold text-slate-100 uppercase">{{ aula.cavalo.nome }}</p>
+              <p class="text-[9px] text-slate-400 font-black uppercase leading-none">Cavalo</p>
+              <p class="text-xs font-bold text-slate-100 uppercase">{{ aula.cavalo.nome }}</p>
             </div>
           </div>
           <div class="flex items-center gap-3 p-3 bg-slate-800 rounded-xl border border-slate-700">
             <i class="fa-solid fa-location-dot text-rose-400"></i>
             <div>
-                <p class="text-[9px] text-slate-400 font-black uppercase leading-none">Localização</p>
-                <p class="text-xs font-bold text-slate-100 uppercase">
-                    {% if aula.cavalo.baia %}Baia {{ aula.cavalo.baia.numero }}
-                    {% elif aula.cavalo.piquete %}Piquete: {{ aula.cavalo.piquete.nome }}
-                    {% else %}N/D{% endif %}
-                </p>
+              <p class="text-[9px] text-slate-400 font-black uppercase leading-none">Localização</p>
+              <p class="text-xs font-bold text-slate-100 uppercase">
+                {% if aula.cavalo.baia %}Baia {{ aula.cavalo.baia.numero }}
+                {% elif aula.cavalo.piquete %}Piquete: {{ aula.cavalo.piquete.nome }}
+                {% else %}N/D{% endif %}
+              </p>
             </div>
           </div>
         </div>
 
         <div class="mt-3 flex items-center gap-2">
-            {% if aula.cavalo.material_proprio %}
-                <span class="text-[9px] font-black uppercase bg-amber-500/20 text-amber-400 border border-amber-400 px-2 py-1 rounded-md">
-                    <i class="fa-solid fa-lock mr-1"></i> Material Próprio
-                </span>
-            {% else %}
-                <span class="text-[9px] font-black uppercase bg-slate-700 text-slate-300 px-2 py-1 rounded-md">
-                    Material Escola
-                </span>
-            {% endif %}
+          {% if aula.cavalo.material_proprio %}
+            <span class="text-[9px] font-black uppercase bg-amber-500/20 text-amber-400 border border-amber-400 px-2 py-1 rounded-md">
+              <i class="fa-solid fa-lock mr-1"></i> Material Próprio
+            </span>
+          {% else %}
+            <span class="text-[9px] font-black uppercase bg-slate-700 text-slate-300 px-2 py-1 rounded-md">
+              Material Escola
+            </span>
+          {% endif %}
         </div>
-      </div>
-    </div>
-    {% endfor %}
+      </div> </div> {% endfor %}
   </div>
   {% else %}
   <div class="card p-16 text-center">

@@ -151,9 +151,7 @@ def _montar_msg_fatura_whatsapp(fatura, empresa):
 
     return "\n".join(linhas)
 
-
 # ── Dashboard ─────────────────────────────────────────────────────────────────
-
 
 @login_required
 def dashboard(request):

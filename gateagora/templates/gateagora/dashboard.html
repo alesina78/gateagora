@@ -211,12 +211,12 @@
         <a href="{% url 'relatorios' %}"
           class="flex items-center gap-2 px-4 py-2 rounded-2xl font-bold text-xs uppercase tracking-wide transition-all hover:scale-105 active:scale-95"
           style="background:var(--card-alt);color:var(--indigo-text);border:1px solid rgba(99,102,241,.3);">
-          <i class="fa-solid fa-chart-bar"></i> Relatórios
+          📈Finanças
         </a>
         <a href="{% url 'encilhamento' %}" 
           class="flex items-center gap-2 px-4 py-2 rounded-2xl font-bold text-xs uppercase tracking-wide transition-all hover:scale-105 active:scale-95 shadow-md"
           style="background: linear-gradient(135deg, #4f46e5, #6366f1); color: #ffffff !important; border: none;">
-          🐎ENCILHAMENTO🏇
+          ENCILHAR
         </a>
       </div>
     </div>
@@ -736,39 +736,36 @@
                   <p class="font-bold" style="color:var(--amber-text)">⚠ Mat. Próprio</p>
                 {% endif %}
               </div>
+
               <div class="flex items-center gap-1.5">
-                {% if not aula.concluida %}
-                  {% if aula.nome_turma %}
-                    {# Turma: botão confirma todos os inscritos de uma vez #}
-                    <form action="{% url 'confirmar_presenca_turma' aula.id %}" method="post">
-                      {% csrf_token %}
-                      <button type="submit" class="btn-fin"
-                              style="background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.25);"
-                              title="Confirmar toda a turma">
-                        <i class="fa-solid fa-users-line text-[9px]"></i>
-                        <i class="fa-solid fa-circle-check text-[9px]"></i>
-                      </button>
-                    </form>
-                  {% elif not aula.is_confirmada %}
-                    {# Individual: confirma só este aluno #}
-                    <form action="{% url 'confirmar_presenca_dashboard' aula.id %}" method="post">
-                      {% csrf_token %}
-                      <button type="submit" class="btn-fin"
-                              style="background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.25);"
-                              title="Confirmar presença">
-                        <i class="fa-solid fa-circle-check"></i>
-                      </button>
-                    </form>
-                  {% endif %}
+                {# BOTÃO WHATSAPP: MENSAGEM LIMPA E PROFISSIONAL #}
+                {% if not aula.concluida and not aula.is_confirmada and not aula.nome_turma %}
+                    <a href="https://wa.me/55{{ aula.aluno.telefone_limpo }}?text=Olá, *{{ aula.aluno.nome }}*! ✍️%0A%0APassando para lembrar da sua aula no *Haras Elite Prateada*.%0A%0A📅 *Data:* {{ aula.data_hora|date:'d/m' }}%0A⏰ *Horário:* {{ aula.data_hora|date:'H:i' }}%0A🐴 *Cavalo:* {{ aula.cavalo.nome }}%0A%0ASua confirmação é muito importante para organizarmos o encilhamento.%0APode confirmar pelo link abaixo?%0A%0Ahttps://gateagora.com.br/minhas-aulas/%0A%0AContamos com você! ✨" 
+                      target="_blank"
+                      class="flex items-center gap-1 bg-green-500/10 text-green-500 border border-green-500/20 px-2 py-1.5 rounded-lg hover:bg-green-500 hover:text-white transition-all text-[9px] font-bold"
+                      title="Enviar lembrete profissional">
+                        <i class="fa-brands fa-whatsapp text-sm"></i>
+                    </a>
                 {% endif %}
+
+                {# BOTÃO CONFIRMAR (SÓ APARECE SE NÃO ESTIVER CONFIRMADA) #}
+                {% if not aula.concluida and not aula.is_confirmada and not aula.nome_turma %}
+                  <form action="{% url 'confirmar_presenca_dashboard' aula.id %}" method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-fin" style="background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.25);">
+                      <i class="fa-solid fa-circle-check"></i>
+                    </button>
+                  </form>
+                {% endif %}
+
+                {# BOTÃO FINALIZAR #}
                 {% if not aula.concluida %}
-                <form action="{% url 'concluir_aula' aula.id %}" method="post"
-                      onsubmit="marcarConcluida({{ aula.id }}, this)">
-                  {% csrf_token %}
-                  <button type="submit" class="btn-fin" id="btn-fin-{{ aula.id }}">
-                    <i class="fa-solid fa-check mr-1"></i>Finalizar
-                  </button>
-                </form>
+                  <form action="{% url 'concluir_aula' aula.id %}" method="post" onsubmit="marcarConcluida({{ aula.id }}, this)">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-fin" id="btn-fin-{{ aula.id }}">
+                      <i class="fa-solid fa-check mr-1"></i>Finalizar
+                    </button>
+                  </form>
                 {% endif %}
               </div>
             </div>
