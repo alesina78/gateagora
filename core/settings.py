@@ -198,17 +198,17 @@ UNFOLD = {
             {
                 "title": "OPERACIONAL",
                 "items": [
-                    {"title": "Dashboard", "icon": "finance_mode", "link": "/"},
+                    {"title": "📶Dashboard📊", "icon": "finance_mode", "link": "/"},
                 ],
             },
             {
                 "title": "MANEJO E CADASTROS",
                 "items": [
-                    {"title": "Cavalos",       "icon": "chess_knight",   "link": "/admin/gateagora/cavalo/"},
-                    {"title": "Alunos/Sócios", "icon": "person",          "link": "/admin/gateagora/aluno/"},
-                    {"title": "Estoque",        "icon": "pallet",    "link": "/admin/gateagora/itemestoque/"},
-                    {"title": "Aulas",          "icon": "calendar_month", "link": "/admin/gateagora/aula/"},
-                    {"title": "Financeiro",     "icon": "payments",       "link": "/admin/gateagora/movimentacaofinanceira/"},
+                    {"title": "🏇🏻Cavalos",       "link": "/admin/gateagora/cavalo/"},
+                    {"title": "👨‍🎓Alunos/Sócios", "link": "/admin/gateagora/aluno/"},
+                    {"title": "📦Estoque",       "link": "/admin/gateagora/itemestoque/"},
+                    {"title": "📚Aulas",         "link": "/admin/gateagora/aula/"},
+                    {"title": "💰Financeiro",    "link": "/admin/gateagora/movimentacaofinanceira/"},
                 ],
             },
         ],
