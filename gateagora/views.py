@@ -209,7 +209,7 @@ def dashboard(request):
                 ).count()
                 v_total = v_hotel + Decimal(str(n_aulas)) * Decimal(str(fatura.aluno.valor_aula or 0))
 
-        tel_c = "".join(filter(str.isdigit, str(fatura.aluno.telefone or "")))
+        tel_c = fatura.aluno.telefone_limpo if hasattr(fatura.aluno, 'telefone_limpo') else ""
         # Usa a função auxiliar para montar a mensagem
         msg_zap = _montar_msg_fatura_whatsapp(fatura, empresa)
         link_zap = f"https://wa.me/55{tel_c}?text={quote(msg_zap)}" if tel_c else "#"
@@ -531,7 +531,7 @@ def dashboard(request):
         # Pega o total calculado da fatura (método .total do model)
         v_fatura = fatura.total 
 
-        tel = "".join(filter(str.isdigit, str(fatura.aluno.telefone or "")))
+        tel_c = fatura.aluno.telefone_limpo if hasattr(fatura.aluno, 'telefone_limpo') else ""
         msg = _montar_msg_fatura_whatsapp(fatura, empresa)
         link_wa = f"https://wa.me/55{tel}?text={quote(msg)}" if tel else "#"
 
@@ -746,7 +746,7 @@ def dashboard(request):
     relatorio_financeiro = []
     for fatura in faturas_abertas:
         total = fatura.total
-        tel = ''.join(filter(str.isdigit, str(fatura.aluno.telefone or '')))
+        tel = getattr(fatura.aluno, 'telefone_limpo', "")
         link_wa = "#"
         if tel:
             if not tel.startswith('55'):
@@ -943,74 +943,62 @@ def dashboard(request):
 # ── Streak / Gamificação ─────────────────────────────────────────────────────
 
 def _atualizar_streak(aluno):
-    """
-    Recalcula streak_atual do aluno com base no histórico de aulas concluídas.
-    Regra: semana com aula concluída = +1; semana sem aula = reset para 0.
-    Atualiza melhor_streak se necessário. Salva o aluno.
-    """
-    from django.utils import timezone as tz
-    hoje     = tz.localdate()
-    # Pega as últimas 52 semanas de aulas concluídas
-    aulas_ok = list(
-        Aula.objects
-        .filter(aluno=aluno, concluida=True, data_hora__date__lte=hoje)
-        .order_by('-data_hora')
-        .values_list('data_hora', flat=True)[:200]
-    )
-
-    if not aulas_ok:
-        aluno.streak_atual = 0
-        aluno.save(update_fields=['streak_atual', 'melhor_streak'])
+    """Atualiza streak do aluno de forma segura (campos podem ter sido removidos)"""
+    if not aluno:
         return
 
-    # Converte para números de semana ISO (ano * 100 + semana)
-    semanas_com_aula = set()
-    for dt in aulas_ok:
-        iso = dt.isocalendar()
-        semanas_com_aula.add(iso[0] * 100 + iso[1])
-
-    # Conta semanas consecutivas a partir da semana atual / última semana
-    semana_ref = hoje.isocalendar()
-    semana_key = semana_ref[0] * 100 + semana_ref[1]
-
-    # Aceita também semana passada como "ainda ativa"
-    from datetime import date, timedelta
-    semana_passada = (hoje - timedelta(days=7)).isocalendar()
-    semana_pass_key = semana_passada[0] * 100 + semana_passada[1]
-
-    if semana_key not in semanas_com_aula and semana_pass_key not in semanas_com_aula:
-        aluno.streak_atual = 0
-        aluno.save(update_fields=['streak_atual', 'melhor_streak'])
+    # Verifica se os campos ainda existem no model Aluno
+    if not hasattr(aluno, 'streak_atual') or not hasattr(aluno, 'melhor_streak'):
+        print(f"[STREAK] Campos streak_atual/melhor_streak não existem no Aluno {aluno.id}")
         return
 
-    # Conta para trás semana a semana
-    streak = 0
-    check = hoje
-    for _ in range(52):
-        iso   = check.isocalendar()
-        key   = iso[0] * 100 + iso[1]
-        if key in semanas_com_aula:
-            streak += 1
-            check  -= timedelta(days=7)
-        else:
-            break
+    try:
+        from django.utils import timezone as tz
+        from datetime import timedelta
 
-    aluno.streak_atual = streak
-    if streak > aluno.melhor_streak:
-        aluno.melhor_streak = streak
-    aluno.save(update_fields=['streak_atual', 'melhor_streak'])
+        hoje = tz.localdate()
 
+        # Pega as últimas 200 aulas concluídas
+        aulas_ok = list(
+            Aula.objects
+            .filter(aluno=aluno, concluida=True, data_hora__date__lte=hoje)
+            .order_by('-data_hora')
+            .values_list('data_hora', flat=True)[:200]
+        )
 
-def _selo_streak(semanas):
-    """Retorna (nome_selo, icone, cor) baseado no streak atual."""
-    if semanas >= 20:
-        return ('Cavaleiro de Ouro',   'fa-crown',          '#f59e0b')
-    if semanas >= 10:
-        return ('Cavaleiro de Prata',  'fa-shield-halved',  '#94a3b8')
-    if semanas >= 5:
-        return ('Cavaleiro de Bronze', 'fa-medal',          '#b45309')
-    return None
+        if not aulas_ok:
+            aluno.streak_atual = 0
+            aluno.save(update_fields=['streak_atual', 'melhor_streak'])
+            return
 
+        # Converte para semanas ISO
+        semanas_com_aula = set()
+        for dt in aulas_ok:
+            iso = dt.isocalendar()
+            semanas_com_aula.add(iso[0] * 100 + iso[1])
+
+        # Conta streak consecutivo para trás
+        streak = 0
+        check = hoje
+        for _ in range(52):   # máximo 52 semanas
+            iso = check.isocalendar()
+            key = iso[0] * 100 + iso[1]
+            
+            if key in semanas_com_aula:
+                streak += 1
+                check -= timedelta(days=7)
+            else:
+                break
+
+        aluno.streak_atual = streak
+
+        if streak > aluno.melhor_streak:
+            aluno.melhor_streak = streak
+
+        aluno.save(update_fields=['streak_atual', 'melhor_streak'])
+
+    except Exception as e:
+        print(f"[STREAK] Erro ao atualizar streak do aluno {aluno.id}: {e}")
 
 # ── Confirmar Presença pelo Dashboard (Gestor) ───────────────────────────────
 
@@ -1487,7 +1475,7 @@ def encilhamento(request):
     contatos_clientes = []
     alunos = Aluno.objects.filter(empresa=empresa).order_by('nome')
     for a in alunos:
-        fone_cru = a.telefone or ''
+        fone_cru = getattr(a, 'telefone', '') or ''
         telefone = ''.join(filter(str.isdigit, str(fone_cru)))
         if telefone:
             contatos_clientes.append({
@@ -2216,6 +2204,17 @@ def salvar_fechamento(request):
     return redirect("dashboard")
 
 
+def _selo_streak(semanas):
+    """Retorna (nome_selo, icone, cor) baseado no streak atual, ou None."""
+    if semanas >= 20:
+        return ('Cavaleiro de Ouro',   'fa-crown',          '#f59e0b')
+    if semanas >= 10:
+        return ('Cavaleiro de Prata',  'fa-shield-halved',  '#94a3b8')
+    if semanas >= 5:
+        return ('Cavaleiro de Bronze', 'fa-medal',          '#b45309')
+    return None
+
+
 # ── Minhas Aulas (Aluno) ──────────────────────────────────────────────────────
 
 @login_required
@@ -2937,4 +2936,3 @@ def relatorio_estoque_pdf(request):
 
     c.save()
     return response
-

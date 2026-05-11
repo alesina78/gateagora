@@ -350,23 +350,32 @@ class PerfilAdmin(ModelAdmin):
 
 
 @admin.register(Aluno)
-class AlunoAdmin(BaseEmpresaAdmin):
-    list_display = ["nome", "telefone", "ativo", "valor_aula_formatado", "usuario_login"]
-    list_editable = ["ativo"]
-    list_filter = ["ativo"]
-    search_fields = ["nome", "telefone", "perfil_usuario__user__username"]
-    actions = ["criar_login_aluno", duplicar_registro, "gerar_aulas_plano"]
+class AlunoAdmin(UnfoldModelAdmin):
+    # 1. Listagem (O que aparece na tabela)
+    list_display = ("nome", "empresa", "ativo", "get_whatsapp", "streak_atual", "melhor_streak")
+    search_fields = ("nome",)
+    list_filter = ("empresa", "ativo")
+    list_editable = ("ativo",)
+    actions = ["criar_login_aluno"] # Não esqueça de registrar a action aqui!
 
+    # 2. Formulário de Edição (O que aparece quando você clica no Aluno)
+    # AJUSTE: Removi 'telefone' que causa erro e adicionei os campos de streak
     fields = [
         'empresa',
         'perfil_usuario',
         'nome',
-        'telefone',
         'foto',
         'ativo',
         'valor_aula',
         'plano',
+        'streak_atual',
+        'melhor_streak',
     ]
+
+    # Método para mostrar o telefone na listagem sem travar o sistema
+    def get_whatsapp(self, obj):
+        return obj.telefone_limpo if hasattr(obj, 'telefone_limpo') else "-"
+    get_whatsapp.short_description = "WhatsApp"
 
     @admin.display(description="Usuário")
     def usuario_login(self, obj):

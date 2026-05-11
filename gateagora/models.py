@@ -23,6 +23,8 @@ class Empresa(models.Model):
 
     class Meta:
         indexes = [models.Index(fields=["slug"])]
+        verbose_name = "Empresa 🏢"
+        verbose_name_plural = "Empresas 🏢"
 
     def __str__(self):
         return self.nome
@@ -54,6 +56,10 @@ class Perfil(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.empresa.nome}"
+    
+    class Meta:
+        verbose_name = "Perfil 👤"
+        verbose_name_plural = "Perfils 👤"
 
 
 @receiver(post_save, sender=User)
@@ -75,14 +81,11 @@ def criar_perfil_usuario(sender, instance, created, **kwargs):
 class Aluno(models.Model):
     empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE)
     nome = models.CharField(max_length=200)
-    telefone = models.CharField(
-        max_length=20,
-        help_text="Formato sugerido: 5511999999999",
-        default="",
-        validators=[RegexValidator(r'^\+?\d{10,15}$', 'Telefone deve estar no formato internacional, ex: 5511999999999')]
-    )
-    foto = models.ImageField(upload_to='alunos/', null=True, blank=True)
     ativo = models.BooleanField(default=True)
+    
+    streak_atual = models.PositiveIntegerField(default=0)
+    melhor_streak = models.PositiveIntegerField(default=0)
+
     valor_aula = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('150.00'))
     
     plano = models.ForeignKey(
@@ -105,23 +108,23 @@ class Aluno(models.Model):
     class Meta:
         ordering = ['nome']
         indexes = [models.Index(fields=["empresa", "nome"])]
+        verbose_name = "Aluno 🧑‍🎓"
+        verbose_name_plural = "Alunos 🧑‍🎓"
 
     @property
     def telefone_limpo(self):
         """Retorna apenas os números do telefone para o link do WhatsApp"""
         tel = ""
-        # 1. Tenta pegar o telefone do Perfil (Login)
+        
+        # 1. Prioridade: Telefone do Perfil (Login do Aluno)
         if self.perfil_usuario and self.perfil_usuario.telefone:
             tel = self.perfil_usuario.telefone
-        # 2. Se não tiver, tenta o telefone direto do cadastro do Aluno
-        elif self.telefone:
+        # 2. Fallback: se ainda existir o campo direto no Aluno (alguns cadastros antigos)
+        elif hasattr(self, 'telefone') and self.telefone:
             tel = self.telefone
         
-        # Remove parênteses, espaços e traços, deixando só números
-        return "".join(filter(str.isdigit, str(tel)))
-
-    def __str__(self):
-        return f"{self.nome} ({self.empresa.nome})"
+        # Remove tudo que não for número
+        return "".join(filter(str.isdigit, str(tel or "")))
 
 
 class Baia(models.Model):
@@ -138,6 +141,8 @@ class Baia(models.Model):
             models.UniqueConstraint(fields=['empresa', 'numero'], name='uq_baia_empresa_numero')
         ]
         indexes = [models.Index(fields=["empresa", "status"])]
+        verbose_name = "Baia 🛖"
+        verbose_name_plural = "Baias 🛖"
 
     def __str__(self):
         return f"Baia {self.numero} - {self.empresa.nome}"
@@ -158,7 +163,8 @@ class Piquete(models.Model):
             models.UniqueConstraint(fields=['empresa', 'nome'], name='uq_piquete_empresa_nome')
         ]
         indexes = [models.Index(fields=["empresa", "status"])]
-
+        verbose_name = "Piquete 🌳"
+        verbose_name_plural = "Piquetes 🌳"
     def __str__(self):
         return f"{self.nome} ({self.empresa.nome})"
 
@@ -257,6 +263,8 @@ class Cavalo(models.Model):
             models.Index(fields=["empresa", "status_saude"]),
             models.Index(fields=["empresa", "categoria"]),
         ]
+        verbose_name = "Cavalo 🐴"
+        verbose_name_plural = "Cavalos 🐴"
 
     def __str__(self):
         return f"{self.nome} ({self.empresa.nome})"
@@ -279,6 +287,8 @@ class DocumentoCavalo(models.Model):
 
     class Meta:
         indexes = [models.Index(fields=["data_validade", "tipo"])]
+        verbose_name = "Documento de Cavalo 📄"
+        verbose_name_plural = "Documentos de Cavalos 📄"
 
     def __str__(self):
         return f"{self.tipo} - {self.cavalo.nome}"
@@ -295,6 +305,8 @@ class RegistroOcorrencia(models.Model):
     class Meta:
         ordering = ["-data"]
         indexes = [models.Index(fields=["cavalo", "data"])]
+        verbose_name = "Registro de Ocorrência 👨‍⚕️"
+        verbose_name_plural = "Registro ocorrencias 👨‍⚕️"
 
     def __str__(self):
         return f"{self.titulo} - {self.cavalo.nome}"
@@ -331,6 +343,8 @@ class Aula(models.Model):
     class Meta:
         ordering = ["data_hora"]
         indexes = [models.Index(fields=["empresa", "data_hora"])]
+        verbose_name = "Aula 📅"
+        verbose_name_plural = "Aulas 📅"
 
     def clean(self):
         """
@@ -409,6 +423,8 @@ class ItemEstoque(models.Model):
             models.Index(fields=["empresa", "nome"]),
             models.Index(fields=["empresa", "quantidade_atual"]),
         ]
+        verbose_name = "Item de Estoque 📦"
+        verbose_name_plural = "Item estoques 📦"
 
     def __str__(self):
         return f"{self.nome} - {self.empresa.nome}"
@@ -551,6 +567,9 @@ class MovimentacaoFinanceira(models.Model):
 
     class Meta:
         indexes = [models.Index(fields=["empresa", "data", "tipo"])]
+        verbose_name = "Movimentação Financeira 💵"
+        verbose_name_plural = "Movimentação financeiras 💵"
+        
 
     def __str__(self):
         return f"{self.tipo}: {self.descricao} ({self.empresa.nome})"
@@ -564,6 +583,10 @@ class Plano(models.Model):
 
     def __str__(self):
         return f"{self.nome} - R$ {self.valor_mensal}"
+    
+    class Meta:
+        verbose_name = "Plano 📑"
+        verbose_name_plural = "Planos 📑"
 
 class Fatura(models.Model):
     """Controle de Contas a Receber"""
@@ -585,6 +608,11 @@ class Fatura(models.Model):
     valor = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='PENDENTE')
     data_pagamento = models.DateField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-data_vencimento']
+        verbose_name = "Fatura 💳"
+        verbose_name_plural = "Faturas 💳"
 
     @property
     def total(self):
@@ -667,6 +695,10 @@ class EventoAgendaCavalo(models.Model):
 
     def __str__(self):
         return f"{self.tipo} - {self.cavalo.nome}"
+    
+    class Meta:
+        verbose_name = "Evento na Agenda 📒"
+        verbose_name_plural = "Eventos agenda cavalos 📒"
 
 # --- 5. SINCRONIZAÇÃO DE BAIA (status) ---
 
@@ -723,8 +755,10 @@ class ConfigPrecoManejo(models.Model):
     valor_casqueamento   = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
 
     class Meta:
-        verbose_name        = "Configuração de Preços de Manejo"
-        verbose_name_plural = "Configurações de Preços de Manejo"
+        verbose_name        = "Configuração de Preços de Manejo 👨‍🌾 💲"
+        verbose_name_plural = "Configurações de Preços de Manejo 👨‍🌾 💲"
+        #verbose_name        = "Configuração de Preço 💰"
+        #verbose_name_plural = "Configurações de Preços de Manejo 💰"
 
     def __str__(self):
         return f"Preços de Manejo — {self.empresa.nome}"
@@ -743,10 +777,12 @@ class LoteEstoque(models.Model):
     data_entrada  = models.DateField(auto_now_add=True)
     numero_lote   = models.CharField(max_length=50, blank=True)
     ativo         = models.BooleanField(default=True)
+    streak_atual  = models.PositiveIntegerField(default=0, verbose_name="Sequência Atual")
+    melhor_streak = models.PositiveIntegerField(default=0, verbose_name="Melhor Sequência")
 
     class Meta:
-        verbose_name        = "Lote de Estoque"
-        verbose_name_plural = "Lotes de Estoque"
+        verbose_name        = "Lote de Estoque 🏷️"
+        verbose_name_plural = "Lotes de Estoque 🏷️"
         ordering            = ["data_validade", "data_entrada"]
         indexes             = [models.Index(fields=["item", "data_validade", "ativo"])]
 
