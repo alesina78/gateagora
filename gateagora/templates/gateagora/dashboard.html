@@ -134,28 +134,42 @@
         <p class="text-[9px] font-semibold uppercase tracking-widest" style="color:var(--text-muted)">{{ empresa.nome }}</p>
       </div>
     </a>
-
-    <div class="flex items-center gap-3">
-      <a href="{% url 'manejo_em_massa' %}" class="hidden sm:flex items-center gap-1.5 text-[10px] font-bold uppercase px-3 py-1.5 rounded-lg"
-         style="background:var(--card-alt);color:var(--text-muted);border:1px solid var(--border);">
-        <i class="fa-solid fa-syringe text-[10px]"></i> Manejo
-      </a>
-      <a href="{% url 'config_prazos_manejo' %}" class="hidden sm:flex items-center gap-1.5 text-[10px] font-bold uppercase px-3 py-1.5 rounded-lg"
-         style="background:var(--card-alt);color:var(--text-muted);border:1px solid var(--border);">
-        <i class="fa-solid fa-sliders text-[10px]"></i> Prazos
-      </a>
-      <a href="/admin/" class="hidden sm:flex items-center gap-1.5 text-[10px] font-bold uppercase px-3 py-1.5 rounded-lg"
-         style="background:var(--card-alt);color:var(--text-muted);border:1px solid var(--border);">
-        <i class="fa-solid fa-gears text-[10px]"></i> Admin
+    
+    <div class="flex items-center gap-1.5 md:gap-3 overflow-x-auto pb-1 custom-scrollbar">
+      
+      <!-- Manejo -->
+      <a href="{% url 'manejo_em_massa' %}" 
+        class="flex items-center gap-1.5 text-[9px] md:text-[10px] font-bold uppercase px-3 py-2 rounded-lg whitespace-nowrap flex-shrink-0"
+        style="background:var(--card-alt);color:var(--text-muted);border:1px solid var(--border);">
+        <i class="fa-solid fa-syringe text-[10px]"></i>
+        Manejo
       </a>
 
+      <!-- Prazos -->
+      <a href="{% url 'config_prazos_manejo' %}" 
+        class="flex items-center gap-1.5 text-[9px] md:text-[10px] font-bold uppercase px-3 py-2 rounded-lg whitespace-nowrap flex-shrink-0"
+        style="background:var(--card-alt);color:var(--text-muted);border:1px solid var(--border);">
+        <i class="fa-solid fa-sliders text-[10px]"></i>
+        Prazos
+      </a>
+
+      <!-- Admin -->
+      <a href="/admin/" 
+        class="flex items-center gap-1.5 text-[9px] md:text-[10px] font-bold uppercase px-3 py-2 rounded-lg whitespace-nowrap flex-shrink-0"
+        style="background:var(--card-alt);color:var(--text-muted);border:1px solid var(--border);">
+        <i class="fa-solid fa-gears text-[10px]"></i>
+        Admin
+      </a>
+
+      <!-- Botão Tema -->
       <button onclick="toggleHorseTheme()"
-        style="background:var(--card-alt);border:1px solid var(--border);color:var(--text-main);
-               padding:0.35rem 0.75rem;border-radius:0.5rem;display:flex;align-items:center;
-               gap:0.35rem;font-size:0.65rem;font-weight:700;text-transform:uppercase;cursor:pointer;">
+        class="flex items-center gap-1.5 text-[9px] md:text-[10px] font-bold uppercase px-3 py-2 rounded-lg whitespace-nowrap flex-shrink-0"
+        style="background:var(--card-alt);border:1px solid var(--border);color:var(--text-main);">
         <span id="theme-icon">🌙</span>
         <span id="theme-name">Noturno</span>
       </button>
+
+    </div>
 
       <div class="flex items-center gap-2 pl-3" style="border-left:1px solid var(--border)">
         <div class="hidden md:block text-right leading-tight">
