@@ -48,14 +48,13 @@
     <div class="max-w-md w-full">
 
         <div class="text-center mb-10">
-            <div class="inline-block mb-4">
-                {% if LOGO_URL %}
-                    <img src="{{ LOGO_URL }}" alt="Gate 4 Logo" class="h-32 w-auto mx-auto opacity-90 hover:opacity-100 transition">
-                {% else %}
-                    <div class="bg-emerald-600/20 p-5 rounded-3xl border border-emerald-500/30">
-                        <i class="fa-solid fa-chess-knight text-emerald-500 text-4xl"></i>
-                    </div>
-                {% endif %}
+            <!-- Logo principal - usando a versão maior -->
+            <div class="inline-block mb-6">
+                <img 
+                    src="{% static 'images/apple-icon-180x180.png' %}" 
+                    alt="Gate 4" 
+                    class="h-36 w-auto mx-auto drop-shadow-2xl hover:scale-105 transition-transform duration-300"
+                >
             </div>
 
             <h1 class="text-3xl font-black tracking-tight" style="color:var(--text-strong);">
@@ -63,7 +62,7 @@
             </h1>
 
             <p class="text-neutral-500 text-[10px] font-bold uppercase tracking-[0.3em] mt-2">
-                Business Intelligence v3.0
+                SISTEMA DE GESTÃO DE HARAS E HÍPICAS
             </p>
         </div>
 

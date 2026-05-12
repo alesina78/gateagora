@@ -316,12 +316,16 @@
 <nav class="glass sticky top-0 z-50 px-6 py-3">
   <div class="container mx-auto flex justify-between items-center">
     <a href="{% url 'dashboard' %}" class="flex items-center gap-3 group">
-      <div class="bg-indigo-600 p-2 rounded-xl shadow-lg group-hover:bg-indigo-700 transition">
-        <i class="fa-solid fa-chess-knight text-xl" style="color:var(--text-strong)"></i>
+      <div class="w-11 h-11 bg-emerald-700 rounded-2xl flex items-center justify-center overflow-hidden shadow-inner border border-emerald-600/50 group-hover:scale-105 transition-all duration-200">
+        <img 
+            src="{% static 'images/apple-icon-180x180.png' %}" 
+            alt="Gate 4" 
+            class="w-9 h-9 object-contain drop-shadow-md"
+        >
       </div>
-      <div>
-        <h1 class="text-xl font-extrabold tracking-tight" style="color:var(--text-strong)">{{ brand_name|default:"Gate 4" }}</h1>
-        <p class="text-[10px] font-bold uppercase tracking-widest" style="color:var(--text-muted)">{{ empresa.nome }}</p>
+      <div class="leading-tight">
+        <p class="text-sm font-bold tracking-tight" style="color:var(--text-strong)">{{ brand_name|default:"Gate 4" }}</p>
+        <p class="text-[9px] font-semibold uppercase tracking-widest" style="color:var(--text-muted)">{{ empresa.nome }}</p>
       </div>
     </a>
     <div class="flex items-center gap-6">

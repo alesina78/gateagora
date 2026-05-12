@@ -29,94 +29,169 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,600;0,700;1,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 
   <style>
-    :root { --font-main:'DM Sans',sans-serif; --font-mono:'DM Mono',monospace; }
-    body  { font-family:var(--font-main); background-color:var(--bg-main); color:var(--text-main); }
+    /* ── Design Tokens ── */
+    :root {
+      --font-main:  'DM Sans', sans-serif;
+      --font-mono:  'DM Mono', monospace;
+      --radius-card: 1.25rem;
+      --radius-sm:   0.75rem;
+      --shadow-xs:   0 1px 3px 0 rgb(0 0 0 / 0.04), 0 1px 2px -1px rgb(0 0 0 / 0.04);
+      --shadow-sm:   0 4px 8px -2px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+      --shadow-md:   0 12px 20px -6px rgb(0 0 0 / 0.10), 0 4px 8px -4px rgb(0 0 0 / 0.06);
+      --ease-out:    cubic-bezier(0.4, 0, 0.2, 1);
+    }
 
-    .card, .card-static {
+    body { font-family:var(--font-main); background-color:var(--bg-main); color:var(--text-main); }
+
+    /* ── Cards base ── */
+    .card {
       background-color: var(--card-bg);
       border: 1px solid var(--border);
-      border-radius: 1.25rem;
+      border-radius: var(--radius-card);
+      box-shadow: var(--shadow-xs);
+      transition: transform 0.25s var(--ease-out), box-shadow 0.25s var(--ease-out), border-color 0.2s;
     }
-    .glass {
+    .card:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-md);
+    }
+    .card-static {
       background-color: var(--card-bg);
-      border-bottom: 1px solid var(--border);
-      backdrop-filter: blur(12px);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-card);
+      box-shadow: var(--shadow-xs);
     }
 
-    /* Scrollbar fina */
+    /* ── Navbar glass ── */
+    .glass {
+      background: rgba(255,255,255,0.80);
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+    }
+    [data-theme="tordilho"] .glass { background: rgba(10,17,34,0.88); }
+
+    /* ── Scrollbar fina ── */
     .custom-scrollbar::-webkit-scrollbar { width: 3px; }
     .custom-scrollbar::-webkit-scrollbar-thumb { background:var(--border); border-radius:10px; }
 
-    /* Animações */
-    .pulse-red { animation: pulse-red 3s infinite; }
-    @keyframes pulse-red {
-      0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); }
-      50%      { box-shadow: 0 0 0 6px rgba(239,68,68,0.2); }
-    }
-    .pulse-amber { animation: pulse-amber 3s infinite; }
-    @keyframes pulse-amber {
-      0%,100% { box-shadow: 0 0 0 0 rgba(245,158,11,0); }
-      50%      { box-shadow: 0 0 0 5px rgba(245,158,11,0.18); }
-    }
-    .pulse-emerald { animation: pulse-emerald 3s infinite; }
-    @keyframes pulse-emerald {
-      0%,100% { box-shadow: 0 0 0 0 rgba(16,185,129,0); }
-      50%      { box-shadow: 0 0 0 6px rgba(16,185,129,0.2); }
-    }
+    /* ── Pulsos suaves ── */
+    .pulse-red    { animation: pulse-red    3s infinite; }
+    .pulse-amber  { animation: pulse-amber  3s infinite; }
+    .pulse-emerald{ animation: pulse-emerald 3s infinite; }
+    @keyframes pulse-red    { 0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,0)} 50%{box-shadow:0 0 0 6px rgba(239,68,68,0.18)} }
+    @keyframes pulse-amber  { 0%,100%{box-shadow:0 0 0 0 rgba(245,158,11,0)} 50%{box-shadow:0 0 0 5px rgba(245,158,11,0.15)} }
+    @keyframes pulse-emerald{ 0%,100%{box-shadow:0 0 0 0 rgba(16,185,129,0)} 50%{box-shadow:0 0 0 6px rgba(16,185,129,0.18)} }
 
-    /* Alertas expansíveis */
-    .alerta-painel { max-height:0; overflow:hidden; transition:max-height 0.4s ease; }
+    /* ── Alertas expansíveis ── */
+    .alerta-painel { max-height:0; overflow:hidden; transition:max-height 0.4s var(--ease-out); }
     .alerta-painel.aberto { max-height:600px; overflow-y:auto; }
 
-    /* Badges veterinários */
-    .badge-proc { font-family:var(--font-mono); font-size:0.6rem; font-weight:600;
+    /* ── Badges veterinários ── */
+    .badge-proc { font-family:var(--font-mono); font-size:0.58rem; font-weight:600;
                   padding:0.15rem 0.45rem; border-radius:0.3rem; display:inline-block; }
-    .badge-vac  { background:rgba(99,102,241,0.18);  color:#818cf8; }
-    .badge-verm { background:rgba(245,158,11,0.18);  color:#f59e0b; }
-    .badge-ferr { background:rgba(239,68,68,0.18);   color:#f87171; }
-    .badge-casc { background:rgba(16,185,129,0.18);  color:#34d399; }
-    .badge-stat { background:rgba(249,115,22,0.18);  color:#fb923c; }
+    .badge-vac  { background:rgba(99,102,241,0.15);  color:#818cf8; }
+    .badge-verm { background:rgba(245,158,11,0.15);  color:#f59e0b; }
+    .badge-ferr { background:rgba(239,68,68,0.15);   color:#f87171; }
+    .badge-casc { background:rgba(16,185,129,0.15);  color:#34d399; }
+    .badge-stat { background:rgba(249,115,22,0.15);  color:#fb923c; }
 
-    /* KPIs — apenas 3 cards agora */
-    .kpi-card { background:var(--card-bg); border:1px solid var(--border);
-                border-radius:1.25rem; padding:1.25rem 1.5rem; }
+    /* ── KPI cards ── */
+    .kpi-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-card);
+      padding: 1.25rem 1.5rem;
+      box-shadow: var(--shadow-xs);
+      transition: transform 0.25s var(--ease-out), box-shadow 0.25s var(--ease-out);
+    }
+    .kpi-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm); }
 
-    /* Cards de aula */
-    .aula-card { background:var(--card-alt); border:1px solid var(--border);
-                 border-radius:1rem; padding:1rem; }
+    /* ── Cards de aula ── */
+    .aula-card {
+      background: var(--card-alt);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 1rem;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .aula-card:hover {
+      border-color: rgba(99,102,241,0.4);
+      box-shadow: 0 4px 12px -4px rgba(99,102,241,0.12);
+    }
 
-    /* Botão finalizar */
-    .btn-fin { font-size:0.65rem; font-weight:700; text-transform:uppercase;
-               padding:0.35rem 0.75rem; border-radius:0.6rem;
-               background:var(--emerald-soft); color:var(--emerald-text);
-               border:1px solid rgba(16,185,129,0.2); }
-    .btn-fin:hover { background:#059669; color:#fff; }
+    /* ── Botão finalizar ── */
+    .btn-fin {
+      font-size: 0.65rem; font-weight: 700; text-transform: uppercase;
+      padding: 0.35rem 0.75rem; border-radius: 0.6rem;
+      background: var(--emerald-soft); color: var(--emerald-text);
+      border: 1px solid rgba(16,185,129,0.2);
+      transition: all 0.2s var(--ease-out);
+    }
+    .btn-fin:hover { background:#059669; color:#fff; transform:scale(1.03); }
 
-    /* Tabelas */
+    /* ── Tabelas ── */
     .tbl-row:hover { background:var(--card-alt); }
-    .sec-title { font-size:0.7rem; font-weight:700; text-transform:uppercase;
-                 letter-spacing:0.12em; color:var(--text-muted); }
+    .sec-title {
+      font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.1em; color: var(--text-muted);
+    }
 
-    /* Barras de estoque */
-    .stock-bar-wrap { height:5px; background:var(--border); border-radius:99px; overflow:hidden; margin-top:4px; }
-    .stock-bar { height:100%; border-radius:99px; transition:width .4s ease; }
+    /* ── Barras de estoque ── */
+    .stock-bar-wrap { height:4px; background:var(--border); border-radius:99px; overflow:hidden; margin-top:5px; }
+    .stock-bar { height:100%; border-radius:99px; transition:width .5s var(--ease-out); }
 
-    /* Cavalo em alerta */
-    .alerta-cavalo-row { padding:0.6rem 0.75rem; border-radius:0.75rem;
-                         background:var(--card-alt); border:1px solid var(--border); }
-    /* Legenda */
-    .legenda-badge { display:inline-flex; align-items:center; gap:4px;
-                     font-size:0.65rem; color:var(--text-muted); }
+    /* ── Cavalo em alerta ── */
+    .alerta-cavalo-row {
+      padding: 0.65rem 0.75rem; border-radius: 0.75rem;
+      background: var(--card-alt); border: 1px solid var(--border);
+      transition: border-color 0.2s;
+    }
+    .alerta-cavalo-row:hover { border-color: rgba(239,68,68,0.3); }
 
-    /* Atalhos — estilo compacto horizontal */
-    .atalho { display:flex; justify-content:space-between; align-items:center;
-               padding:0.6rem 0.9rem; border-radius:0.75rem;
-               font-size:0.6rem; font-weight:700; text-transform:uppercase;
-               transition:filter .15s; white-space:nowrap; }
-    .atalho:hover { filter:brightness(1.15); }
+    /* ── Legenda ── */
+    .legenda-badge { display:inline-flex; align-items:center; gap:4px; font-size:0.65rem; color:var(--text-muted); }
 
-    /* Estoque item */
-    .estq-row { border-radius:0.65rem; padding:0.5rem 0.75rem; }
+    /* ── Atalhos rápidos ── */
+    .atalho {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 0.55rem 0.85rem; border-radius: 0.65rem;
+      font-size: 0.6rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.04em;
+      transition: transform 0.2s var(--ease-out), box-shadow 0.2s, filter 0.15s;
+      white-space: nowrap;
+    }
+    .atalho:hover { transform: translateY(-1px) scale(1.01); filter:brightness(1.12); box-shadow: var(--shadow-sm); }
+
+    /* ── Estoque item ── */
+    .estq-row { border-radius: 0.65rem; padding: 0.5rem 0.75rem; }
+
+    /* ── KPI fade-up (sem JS) ── */
+    .kpi-card p.text-2xl,
+    .kpi-card .text-2xl {
+      animation: kpiFadeUp 0.45s var(--ease-out) both;
+    }
+    @keyframes kpiFadeUp {
+      from { opacity:0; transform:translateY(6px); }
+      to   { opacity:1; transform:none; }
+    }
+
+    /* ── Legibilidade geral ── */
+    .text-xs, .text-sm, .sec-title { line-height: 1.5; }
+
+    /* ── Botões de nav ── */
+    nav a[style*="card-alt"], nav button[style*="card-alt"] {
+      transition: background-color 0.2s, color 0.2s, border-color 0.2s, transform 0.2s;
+    }
+    nav a[style*="card-alt"]:hover { transform: translateY(-1px); }
+
+    /* ── Campos de formulário ── */
+    select, input { transition: border-color 0.2s, box-shadow 0.2s; }
+    select:focus, input:focus {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(99,102,241,0.18);
+      border-color: #6366f1 !important;
+    }
   </style>
 </head>
 <body>
@@ -125,9 +200,13 @@
 <nav class="glass sticky top-0 z-50 px-5 py-3">
   <div class="max-w-screen-xl mx-auto flex justify-between items-center">
 
-    <a href="{% url 'dashboard' %}" class="flex items-center gap-2.5 group">
-      <div class="bg-indigo-600 w-9 h-9 rounded-xl flex items-center justify-center shadow-lg group-hover:bg-indigo-500 transition">
-        <i class="fa-solid fa-chess-knight text-white text-base"></i>
+    <a href="{% url 'dashboard' %}" class="flex items-center gap-3 group">
+      <div class="w-11 h-11 bg-emerald-700 rounded-2xl flex items-center justify-center overflow-hidden shadow-inner border border-emerald-600/50 group-hover:scale-105 transition-all duration-200">
+        <img 
+            src="{% static 'images/apple-icon-180x180.png' %}" 
+            alt="Gate 4" 
+            class="w-9 h-9 object-contain drop-shadow-md"
+        >
       </div>
       <div class="leading-tight">
         <p class="text-sm font-bold tracking-tight" style="color:var(--text-strong)">{{ brand_name|default:"Gate 4" }}</p>
@@ -218,19 +297,26 @@
           {{ hoje|date:"l, d \d\e F \d\e Y" }}
         </p>
         <h2 class="text-xl font-bold mt-0.5" style="color:var(--text-strong)">
-          Bom dia, {{ user.get_full_name|default:user.username }}
+          Bom dia, {{ user.get_full_name|default:user.username }} 
         </h2>
       </div>
       <div class="flex items-center gap-2">
         <a href="{% url 'relatorios' %}"
-          class="flex items-center gap-2 px-4 py-2 rounded-2xl font-bold text-xs uppercase tracking-wide transition-all hover:scale-105 active:scale-95"
-          style="background:var(--card-alt);color:var(--indigo-text);border:1px solid rgba(99,102,241,.3);">
-          📈Finanças
+          class="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-xs uppercase tracking-wide"
+          style="background:var(--card-alt);color:var(--indigo-text);border:1px solid rgba(99,102,241,.25);
+                 transition:all 0.2s var(--ease-out);"
+          onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 6px 14px -4px rgba(99,102,241,0.25)'"
+          onmouseout="this.style.transform='';this.style.boxShadow=''">
+          📈 Finanças
         </a>
-        <a href="{% url 'encilhamento' %}" 
-          class="flex items-center gap-2 px-4 py-2 rounded-2xl font-bold text-xs uppercase tracking-wide transition-all hover:scale-105 active:scale-95 shadow-md"
-          style="background: linear-gradient(135deg, #4f46e5, #6366f1); color: #ffffff !important; border: none;">
-          ENCILHAR
+        <a href="{% url 'encilhamento' %}"
+          class="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-xs uppercase tracking-wide"
+          style="background:linear-gradient(135deg,#4f46e5,#6366f1);color:#fff;
+                 box-shadow:0 4px 14px -4px rgba(99,102,241,0.5);
+                 transition:all 0.2s var(--ease-out);"
+          onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 10px 20px -6px rgba(99,102,241,0.55)'"
+          onmouseout="this.style.transform='';this.style.boxShadow='0 4px 14px -4px rgba(99,102,241,0.5)'">
+          Encilhar
         </a>
       </div>
     </div>
@@ -1295,8 +1381,8 @@
 
 <!-- ══════════════════════════════════════════════════════ FOOTER -->
 <footer class="mt-10 py-6 text-center" style="border-top:1px solid var(--border)">
-  <p class="text-[9px] font-bold uppercase tracking-widest" style="color:var(--text-muted)">
-    Gate 4 — Gestão de Haras e Hípicas · {{ hoje.year }}
+  <p class="text-[9px] font-bold uppercase tracking-[0.25em]" style="color:var(--text-muted)">
+    Gate 4 · Gestão de Haras e Hípicas · {{ hoje.year }}
   </p>
 </footer>
 

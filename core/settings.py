@@ -176,7 +176,9 @@ MEDIA_ROOT = BASE_DIR / 'media'
 UNFOLD = {
     "SITE_TITLE":  "Gate 4",
     "SITE_HEADER": "Gate 4",
-    "SITE_SYMBOL": "🐎",
+    "SITE_SYMBOL": "psychiatry",
+    "SITE_FAVICON":     lambda r: "/static/images/favicon-32x32.png",
+    "SITE_LOGO":        lambda r: "/static/images/favicon-32x32.png",
     "COLORS": {
         "primary": {
             "50":  "236, 253, 245",
@@ -193,22 +195,64 @@ UNFOLD = {
         },
     },
     "SIDEBAR": {
-        "show_search": True,
+        "show_search":        True,
+        "show_all_applications": False,
         "navigation": [
             {
-                "title": "OPERACIONAL",
+                "title": "Operacional",
+                "separator": False,
                 "items": [
-                    {"title": "📶Dashboard📊", "icon": "finance_mode", "link": "/"},
+                    {
+                        "title": "Dashboard 📶",
+                        "icon":  "finance_mode",
+                        "link":  "/",
+                    },
                 ],
             },
             {
-                "title": "MANEJO E CADASTROS",
+                "title": "Treinos",
+                "separator": True,
                 "items": [
-                    {"title": "🏇🏻Cavalos",       "link": "/admin/gateagora/cavalo/"},
-                    {"title": "👨‍🎓Alunos/Sócios", "link": "/admin/gateagora/aluno/"},
-                    {"title": "📦Estoque",       "link": "/admin/gateagora/itemestoque/"},
-                    {"title": "📚Aulas",         "link": "/admin/gateagora/aula/"},
-                    {"title": "💰Financeiro",    "link": "/admin/gateagora/movimentacaofinanceira/"},
+                    {"title": "Alunos / Sócios","icon": "school",           "link": "/admin/gateagora/aluno/"},
+                    {"title": "Aulas",          "icon": "calendar_month",   "link": "/admin/gateagora/aula/"},
+                ],
+            },
+            {
+                "title": "Manejo & Cadastros",
+                "separator": True,
+                "items": [
+                    {"title": "Cavalos",        "icon": "♞",               "link": "/admin/gateagora/cavalo/"},
+                    {"title": "Baias",          "icon": "home_work",        "link": "/admin/gateagora/baia/"},
+                    {"title": "Piquetes",       "icon": "grass",            "link": "/admin/gateagora/piquete/"},
+                    {"title": "Estoque",        "icon": "inventory_2",      "link": "/admin/gateagora/itemestoque/"},
+                ],
+            },
+            {
+                "title": "Financeiro",
+                "separator": True,
+                "items": [
+                    {"title": "Movimentações",  "icon": "payments",         "link": "/admin/gateagora/movimentacaofinanceira/"},
+                    {"title": "Faturas",        "icon": "receipt_long",     "link": "/admin/gateagora/fatura/"},
+                    {"title": "Planos",         "icon": "card_membership",  "link": "/admin/gateagora/plano/"},
+                ],
+            },
+            {
+                "title": "Saúde & Documentos",
+                "separator": True,
+                "items": [
+                    {"title": "Ocorrências",    "icon": "emergency",        "link": "/admin/gateagora/registroocorrencia/"},
+                    {"title": "Documentos",     "icon": "folder_open",      "link": "/admin/gateagora/documentocavalo/"},
+                ],
+            },
+            {
+                "title": "Sistema",
+                "separator": True,
+                "collapsible": True,
+                "items": [
+                    {"title": "Usuários",       "icon": "manage_accounts",  "link": "/admin/auth/user/"},
+                    {"title": "Grupos",         "icon": "group",            "link": "/admin/auth/group/"},
+                    {"title": "Empresas",       "icon": "business",         "link": "/admin/gateagora/empresa/"},
+                    {"title": "Perfis",         "icon": "badge",            "link": "/admin/gateagora/perfil/"},
                 ],
             },
         ],
