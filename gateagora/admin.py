@@ -357,7 +357,7 @@ class AlunoAdmin(UnfoldModelAdmin):
     search_fields = ("nome",)
     list_filter = ("empresa", "ativo")
     list_editable = ("ativo",)
-    actions = ["criar_login_aluno"] # Não esqueça de registrar a action aqui!
+    actions = ["criar_login_aluno", "gerar_aulas_plano"]
 
     # 2. Formulário de Edição (O que aparece quando você clica no Aluno)
     # AJUSTE: Removi 'telefone' que causa erro e adicionei os campos de streak

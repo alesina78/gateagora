@@ -2,33 +2,43 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- Favicon padrão -->
-  <link rel="icon" type="image/png" sizes="32x32" href="{% static 'images/favicon-32x32.png' %}">
-  <link rel="icon" type="image/png" sizes="16x16" href="{% static 'images/favicon-16x16.png' %}">
-  <link rel="shortcut icon" href="{% static 'images/favicon-32x32.png' %}">
+    <title>{{ brand_name|default:"Gate 4" }} - {{ empresa.nome|default:"Enterprise" }}</title>
 
-  <!-- Ícones para mobile -->
-  <link rel="apple-touch-icon" sizes="180x180" href="{% static 'images/apple-icon-180x180.png' %}">
-  <link rel="icon" type="image/png" sizes="192x192" href="{% static 'images/android-icon-192x192.png' %}">
+    <!-- ===== FAVICONS (mesmo do base.html) ===== -->
+    <link rel="icon" type="image/png" sizes="32x32"   href="{% static 'img/favicon-32x32.png' %}">
+    <link rel="icon" type="image/png" sizes="16x16"   href="{% static 'img/favicon-16x16.png' %}">
+    <link rel="shortcut icon" type="image/x-icon"     href="{% static 'img/favicon.ico' %}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{% static 'img/favicon-180x180.png' %}">
+    <link rel="icon" type="image/png" sizes="192x192" href="{% static 'img/favicon-192x192.png' %}">
 
-  <meta name="theme-color" content="#ffffff">
+    <meta name="theme-color" content="#10b981">
 
-  <title>{{ brand_name|default:"Gate 4" }} - {{ empresa.nome|default:"Enterprise" }}</title>
+    <!-- Scripts e estilos -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-  <!-- Scripts e estilos -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+    <link rel="stylesheet" href="{% static 'css/themes.css' %}">
 
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
-  <link rel="stylesheet" href="{% static 'css/themes.css' %}">
+    <!-- Fontes -->
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,600;0,700;1,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 
-  <!-- Fontes -->
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,600;0,700;1,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <!-- ===== APLICAÇÃO DO TEMA ===== -->
+    <script>
+        (function() {
+            const savedTheme = localStorage.getItem("gate-theme") || "zaino";
+            if (savedTheme === "tordilho") {
+                document.documentElement.setAttribute("data-theme", "tordilho");
+            } else {
+                document.documentElement.removeAttribute("data-theme");
+            }
+        })();
+    </script>
 
-  <style>
+    <style>
     /* ── Design Tokens ── */
     :root {
       --font-main:  'DM Sans', sans-serif;
