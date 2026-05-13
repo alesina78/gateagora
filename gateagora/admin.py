@@ -525,6 +525,23 @@ class AlunoAdmin(UnfoldModelAdmin):
             'title':    'Gerar Aulas por Plano Semanal',
             **self.admin_site.each_context(request),
         })
+    
+    def save_model(self, request, obj, form, change):
+        foto = request.FILES.get('foto')
+        if foto and foto.size > 5 * 1024 * 1024:
+            from django.contrib import messages
+            self.message_user(
+                request,
+                "❌ A foto não foi salva: tamanho máximo permitido é 5MB.",
+                messages.ERROR
+            )
+            if change:
+                obj.foto = Aluno.objects.get(pk=obj.pk).foto
+            else:
+                obj.foto = None
+            obj.save()
+            return
+        super().save_model(request, obj, form, change)
 
 
 @admin.register(Baia)
@@ -550,7 +567,7 @@ class CavaloAdmin(BaseEmpresaAdmin):
     inlines = [DocumentoInline, OcorrenciaInline]
 
     fieldsets = (
-        ("Informações Básicas", {"fields": ("nome", "proprietario", "categoria", "raca", "peso", "fator_atividade")}),
+        ("Informações Básicas", {"fields": ("nome", "foto", "proprietario", "categoria", "raca", "peso", "fator_atividade")}),
         ("Localização", {"fields": ("onde_dorme", "baia", "piquete")}),
         ("Equipamentos", {"fields": ("tipo_sela", "tipo_cabecada", "material_proprio")}),
         ("Saúde", {"fields": ("status_saude", "usa_ferradura", "ultima_vacina", "ultimo_vermifugo", "ultimo_ferrageamento", "ultimo_casqueamento")}),
@@ -578,6 +595,22 @@ class CavaloAdmin(BaseEmpresaAdmin):
             '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-{}-100 text-{}-800">{}',
             color, color, status_display
         )
+    
+    def save_model(self, request, obj, form, change):
+        foto = request.FILES.get('foto')
+        if foto and foto.size > 5 * 1024 * 1024:
+            self.message_user(
+                request,
+                "❌ A foto não foi salva: tamanho máximo permitido é 5MB.",
+                messages.ERROR
+            )
+            if change:
+                obj.foto = Cavalo.objects.get(pk=obj.pk).foto
+            else:
+                obj.foto = None
+            obj.save()
+            return
+        super().save_model(request, obj, form, change)
 
 
 @admin.register(DocumentoCavalo)

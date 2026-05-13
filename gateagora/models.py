@@ -96,10 +96,12 @@ class Aluno(models.Model):
         verbose_name="Plano Contratado"
     )
     foto = models.ImageField(
-        upload_to='alunos/', 
-        null=True, 
-        blank=True, 
-        verbose_name="Foto do Aluno")
+        upload_to='alunos/',
+        null=True,
+        blank=True,
+        verbose_name="Foto do Aluno",
+        help_text="⚠️ Tamanho máximo: 5MB. Formatos aceitos: JPG, PNG."
+    )
 
     perfil_usuario = models.OneToOneField(
         'Perfil',
@@ -110,6 +112,9 @@ class Aluno(models.Model):
         verbose_name="Login do Aluno",
         help_text="Perfil de acesso do aluno ao sistema"
     )
+
+    def __str__(self):
+        return self.nome
 
     class Meta:
         ordering = ['nome']
@@ -214,7 +219,13 @@ class Cavalo(models.Model):
     categoria = models.CharField(max_length=20, choices=CATEGORIA_CHOICES, default='PROPRIO')
     status_saude = models.CharField(max_length=20, choices=STATUS_SAUDE_CHOICES, default='Saudável')
     onde_dorme = models.CharField(max_length=10, choices=LOCAL_DORMIDA, default='BAIA')
-    foto = models.ImageField(upload_to='cavalos/', null=True, blank=True)
+    foto = models.ImageField(
+        upload_to='cavalos/',
+        null=True,
+        blank=True,
+        verbose_name="Foto do Cavalo",
+        help_text="⚠️ Tamanho máximo: 5MB. Formatos aceitos: JPG, PNG."
+    )
 
     # IA e Raça
     raca = models.CharField(max_length=25, choices=RACA_CHOICES, default='srd')
