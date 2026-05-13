@@ -559,6 +559,10 @@ class PiqueteAdmin(BaseEmpresaAdmin):
     list_filter = ["status"]
     actions = [duplicar_registro]
 
+@admin.register(RacaCavalo)
+class RacaCavaloAdmin(ModelAdmin):
+    list_display = ["nome"]
+    search_fields = ["nome"]
 
 @admin.register(Cavalo)
 class CavaloAdmin(BaseEmpresaAdmin):
