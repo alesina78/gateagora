@@ -40,8 +40,7 @@
           background-color: var(--card-bg); 
           border: 1px solid var(--border); 
           border-radius: 1.5rem; 
-          transition: 0.2s ease;
-          box-shadow: 0 8px 24px -6px rgb(0 0 0 / 0.12), 0 2px 6px -2px rgb(0 0 0 / 0.06);
+          transition: 0.2s ease; 
       }
 
       .card:hover { 
@@ -152,7 +151,6 @@
           border: 1px solid var(--border);
           border-radius: 3rem;
           padding: 2rem;
-          box-shadow: 0 8px 24px -6px rgb(0 0 0 / 0.12), 0 2px 6px -2px rgb(0 0 0 / 0.06);
       }
       .btn-atalho {
           display: flex;
@@ -164,13 +162,12 @@
           font-size: 0.6875rem;
           font-weight: 900;
           text-transform: uppercase;
-          transition: all 0.22s cubic-bezier(0.4,0,0.2,1);
+          transition: all 0.2s ease;
           margin-bottom: 0.75rem;
-          box-shadow: 0 2px 6px -2px rgb(0 0 0 / 0.08);
       }
       .btn-atalho:last-child { margin-bottom: 0; }
       .btn-atalho i { transition: transform 0.2s; font-size: 1.125rem; }
-      .btn-atalho:hover { transform: translateY(-2px); box-shadow: 0 8px 16px -4px rgb(0 0 0 / 0.18); }
+      .btn-atalho:hover i { transform: scale(1.25); }
 
       .btn-atalho-emerald {
           background-color: var(--emerald-soft);

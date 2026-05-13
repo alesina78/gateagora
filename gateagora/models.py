@@ -95,6 +95,12 @@ class Aluno(models.Model):
         blank=True, 
         verbose_name="Plano Contratado"
     )
+    foto = models.ImageField(
+        upload_to='alunos/', 
+        null=True, 
+        blank=True, 
+        verbose_name="Foto do Aluno")
+
     perfil_usuario = models.OneToOneField(
         'Perfil',
         on_delete=models.SET_NULL,
