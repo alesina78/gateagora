@@ -340,14 +340,43 @@
         <i class="fa-solid fa-gears mr-1"></i> Admin
       </a>
 
-      <button onclick="toggleHorseTheme()" 
-              id="btn-tema"
-              style="background:var(--card-alt); border:1px solid var(--border); color:var(--text-main);
-                    padding:0.4rem 0.85rem; border-radius:0.75rem; display:flex; align-items:center; gap:0.4rem;
-                    font-size:0.7rem; font-weight:700; text-transform:uppercase; cursor:pointer; transition:all 0.2s;">
-          <span id="theme-icon">🌙</span>
-          <span id="theme-name">Zaino</span>
-      </button>
+            <!-- Script de Controle do Tema - Melhorado -->
+      <script>
+          function toggleHorseTheme() {
+              const html = document.documentElement;
+              const isDark = html.getAttribute("data-theme") === "tordilho";
+              
+              if (isDark) {
+                  html.removeAttribute("data-theme");
+                  localStorage.setItem("gate-theme", "zaino");
+              } else {
+                  html.setAttribute("data-theme", "tordilho");
+                  localStorage.setItem("gate-theme", "tordilho");
+              }
+              
+              updateThemeButton();
+              
+              // Atualiza gráficos se existirem
+              setTimeout(() => {
+                  if (typeof buildCharts === "function") buildCharts();
+              }, 100);
+          }
+
+          function updateThemeButton() {
+              const icon = document.getElementById("theme-icon");
+              const name = document.getElementById("theme-name");
+              if (!icon || !name) return;
+              
+              const isDark = document.documentElement.getAttribute("data-theme") === "tordilho";
+              
+              icon.textContent = isDark ? "☀️" : "🌙";
+              name.textContent = isDark ? "Tordilho" : "Zaino";
+          }
+
+          // Inicializa ao carregar
+          document.addEventListener("DOMContentLoaded", updateThemeButton);
+      </script>
+
       <!-- Script de Controle do Tema -->
       <script>
           function toggleHorseTheme() {
