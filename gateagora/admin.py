@@ -26,6 +26,7 @@ from .models import (
     Aluno,
     Aula,
     Baia,
+    RacaCavalo,
     Cavalo,
     ConfigPrazoManejo,
     ConfigPrecoManejo,

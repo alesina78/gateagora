@@ -179,6 +179,16 @@ class Piquete(models.Model):
     def __str__(self):
         return f"{self.nome} ({self.empresa.nome})"
 
+class RacaCavalo(models.Model):
+    nome = models.CharField(max_length=100, unique=True)
+
+    class Meta:
+        ordering = ['nome']
+        verbose_name = "Raça de Cavalo 🐴"
+        verbose_name_plural = "Raças de Cavalos 🐴"
+
+    def __str__(self):
+        return self.nome
 
 class Cavalo(models.Model):
     CATEGORIA_CHOICES = [
@@ -227,8 +237,14 @@ class Cavalo(models.Model):
         help_text="⚠️ Tamanho máximo: 5MB. Formatos aceitos: JPG, PNG."
     )
 
-    # IA e Raça
-    raca = models.CharField(max_length=25, choices=RACA_CHOICES, default='srd')
+    raca = models.ForeignKey(
+        'RacaCavalo',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name="Raça"
+    )
+    
     peso = models.FloatField(
         default=450.0,
         validators=[MinValueValidator(100)],
