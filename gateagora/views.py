@@ -74,6 +74,19 @@ def get_pdf_colors(request):
         "primary": (0.2, 0.2, 0.2) # cinza escuro
     }
 
+def set_theme(request):
+    """Alterna o tema e redireciona de volta para a página anterior."""
+    tema_atual = request.COOKIES.get("gate-theme", "zaino")
+    novo_tema  = "tordilho" if tema_atual != "tordilho" else "zaino"
+    next_url   = request.META.get("HTTP_REFERER", "/")
+    response   = redirect(next_url)
+    response.set_cookie("gate-theme", novo_tema, max_age=60*60*24*365, samesite="Lax")
+    return response
+
+def theme_context_processor(request):
+    """Disponibiliza current_theme em todos os templates automaticamente."""
+    return {"current_theme": request.COOKIES.get("gate-theme", "zaino")}
+
 # ── Utilitários ───────────────────────────────────────────────────────────────
 
 def formata_real(valor):

@@ -58,6 +58,7 @@ MIDDLEWARE = [
     'whitenoise.middleware.WhiteNoiseMiddleware',
 
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'gateagora.unfold_theme_middleware.UnfoldThemeMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
 
@@ -91,6 +92,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'gateagora.views.theme_context_processor', 
             ],
         },
     },
@@ -179,6 +181,7 @@ UNFOLD = {
     "SITE_SYMBOL": "psychiatry",
     "SITE_FAVICON":     lambda r: "/static/images/favicon-32x32.png",
     "SITE_LOGO":        lambda r: "/static/images/favicon-32x32.png",
+    "THEME": "light",
     "COLORS": {
         "primary": {
             "50":  "236, 253, 245",
@@ -225,6 +228,7 @@ UNFOLD = {
                     {"title": "Baias",          "icon": "home_work",        "link": "/admin/gateagora/baia/"},
                     {"title": "Piquetes",       "icon": "grass",            "link": "/admin/gateagora/piquete/"},
                     {"title": "Estoque",        "icon": "inventory_2",      "link": "/admin/gateagora/itemestoque/"},
+                    {"title": "Fornecedor",     "icon": "local_shipping",   "link": "/admin/gateagora/fornecedor/"},
                 ],
             },
             {

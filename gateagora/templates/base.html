@@ -1,9 +1,12 @@
 {% load static %}
 
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-br" {% if current_theme == "tordilho" %}data-theme="tordilho"{% endif %}>
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <title>{{ brand_name|default:"Gate 4" }} - {{ empresa.nome|default:"Enterprise" }}</title>
@@ -304,20 +307,9 @@
       }
   </style>
 
-  <!-- Aplicação inicial do tema (antes do body) -->
-    <script>
-        (function() {
-            const savedTheme = localStorage.getItem("gate-theme") || "zaino";
-            if (savedTheme === "tordilho") {
-                document.documentElement.setAttribute("data-theme", "tordilho");
-            } else {
-                document.documentElement.removeAttribute("data-theme");
-            }
-        })();
-    </script>
 </head>
-{# CORRIGIDO: </head> duplicada removida (havia dois </head> no original) #}
-<body>
+
+<body>  
 
 <!-- NAVBAR -->
 <nav class="glass sticky top-0 z-50 px-6 py-3">
@@ -340,76 +332,22 @@
         <i class="fa-solid fa-gears mr-1"></i> Admin
       </a>
 
-            <!-- Script de Controle do Tema - Melhorado -->
+      <!-- BOTÃO TEMA -->
+      <form action="{% url 'set_theme' %}" method="post" style="display:inline;">
+        {% csrf_token %}
+        <button type="submit"
+                id="btn-tema"
+                class="flex flex-col items-center justify-center w-14 h-14 rounded-2xl transition-all hover:scale-105 active:scale-95"
+                style="background:var(--card-alt); border:1px solid var(--border); color:var(--text-main);">
+            <span class="text-2xl mb-0.5">{% if current_theme == "tordilho" %}☀️{% else %}🌙{% endif %}</span>
+            <span class="text-[10px] font-bold">{% if current_theme == "tordilho" %}TORDILHO{% else %}ZAINO{% endif %}</span>
+        </button>
+      </form>
+
       <script>
-          function toggleHorseTheme() {
-              const html = document.documentElement;
-              const isDark = html.getAttribute("data-theme") === "tordilho";
-              
-              if (isDark) {
-                  html.removeAttribute("data-theme");
-                  localStorage.setItem("gate-theme", "zaino");
-              } else {
-                  html.setAttribute("data-theme", "tordilho");
-                  localStorage.setItem("gate-theme", "tordilho");
-              }
-              
-              updateThemeButton();
-              
-              // Atualiza gráficos se existirem
-              setTimeout(() => {
-                  if (typeof buildCharts === "function") buildCharts();
-              }, 100);
+          if (typeof buildCharts === "function") {
+              document.addEventListener("DOMContentLoaded", function() { buildCharts(); });
           }
-
-          function updateThemeButton() {
-              const icon = document.getElementById("theme-icon");
-              const name = document.getElementById("theme-name");
-              if (!icon || !name) return;
-              
-              const isDark = document.documentElement.getAttribute("data-theme") === "tordilho";
-              
-              icon.textContent = isDark ? "☀️" : "🌙";
-              name.textContent = isDark ? "Tordilho" : "Zaino";
-          }
-
-          // Inicializa ao carregar
-          document.addEventListener("DOMContentLoaded", updateThemeButton);
-      </script>
-
-      <!-- Script de Controle do Tema -->
-      <script>
-          function toggleHorseTheme() {
-              const html = document.documentElement;
-              const isDark = html.getAttribute("data-theme") === "tordilho";
-              
-              if (isDark) {
-                  html.removeAttribute("data-theme");
-                  localStorage.setItem("gate-theme", "zaino");
-              } else {
-                  html.setAttribute("data-theme", "tordilho");
-                  localStorage.setItem("gate-theme", "tordilho");
-              }
-              
-              updateThemeButton();
-              
-              // Atualiza gráficos se existirem
-              setTimeout(() => {
-                  if (typeof buildCharts === "function") buildCharts();
-              }, 80);
-          }
-
-          function updateThemeButton() {
-              const icon = document.getElementById("theme-icon");
-              const name = document.getElementById("theme-name");
-              const isDark = document.documentElement.getAttribute("data-theme") === "tordilho";
-
-              if (icon) icon.textContent = isDark ? "☀️" : "🌙";
-              if (name) name.textContent = isDark ? "Tordilho" : "Zaino";
-          }
-
-          // Inicializa o botão ao carregar
-          document.addEventListener("DOMContentLoaded", updateThemeButton);
       </script>
 
       <div class="w-[1px] h-8 hidden md:block" style="background-color:var(--border)"></div>

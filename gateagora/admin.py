@@ -42,6 +42,7 @@ from .models import (
     Piquete,
     Plano,
     RegistroOcorrencia,
+    Fornecedor,
 )
 
 # ── ACTION: DUPLICAR REGISTRO ───────────────────────────────────────────────
@@ -352,19 +353,19 @@ class PerfilAdmin(ModelAdmin):
 
 @admin.register(Aluno)
 class AlunoAdmin(UnfoldModelAdmin):
-    # 1. Listagem (O que aparece na tabela)
     list_display = ("nome", "empresa", "ativo", "get_whatsapp", "streak_atual", "melhor_streak")
     search_fields = ("nome",)
     list_filter = ("empresa", "ativo")
     list_editable = ("ativo",)
     actions = ["criar_login_aluno", "gerar_aulas_plano"]
 
-    # 2. Formulário de Edição (O que aparece quando você clica no Aluno)
-    # AJUSTE: Removi 'telefone' que causa erro e adicionei os campos de streak
+    # 'telefone' não existe no model Aluno — fica em perfil_usuario.telefone
+    # Expomos via readonly para mostrar no formulário sem causar FieldError
     fields = [
         'empresa',
         'perfil_usuario',
         'nome',
+        'telefone',    # readonly calculado abaixo
         'foto',
         'ativo',
         'valor_aula',
@@ -372,12 +373,24 @@ class AlunoAdmin(UnfoldModelAdmin):
         'streak_atual',
         'melhor_streak',
     ]
+    readonly_fields = ('telefone_perfil',)
 
-    # Método para mostrar o telefone na listagem sem travar o sistema
+    @admin.display(description="Telefone (editar no Perfil vinculado)")
+    def telefone_perfil(self, obj):
+        if not obj.perfil_usuario:
+            return "Sem perfil vinculado — use a action 'Criar Login'"
+        tel = obj.perfil_usuario.telefone or "—"
+        url = reverse("admin:gateagora_perfil_change", args=[obj.perfil_usuario.pk])
+        return format_html(
+            '{} &nbsp;<a href="{}" target="_blank">✏️ Editar Perfil</a>',
+            tel, url,
+        )
+
+    @admin.display(description="WhatsApp")
     def get_whatsapp(self, obj):
-        return obj.telefone_limpo if hasattr(obj, 'telefone_limpo') else "-"
-    get_whatsapp.short_description = "WhatsApp"
+        return obj.telefone_limpo or '-'
 
+    
     @admin.display(description="Usuário")
     def usuario_login(self, obj):
         if obj.perfil_usuario and obj.perfil_usuario.user:
@@ -923,5 +936,30 @@ class CustomUserAdmin(BaseUserAdmin, UnfoldModelAdmin):
         }),
     )
 
+@admin.register(Fornecedor)
+class FornecedorAdmin(BaseEmpresaAdmin):
+    list_display = ("nome", "empresa", "telefone", "email", "ativo", "get_whatsapp_link")
+    list_filter = ("ativo", "empresa")
+    search_fields = ("nome", "telefone", "email")
+    list_editable = ("ativo",)
+
+    fields = (
+        'empresa',
+        'nome',
+        'telefone',
+        'email',
+        'observacoes',
+        'ativo',
+    )
+
+    @admin.display(description="WhatsApp")
+    def get_whatsapp_link(self, obj):
+        numero = obj.telefone_limpo
+        if not numero:
+            return "-"
+        return format_html(
+            '<a href="https://wa.me/55{}" target="_blank">📲 Abrir</a>',
+            numero,
+        )
 
 admin.site.register(User, CustomUserAdmin)

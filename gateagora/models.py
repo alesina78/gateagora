@@ -82,6 +82,12 @@ class Aluno(models.Model):
     empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE)
     nome = models.CharField(max_length=200)
     ativo = models.BooleanField(default=True)
+    telefone = models.CharField(        # ← ADICIONAR AQUI
+        max_length=20,
+        blank=True,
+        null=True,
+        help_text="WhatsApp com DDD"
+    )
     
     streak_atual = models.PositiveIntegerField(default=0)
     melhor_streak = models.PositiveIntegerField(default=0)
@@ -861,3 +867,24 @@ class MovimentacaoEstoque(models.Model):
 
     def __str__(self):
         return f"{self.get_tipo_display()} — {self.item.nome} ({self.quantidade} {self.item.unidade}) em {self.data}"
+
+class Fornecedor(models.Model):
+    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name='fornecedores')
+    nome = models.CharField(max_length=150)
+    telefone = models.CharField(max_length=20, blank=True, help_text="WhatsApp com DDD")
+    email = models.EmailField(blank=True, null=True)
+    observacoes = models.TextField(blank=True)
+    ativo = models.BooleanField(default=True)
+    criado_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['nome']
+        verbose_name = "Fornecedor 🚚"
+        verbose_name_plural = "Fornecedores 🚚"
+
+    def __str__(self):
+        return self.nome
+
+    @property
+    def telefone_limpo(self):
+        return "".join(filter(str.isdigit, self.telefone or ""))
