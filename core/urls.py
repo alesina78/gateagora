@@ -4,7 +4,13 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from django.views.static import serve
+from django.http import HttpResponseRedirect
 import os
+
+def toggle_admin_theme(request):
+    current = request.session.get("admin_theme", "light")
+    request.session["admin_theme"] = "dark" if current == "light" else "light"
+    return HttpResponseRedirect(request.META.get("HTTP_REFERER", "/admin/"))
 
 urlpatterns = [
     # 1. Favicon direto na raiz
@@ -14,6 +20,7 @@ urlpatterns = [
     }),
     
     # 2. Painel Administrativo (Unfold)
+    path('admin/toggle-theme/', toggle_admin_theme, name='toggle_admin_theme'),
     path('admin/', admin.site.urls),
 
     # 3. Encaminha todas as outras rotas para a pasta gateagora

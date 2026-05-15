@@ -328,9 +328,15 @@
       </div>
     </a>
     <div class="flex items-center gap-6">
-      <a href="/admin/" class="text-sm font-bold uppercase transition" style="color:var(--text-muted)">
-        <i class="fa-solid fa-gears mr-1"></i> Admin
-      </a>
+      <form action="{% url 'set_theme' %}" method="post" style="display:inline;">
+        {% csrf_token %}
+        <button type="submit"
+          class="flex items-center gap-1.5 text-[9px] md:text-[10px] font-bold uppercase px-3 py-2 rounded-lg whitespace-nowrap"
+          style="background:var(--card-alt);border:1px solid var(--border);color:var(--text-main);">
+          <span>{% if current_theme == "tordilho" %}☀️{% else %}🌙{% endif %}</span>
+          <span>{% if current_theme == "tordilho" %}TORDILHO{% else %}ZAINO{% endif %}</span>
+        </button>
+      </form>
 
       <!-- BOTÃO TEMA -->
       <form action="{% url 'set_theme' %}" method="post" style="display:inline;">

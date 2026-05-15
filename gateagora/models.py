@@ -438,13 +438,60 @@ class ItemEstoque(models.Model):
     empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE)
     nome = models.CharField(max_length=100)
 
+    fornecedor_padrao = models.ForeignKey(
+        'Fornecedor', 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        verbose_name="Fornecedor Padrão"
+    )
+
     alerta_minimo = models.IntegerField(default=5)
     unidade = models.CharField(
         max_length=20,
         default="Unidade",
         help_text="Ex: KG, Sacos, Fardos"
     )
-    fornecedor_contato = models.CharField(max_length=20, blank=True)
+    fornecedor_contato = models.CharField(max_length=20, blank=True, verbose_name="Telefone do Fornecedor")
+
+    @property
+    def whatsapp_fornecedor(self):
+        if not self.fornecedor_padrao or not self.fornecedor_padrao.telefone:
+            return None
+        tel = "".join(filter(str.isdigit, str(self.fornecedor_padrao.telefone)))
+        if not tel.startswith("55"):
+            tel = f"55{tel}"
+
+        from urllib.parse import quote
+
+        aviso_vencido = (
+            f"⚠️ *Atenção: lote atual VENCIDO* — {self.quantidade_vencida} {self.unidade} para descarte.\n"
+            if self.quantidade_vencida > 0 else ""
+        )
+
+        msg = (
+            f"📦 *Pedido de Reposição — {self.empresa.nome}* 🐎\n\n"
+            f"Olá! Gostaríamos de solicitar a reposição do seguinte item:\n\n"
+            f"*Produto:* {self.nome}\n"
+            f"*Estoque disponível (válido):* {self.estoque_disponivel} {self.unidade}\n"
+            f"*Estoque mínimo:* {self.alerta_minimo} {self.unidade}\n"
+            f"{aviso_vencido}"
+        )
+        if self.dias_para_vencer is not None and self.status_validade != 'vencido':
+            msg += f"*Validade mais próxima:* {self.dias_para_vencer} dias\n"
+        msg += (
+            f"*Quantidade a pedir:* {self.lote_economico or '???'} {self.unidade}\n\n"
+            f"Por favor, confirme disponibilidade e prazo de entrega.\n"
+            f"⚠️ Antes de qualquer alteração, envie os documentos para conferência.\n\n"
+            f"📲 _Enviado via *Gate 4 — Gestão de Haras e Hípicas*_ 🐎"
+        )
+        return f"https://wa.me/{tel}?text={quote(msg)}"
+
+    lote_economico = models.IntegerField(
+        default=0,
+        blank=True,
+        help_text="Quantidade padrão a pedir ao fornecedor"
+    )
 
     consumo_diario = models.DecimalField(
         max_digits=6,

@@ -181,7 +181,15 @@ UNFOLD = {
     "SITE_SYMBOL": "psychiatry",
     "SITE_FAVICON":     lambda r: "/static/images/favicon-32x32.png",
     "SITE_LOGO":        lambda r: "/static/images/favicon-32x32.png",
-    "THEME": "light",
+    "THEME": lambda request: request.session.get("admin_theme", "light"),
+    "THEME_SWITCHER": True,
+    "SITE_DROPDOWN": [
+        {
+            "icon": "dark_mode",
+            "title": "Alternar Tema (Light/Dark)",
+            "link": "/admin/toggle-theme/",
+        },
+    ],
     "COLORS": {
         "primary": {
             "50":  "236, 253, 245",

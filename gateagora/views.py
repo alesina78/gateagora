@@ -307,38 +307,6 @@ def dashboard(request):
     # Badge de críticos: vencidos + abaixo do mínimo
     estoque_baixo_count = sum(1 for item in estoque_todos if item.prioridade == 0)
 
-    # Gera link WhatsApp para fornecedor
-    for _item in estoque_todos:
-        if _item.fornecedor_contato:
-            tel = "".join(filter(str.isdigit, str(_item.fornecedor_contato)))
-            if not tel.startswith("55"):
-                tel = f"55{tel}"
-
-            # Informa ao fornecedor o estoque *disponível* (não o bruto)
-            aviso_vencido = (
-                f"⚠️ *Atenção: lote atual VENCIDO* — {_item.quantidade_descarte} {_item.unidade} para descarte.\n"
-                if _item.quantidade_descarte > 0 else ""
-            )
-            msg = (
-                f"📦 *Pedido de Reposição — {_item.empresa.nome}* 🐎\n\n"
-                f"Olá! Gostaríamos de solicitar a reposição do seguinte item:\n\n"
-                f"*Produto:* {_item.nome}\n"
-                f"*Estoque disponível (válido):* {item._estoque_disponivel} {item.unidade}\n"
-                f"*Estoque mínimo:* {_item.alerta_minimo} {_item.unidade}\n"
-                f"{aviso_vencido}"
-            )
-            if _item.dias_para_vencer is not None and _item.status_validade != 'vencido':
-                msg += f"*Validade mais próxima:* {_item.dias_para_vencer} dias\n"
-            msg += (
-                f"*Quantidade a pedir:* ??? {_item.unidade}\n\n"
-                f"Por favor, confirme disponibilidade e prazo de entrega.\n"
-                f"⚠️ Antes de qualquer alteração, envie os documentos para conferência.\n\n"
-                f"📲 _Enviado via *Gate 4 — Gestão de Haras e Hípicas*_ 🐎"
-            )
-            _item.whatsapp_fornecedor = f"https://wa.me/{tel}?text={quote(msg)}"
-        else:
-            _item.whatsapp_fornecedor = None
-
     # Dados para o gráfico (Chart.js) — usa estoque_disponivel, não quantidade_atual
     estoque_labels = []
     estoque_valores = []
@@ -347,7 +315,7 @@ def dashboard(request):
     for item in estoque_todos:
         estoque_labels.append(item.nome)
         # CORRIGIDO: gráfico reflete o estoque real disponível (vencidos = 0)
-        estoque_valores.append(float(item._estoque_disponivel))
+        estoque_valores.append(float(item.estoque_disponivel))
         if item.prioridade == 0:
             estoque_cores.append('#ef4444')   # vermelho — crítico / vencido
         elif item.prioridade == 1:
@@ -546,7 +514,7 @@ def dashboard(request):
 
         tel_c = fatura.aluno.telefone_limpo if hasattr(fatura.aluno, 'telefone_limpo') else ""
         msg = _montar_msg_fatura_whatsapp(fatura, empresa)
-        link_wa = f"https://wa.me/55{tel}?text={quote(msg)}" if tel else "#"
+        link_wa = f"https://wa.me/55{tel_c}?text={quote(msg)}" if tel_c else "#"
 
         relatorio.append({
             "aluno": fatura.aluno,
