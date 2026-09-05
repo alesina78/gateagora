@@ -213,23 +213,6 @@ class BaseCavaloAdmin(ModelAdmin):
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 
-class BaseItemEstoqueAdmin(ModelAdmin):
-    """Base para models que têm FK para ItemEstoque (ex: LoteEstoque)"""
-    def get_queryset(self, request):
-        qs = super().get_queryset(request)
-        if request.user.is_superuser:
-            return qs
-        if hasattr(request, 'empresa') and request.empresa:
-            return qs.filter(item__empresa=request.empresa)
-        return qs.none()
-
-    def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        if db_field.name == "item":
-            if not request.user.is_superuser and hasattr(request, 'empresa') and request.empresa:
-                kwargs["queryset"] = ItemEstoque.objects.filter(empresa=request.empresa)
-        return super().formfield_for_foreignkey(db_field, request, **kwargs)
-
-
 # ── INLINES ─────────────────────────────────────────────────────────────────
 
 class DocumentoInline(TabularInline):
@@ -369,7 +352,7 @@ class PerfilAdmin(ModelAdmin):
 
 
 @admin.register(Aluno)
-class AlunoAdmin(BaseEmpresaAdmin):
+class AlunoAdmin(UnfoldModelAdmin):
     list_display = ("nome", "empresa", "ativo", "get_whatsapp", "streak_atual", "melhor_streak")
     search_fields = ("nome",)
     list_filter = ("empresa", "ativo")
@@ -875,7 +858,7 @@ class ConfigPrecoManejoAdmin(BaseEmpresaAdmin):
 
 
 @admin.register(LoteEstoque)
-class LoteEstoqueAdmin(BaseItemEstoqueAdmin):
+class LoteEstoqueAdmin(ModelAdmin):
     list_display = (
         'item',
         'numero_lote',
