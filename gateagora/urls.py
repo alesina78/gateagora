@@ -8,6 +8,15 @@ urlpatterns = [
     path('login/',  views.CustomLoginView.as_view(), name='login'),
     path('logout/', auth_views.LogoutView.as_view(next_page='login'), name='logout'),
 
+    # Troca de senha (usuário já logado)
+    path('trocar-senha/', auth_views.PasswordChangeView.as_view(
+        template_name='gateagora/trocar_senha.html',
+        success_url='/trocar-senha/feito/'
+    ), name='password_change'),
+    path('trocar-senha/feito/', auth_views.PasswordChangeDoneView.as_view(
+        template_name='gateagora/trocar_senha_feito.html'
+    ), name='password_change_done'),
+
     # Tema
     path('set-theme/', views.set_theme, name='set_theme'),
 

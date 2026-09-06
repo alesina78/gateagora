@@ -513,6 +513,7 @@
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
 
     <!-- Faturamento -->
+    {% if pode_ver_financeiro %}
     <div class="kpi-faturamento card p-6">
       <p class="text-[10px] uppercase mb-1 font-bold" style="color:var(--text-muted)">Faturamento Estimado</p>
       <h2 class="text-3xl font-black" style="color:var(--emerald-text)">R$ {{ receita_total_prevista|floatformat:2 }}</h2>
@@ -520,6 +521,7 @@
         <i class="fa-solid fa-chart-line" style="color:var(--emerald-text)"></i> Projeção baseada em mensalidades
       </div>
     </div>
+    {% endif %}
 
     <!-- Agenda -->
     <div class="p-6 rounded-[2rem] shadow-2xl relative overflow-hidden group" style="background:#4f46e5;">
@@ -614,10 +616,12 @@
       </div>
 
       <!-- Fluxo Financeiro -->
+      {% if pode_ver_financeiro %}
       <div class="card p-8">
         <h3 class="text-lg font-black uppercase italic mb-6" style="color:var(--text-strong)">Fluxo Financeiro (6 Meses)</h3>
         <div class="h-[320px] w-full"><canvas id="chartFinanceiro6Meses"></canvas></div>
       </div>
+      {% endif %}
 
       <!-- Ranking de Treinos dos Cavalos -->
       <div class="card p-8">
@@ -668,9 +672,11 @@
       <!-- Atalhos -->
       <div class="atalhos-panel">
         <h3 class="text-xs uppercase mb-6 tracking-widest font-black text-center italic" style="color:var(--text-muted)">Atalhos Operacionais</h3>
+        {% if pode_ver_financeiro %}
         <a href="/admin/gateagora/movimentacaofinanceira/add/" class="btn-atalho btn-atalho-emerald">
           <span>Registrar Receita/Despesa</span><i class="fa-solid fa-dollar-sign"></i>
         </a>
+        {% endif %}
         <a href="{% url 'encilhamento' %}" class="btn-atalho btn-atalho-amber">
           <span>Guia de Encilhamento</span><i class="fa-solid fa-horse-head"></i>
         </a>
@@ -706,6 +712,7 @@
       </div>
 
       <!-- Pendências Financeiras -->
+      {% if pode_ver_financeiro %}
       <div class="card-static p-6 h-[440px] flex flex-col">
         <h3 class="text-sm font-black uppercase tracking-tighter pb-3 mb-4" style="color:var(--text-strong);border-bottom:1px solid var(--border)">Pendências Financeiras</h3>
         <div class="overflow-y-auto custom-scrollbar pr-1 space-y-3 flex-1">
@@ -748,6 +755,7 @@
           {% endfor %}
         </div>
       </div>
+      {% endif %}
 
     </div>
   </div>

@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Trocar Senha — Gate 4</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            background: #0d1117;
+            color: #e6edf3;
+            font-family: -apple-system, 'Segoe UI', Roboto, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .card {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 14px;
+            padding: 2.5rem;
+            width: 100%;
+            max-width: 380px;
+        }
+        h1 { font-size: 1.3rem; margin-bottom: .3rem; }
+        p.sub { color: #8b949e; font-size: .85rem; margin-bottom: 1.6rem; }
+        label { display:block; font-size: .78rem; color:#8b949e; margin-bottom:.3rem; margin-top:1rem; text-transform:uppercase; }
+        input {
+            width: 100%;
+            padding: .7rem .9rem;
+            border-radius: 8px;
+            border: 1px solid #30363d;
+            background: #0d1117;
+            color: #e6edf3;
+            font-size: .95rem;
+        }
+        input:focus { outline: 2px solid #10b981; border-color: #10b981; }
+        button {
+            width: 100%;
+            margin-top: 1.6rem;
+            padding: .8rem;
+            border-radius: 10px;
+            border: none;
+            background: #10b981;
+            color: #0d1117;
+            font-weight: 700;
+            font-size: .95rem;
+            cursor: pointer;
+        }
+        button:hover { background: #0ea371; }
+        .erro { color: #f87171; font-size: .8rem; margin-top: .3rem; }
+        a.voltar { display:block; text-align:center; margin-top:1.4rem; color:#8b949e; font-size:.82rem; text-decoration:none; }
+        a.voltar:hover { color: #e6edf3; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>Trocar senha</h1>
+        <p class="sub">Escolha uma nova senha para sua conta.</p>
+        <form method="post">
+            {% csrf_token %}
+            {% for field in form %}
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% for error in field.errors %}
+                    <div class="erro">{{ error }}</div>
+                {% endfor %}
+            {% endfor %}
+            <button type="submit">Salvar nova senha</button>
+        </form>
+        <a class="voltar" href="{% url 'dashboard' %}">← Voltar ao painel</a>
+    </div>
+</body>
+</html>

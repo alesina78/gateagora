@@ -128,12 +128,9 @@ else:
 # SENHAS
 # ------------------------------------------------------------------------------
 
-AUTH_PASSWORD_VALIDATORS = [
-    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
-]
+AUTH_PASSWORD_VALIDATORS = []
+# Sem validadores por decisão de produto: senhas o mais simples possível
+# pro público-alvo. Django continua rejeitando senha totalmente vazia.
 
 
 # ------------------------------------------------------------------------------

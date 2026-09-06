@@ -347,14 +347,20 @@ class PerfilAdmin(ModelAdmin):
         return qs
 
     def has_add_permission(self, request):
-        return request.user.is_superuser
+        if request.user.is_superuser:
+            return True
+        return hasattr(request.user, 'perfil') and request.user.perfil.cargo == 'Gestor'
 
     def has_change_permission(self, request, obj=None):
         if request.user.is_superuser:
             return True
-        # gestor só edita o próprio perfil
         if obj and obj.user == request.user:
-            return True
+            return True  # qualquer um pode editar o próprio perfil
+        # Gestor edita qualquer perfil da própria empresa
+        if hasattr(request.user, 'perfil') and request.user.perfil.cargo == 'Gestor':
+            if obj is None:
+                return True
+            return obj.empresa_id == request.user.perfil.empresa_id
         return False
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
@@ -423,45 +429,59 @@ class AlunoAdmin(BaseEmpresaAdmin):
         return obj.perfil_usuario is not None
 
     @admin.action(description="🔑 Criar Login para Aluno(s) selecionado(s)")
+    def _criar_login_para_aluno(self, request, aluno):
+        """Cria User + Perfil pro aluno e vincula. Usado tanto pela action manual
+        quanto automaticamente ao salvar um Aluno novo (login agora é obrigatório)."""
+        base_username = aluno.nome.lower().replace(" ", ".").replace("ç", "c").replace("ã", "a").replace("ê", "e").replace("é", "e").replace("á", "a").replace("ó", "o").replace("ú", "u").replace("í", "i")[:25]
+        username = base_username
+        counter = 1
+        while User.objects.filter(username=username).exists():
+            username = f"{base_username}{counter}"
+            counter += 1
+
+        senha_temp = (aluno.telefone[-4:] if aluno.telefone and len(aluno.telefone) >= 4 else "1234") + "aluno"
+
+        user = User.objects.create_user(
+            username=username,
+            first_name=aluno.nome.split()[0] if aluno.nome else "",
+            last_name=" ".join(aluno.nome.split()[1:]) if len(aluno.nome.split()) > 1 else "",
+            password=senha_temp
+        )
+
+        perfil = Perfil.objects.create(
+            user=user,
+            empresa=aluno.empresa,
+            cargo='Aluno',
+            telefone=aluno.telefone
+        )
+
+        aluno.perfil_usuario = perfil
+        aluno.save(update_fields=['perfil_usuario'])
+
+        messages.success(
+            request,
+            f"✅ Login criado para {aluno.nome} — "
+            f"Usuário: {username} | Senha: {senha_temp}"
+        )
+        return perfil
+
+    def save_model(self, request, obj, form, change):
+        is_novo = obj.pk is None
+        super().save_model(request, obj, form, change)
+        # Login agora é obrigatório: todo Aluno novo, sem perfil_usuario já
+        # escolhido manualmente no formulário, ganha um login automático.
+        if is_novo and not obj.perfil_usuario:
+            self._criar_login_para_aluno(request, obj)
+
+    @admin.action(description="🔑 Criar Login (usuário + senha)")
     def criar_login_aluno(self, request, queryset):
         criados = 0
         for aluno in queryset:
             if aluno.perfil_usuario:
                 messages.warning(request, f"{aluno.nome} já possui login.")
                 continue
-
-            base_username = aluno.nome.lower().replace(" ", ".").replace("ç", "c").replace("ã", "a").replace("ê", "e").replace("é", "e").replace("á", "a").replace("ó", "o").replace("ú", "u").replace("í", "i")[:25]
-            username = base_username
-            counter = 1
-            while User.objects.filter(username=username).exists():
-                username = f"{base_username}{counter}"
-                counter += 1
-
-            senha_temp = (aluno.telefone[-4:] if aluno.telefone and len(aluno.telefone) >= 4 else "1234") + "aluno"
-
-            user = User.objects.create_user(
-                username=username,
-                first_name=aluno.nome.split()[0] if aluno.nome else "",
-                last_name=" ".join(aluno.nome.split()[1:]) if len(aluno.nome.split()) > 1 else "",
-                password=senha_temp
-            )
-
-            perfil = Perfil.objects.create(
-                user=user,
-                empresa=aluno.empresa,
-                cargo='Aluno',
-                telefone=aluno.telefone
-            )
-
-            aluno.perfil_usuario = perfil
-            aluno.save(update_fields=['perfil_usuario'])
-
+            self._criar_login_para_aluno(request, aluno)
             criados += 1
-            messages.success(
-                request,
-                f"✅ Login criado para {aluno.nome} — "
-                f"Usuário: {username} | Senha: {senha_temp}"
-            )
 
         if criados == 0:
             messages.warning(request, "Nenhum login foi criado.")
@@ -927,11 +947,39 @@ class CustomUserAdmin(BaseUserAdmin, UnfoldModelAdmin):
         return qs.none()
 
     def has_add_permission(self, request):
-        # Apenas superuser cria usuários pelo admin
-        return request.user.is_superuser
+        # Superuser sempre pode. Gestor pode cadastrar usuários da própria empresa.
+        if request.user.is_superuser:
+            return True
+        return hasattr(request.user, 'perfil') and request.user.perfil.cargo == 'Gestor'
+
+    def has_change_permission(self, request, obj=None):
+        if request.user.is_superuser:
+            return True
+        if not hasattr(request.user, 'perfil') or request.user.perfil.cargo != 'Gestor':
+            return False
+        if obj is None:
+            return True  # necessário para o Django mostrar a lista/tela
+        # Gestor só edita usuários da própria empresa
+        obj_perfil = getattr(obj, 'perfil', None)
+        return bool(obj_perfil) and obj_perfil.empresa_id == request.user.perfil.empresa_id
 
     def has_delete_permission(self, request, obj=None):
         return request.user.is_superuser
+
+    def get_fieldsets(self, request, obj=None):
+        if request.user.is_superuser:
+            return self.fieldsets
+        # Gestor não pode ver nem alterar is_superuser, groups ou user_permissions
+        # -- evita que um Gestor se autopromova (ou promova outro usuário) a superuser.
+        return (
+            (None, {'fields': ('username', 'password')}),
+            ('Informações pessoais', {
+                'fields': ('first_name', 'last_name', 'email')
+            }),
+            ('Permissões', {
+                'fields': ('is_active', 'is_staff')
+            }),
+        )
 
     def get_telefone(self, obj):
         perfil = getattr(obj, 'perfil', None)

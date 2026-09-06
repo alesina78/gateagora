@@ -853,18 +853,8 @@ def dashboard(request):
         c['critico'] = c['total_aulas'] >= 4
 
     # ── 13) Contexto final ────────────────────────────────────────────────────
-    # Cargos que podem ver dados financeiros sensíveis (faturamento, inadimplência,
-    # fluxo de caixa). Tratador, Professor e Veterinário veem o dashboard normalmente,
-    # só sem essas seções específicas.
-    cargos_com_acesso_financeiro = {'Gestor'}
-    pode_ver_financeiro = request.user.is_superuser or (
-        hasattr(request.user, 'perfil')
-        and request.user.perfil.cargo in cargos_com_acesso_financeiro
-    )
-
     context = {
         "brand_name":               BRAND_NAME,
-        "pode_ver_financeiro":      pode_ver_financeiro,
         "empresa":                  empresa,
         "hoje":                     hoje,
         "mes_selecionado":          mes_selecionado,

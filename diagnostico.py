@@ -1,3 +1,10 @@
+import os
+import django
+
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'gateagora.settings')
+django.setup()           
+
+
 from gateagora.models import Aluno, Cavalo, Aula, MovimentacaoFinanceira
 from django.utils import timezone
 
