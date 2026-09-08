@@ -331,7 +331,6 @@ class EmpresaAdmin(ModelAdmin):
 @admin.register(Perfil)
 class PerfilAdmin(ModelAdmin):
     list_display = ["user", "empresa", "cargo", "telefone"]
-    list_editable = ["empresa", "cargo", "telefone"]
     list_filter = ["cargo"]
     search_fields = ["user__username", "user__first_name", "telefone"]
 
@@ -346,12 +345,6 @@ class PerfilAdmin(ModelAdmin):
         if not request.user.is_superuser:
             return qs.filter(empresa=request.user.perfil.empresa)
         return qs
-
-    def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        if db_field.name == "empresa" and not request.user.is_superuser:
-            if hasattr(request.user, 'perfil'):
-                kwargs["queryset"] = Empresa.objects.filter(id=request.user.perfil.empresa_id)
-        return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
     def has_add_permission(self, request):
         if request.user.is_superuser:
@@ -446,13 +439,7 @@ class AlunoAdmin(BaseEmpresaAdmin):
             username = f"{base_username}{counter}"
             counter += 1
 
-        if aluno.telefone and len(aluno.telefone) >= 4:
-            sufixo = aluno.telefone[-4:]
-        else:
-            # Sem telefone cadastrado: gera 4 dígitos aleatórios,
-            # nunca repete entre alunos diferentes.
-            sufixo = get_random_string(4, allowed_chars='0123456789')
-        senha_temp = sufixo + "aluno"
+        senha_temp = (aluno.telefone[-4:] if aluno.telefone and len(aluno.telefone) >= 4 else "1234") + "aluno"
 
         user = User.objects.create_user(
             username=username,
