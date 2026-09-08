@@ -936,6 +936,54 @@ class CustomUserAdmin(BaseUserAdmin, UnfoldModelAdmin):
     list_display = ("username", "email", "get_telefone", "is_active", "is_staff")
     search_fields = ("username", "email")
     ordering = ("username",)
+    actions = ["redefinir_senha"]
+
+    @admin.action(description="🔑 Redefinir senha deste usuário")
+    def redefinir_senha(self, request, queryset):
+        from django import forms
+        from django.template.response import TemplateResponse
+
+        if queryset.count() != 1:
+            self.message_user(request, "Selecione exatamente 1 usuário por vez.", level=messages.WARNING)
+            return
+
+        alvo = queryset.first()
+
+        # Gestor só pode redefinir senha de gente da própria empresa
+        if not request.user.is_superuser:
+            perfil_alvo = getattr(alvo, 'perfil', None)
+            perfil_seu = getattr(request.user, 'perfil', None)
+            if not perfil_alvo or not perfil_seu or perfil_alvo.empresa_id != perfil_seu.empresa_id:
+                self.message_user(request, "Você só pode redefinir senha de usuários da sua própria hípica.", level=messages.ERROR)
+                return
+
+        class RedefinirSenhaForm(forms.Form):
+            nova_senha = forms.CharField(label="Nova senha", widget=forms.TextInput)
+
+        if 'aplicar' in request.POST:
+            form = RedefinirSenhaForm(request.POST)
+            if form.is_valid():
+                alvo.set_password(form.cleaned_data['nova_senha'])
+                alvo.save()
+                self.message_user(
+                    request,
+                    f"✅ Senha de '{alvo.username}' redefinida com sucesso."
+                )
+                return
+        else:
+            form = RedefinirSenhaForm()
+
+        return TemplateResponse(
+            request,
+            "admin/redefinir_senha.html",
+            {
+                "form": form,
+                "usuario": alvo,
+                "queryset": queryset,
+                "action_checkbox_name": admin.helpers.ACTION_CHECKBOX_NAME,
+                "opts": self.model._meta,
+            },
+        )
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)

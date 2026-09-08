@@ -1,0 +1,21 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+<h1>🔑 Redefinir senha — {{ usuario.username }}</h1>
+
+<form method="post">
+    {% csrf_token %}
+    {% for obj in queryset %}
+        <input type="hidden" name="{{ action_checkbox_name }}" value="{{ obj.pk }}">
+    {% endfor %}
+    <input type="hidden" name="action" value="redefinir_senha">
+
+    <p>
+        <label for="id_nova_senha"><strong>Nova senha para {{ usuario.username }}:</strong></label><br>
+        {{ form.nova_senha }}
+    </p>
+
+    <input type="submit" name="aplicar" value="Definir nova senha" class="default" style="margin-top:1rem;">
+    <a href="../" style="margin-left:1rem;">Cancelar</a>
+</form>
+{% endblock %}
