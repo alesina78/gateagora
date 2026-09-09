@@ -931,8 +931,7 @@ class PerfilInline(TabularInline):
     model = Perfil
     fields = ["empresa", "cargo", "telefone"]
     can_delete = False
-    extra = 1       # mostra 1 formulário em branco quando o Usuário ainda não tem Perfil
-    max_num = 1     # nunca mostra um segundo, mesmo depois que o Perfil já existir
+    extra = 0
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == "empresa":
