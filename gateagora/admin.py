@@ -28,6 +28,7 @@ from .models import (
     Baia,
     RacaCavalo,
     Cavalo,
+    ChecklistItem,
     ConfigPrazoManejo,
     ConfigPrecoManejo,
     DocumentoCavalo,
@@ -230,6 +231,51 @@ class BaseItemEstoqueAdmin(ModelAdmin):
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 
+class PermissaoPorCargoMixin:
+    """
+    Mixin genérico pra restringir uma tela do admin por Cargo do Perfil.
+    Configure em cada subclasse:
+      - cargos_acesso_total: podem ver, criar, editar e excluir
+      - cargos_somente_leitura: só podem ver, sem editar/criar/excluir
+    Superuser sempre tem acesso total, independente da configuração.
+    Combine com BaseEmpresaAdmin/BaseCavaloAdmin/etc (que continuam
+    cuidando do isolamento entre empresas) -- este mixin só decide
+    QUEM de dentro da empresa pode acessar a tela.
+    """
+    cargos_acesso_total = set()
+    cargos_somente_leitura = set()
+
+    def _cargo_do_usuario(self, request):
+        if hasattr(request.user, 'perfil'):
+            return request.user.perfil.cargo
+        return None
+
+    def has_module_permission(self, request):
+        if request.user.is_superuser:
+            return True
+        cargo = self._cargo_do_usuario(request)
+        return cargo in self.cargos_acesso_total or cargo in self.cargos_somente_leitura
+
+    def has_view_permission(self, request, obj=None):
+        return self.has_module_permission(request)
+
+    def has_add_permission(self, request):
+        if request.user.is_superuser:
+            return True
+        return self._cargo_do_usuario(request) in self.cargos_acesso_total
+
+    def has_change_permission(self, request, obj=None):
+        if request.user.is_superuser:
+            return True
+        return self._cargo_do_usuario(request) in self.cargos_acesso_total
+
+    def has_delete_permission(self, request, obj=None):
+        if request.user.is_superuser:
+            return True
+        return self._cargo_do_usuario(request) in self.cargos_acesso_total
+
+
+
 # ── INLINES ─────────────────────────────────────────────────────────────────
 
 class DocumentoInline(TabularInline):
@@ -382,7 +428,8 @@ class PerfilAdmin(ModelAdmin):
 
 
 @admin.register(Aluno)
-class AlunoAdmin(BaseEmpresaAdmin):
+class AlunoAdmin(PermissaoPorCargoMixin, BaseEmpresaAdmin):
+    cargos_acesso_total = {'Gestor'}
     list_display = ("nome", "empresa", "ativo", "get_whatsapp", "streak_atual", "melhor_streak")
     search_fields = ("nome",)
     list_filter = ("empresa", "ativo")
@@ -609,7 +656,9 @@ class AlunoAdmin(BaseEmpresaAdmin):
 
 
 @admin.register(Baia)
-class BaiaAdmin(BaseEmpresaAdmin):
+class BaiaAdmin(PermissaoPorCargoMixin, BaseEmpresaAdmin):
+    cargos_acesso_total = {'Gestor', 'Tratador'}
+    cargos_somente_leitura = {'Veterinario'}
     list_display = ["numero", "status", "empresa"]
     list_filter = ["status"]
     search_fields = ["numero"]
@@ -617,7 +666,9 @@ class BaiaAdmin(BaseEmpresaAdmin):
 
 
 @admin.register(Piquete)
-class PiqueteAdmin(BaseEmpresaAdmin):
+class PiqueteAdmin(PermissaoPorCargoMixin, BaseEmpresaAdmin):
+    cargos_acesso_total = {'Gestor', 'Tratador'}
+    cargos_somente_leitura = {'Veterinario'}
     list_display = ["nome", "status", "empresa"]
     list_filter = ["status"]
     actions = [duplicar_registro]
@@ -628,7 +679,8 @@ class RacaCavaloAdmin(ModelAdmin):
     search_fields = ["nome"]
 
 @admin.register(Cavalo)
-class CavaloAdmin(BaseEmpresaAdmin):
+class CavaloAdmin(PermissaoPorCargoMixin, BaseEmpresaAdmin):
+    cargos_acesso_total = {'Gestor', 'Veterinario', 'Tratador'}
     list_display = ["nome", "proprietario", "baia", "status_saude_colorido"]
     list_filter = ["status_saude", "categoria"]
     search_fields = ["nome", "proprietario__nome"]
@@ -682,14 +734,18 @@ class CavaloAdmin(BaseEmpresaAdmin):
 
 
 @admin.register(DocumentoCavalo)
-class DocumentoCavaloAdmin(BaseCavaloAdmin):
+class DocumentoCavaloAdmin(PermissaoPorCargoMixin, BaseCavaloAdmin):
+    cargos_acesso_total = {'Gestor', 'Veterinario'}
+    cargos_somente_leitura = {'Tratador'}
     list_display = ["titulo", "cavalo", "tipo", "data_validade"]
     list_filter = ["tipo","cavalo"]
     search_fields = ["titulo", "cavalo__nome"]
 
 
 @admin.register(RegistroOcorrencia)
-class RegistroOcorrenciaAdmin(BaseCavaloAdmin):
+class RegistroOcorrenciaAdmin(PermissaoPorCargoMixin, BaseCavaloAdmin):
+    cargos_acesso_total = {'Gestor', 'Veterinario'}
+    cargos_somente_leitura = {'Tratador'}
     list_display = ["data", "titulo", "cavalo", "veterinario"]
     list_filter = ["data"]
     search_fields = ["titulo", "cavalo__nome", "veterinario"]
@@ -698,7 +754,8 @@ class RegistroOcorrenciaAdmin(BaseCavaloAdmin):
 
 
 @admin.register(Aula)
-class AulaAdmin(BaseEmpresaAdmin):
+class AulaAdmin(PermissaoPorCargoMixin, BaseEmpresaAdmin):
+    cargos_acesso_total = {'Gestor'}
     list_display = ["data_hora", "aluno", "cavalo", "tipo", "concluida"]
     list_filter = ["concluida", "tipo", "data_hora"]
     list_editable = ["concluida"]
@@ -712,7 +769,8 @@ class AulaAdmin(BaseEmpresaAdmin):
 
 
 @admin.register(MovimentacaoFinanceira)
-class MovimentacaoFinanceiraAdmin(BaseEmpresaAdmin):
+class MovimentacaoFinanceiraAdmin(PermissaoPorCargoMixin, BaseEmpresaAdmin):
+    cargos_acesso_total = {'Gestor'}
     list_display = ["data", "descricao", "tipo_formatado", "valor"]
     list_filter = ["tipo", "data"]
     search_fields = ["descricao"]
@@ -731,12 +789,14 @@ class MovimentacaoFinanceiraAdmin(BaseEmpresaAdmin):
 
 
 @admin.register(Plano)
-class PlanoAdmin(BaseEmpresaAdmin):
+class PlanoAdmin(PermissaoPorCargoMixin, BaseEmpresaAdmin):
+    cargos_acesso_total = {'Gestor'}
     list_display = ["nome", "valor_mensal"]
 
 
 @admin.register(Fatura)
-class FaturaAdmin(BaseEmpresaAdmin):
+class FaturaAdmin(PermissaoPorCargoMixin, BaseEmpresaAdmin):
+    cargos_acesso_total = {'Gestor'}
     list_display = ["aluno", "data_vencimento", "total_display", "status_custom"]
     list_filter = ["status", "data_vencimento"]
     search_fields = ["aluno__nome"]
@@ -805,7 +865,8 @@ class ItemFaturaAdmin(ModelAdmin):
 
 
 @admin.register(ItemEstoque)
-class ItemEstoqueAdmin(BaseEmpresaAdmin):
+class ItemEstoqueAdmin(PermissaoPorCargoMixin, BaseEmpresaAdmin):
+    cargos_acesso_total = {'Gestor', 'Tratador'}
     inlines = [LoteEstoqueInline]
     actions = [duplicar_registro]
 
@@ -897,7 +958,10 @@ class EventoAgendaAdmin(BaseCavaloAdmin):
 
 
 @admin.register(ConfigPrecoManejo)
-class ConfigPrecoManejoAdmin(BaseEmpresaAdmin):
+class ConfigPrecoManejoAdmin(PermissaoPorCargoMixin, BaseEmpresaAdmin):
+    # Não estava na tabela confirmada -- assumi Gestor-only por ser
+    # configuração de preço (financeiro-adjacente). Avise se for diferente.
+    cargos_acesso_total = {'Gestor'}
     list_display = ["empresa", "cobrar_vacina", "valor_vacina", "cobrar_vermifugo", "valor_vermifugo", "cobrar_ferrageamento", "valor_ferrageamento", "cobrar_casqueamento", "valor_casqueamento"]
     fieldsets = (
         ("Vacinação",     {"fields": ("cobrar_vacina",        "valor_vacina")}),
@@ -908,7 +972,8 @@ class ConfigPrecoManejoAdmin(BaseEmpresaAdmin):
 
 
 @admin.register(LoteEstoque)
-class LoteEstoqueAdmin(BaseItemEstoqueAdmin):
+class LoteEstoqueAdmin(PermissaoPorCargoMixin, BaseItemEstoqueAdmin):
+    cargos_acesso_total = {'Gestor', 'Tratador'}
     list_display = (
         'item',
         'numero_lote',
@@ -1065,7 +1130,8 @@ class CustomUserAdmin(BaseUserAdmin, UnfoldModelAdmin):
     )
 
 @admin.register(Fornecedor)
-class FornecedorAdmin(BaseEmpresaAdmin):
+class FornecedorAdmin(PermissaoPorCargoMixin, BaseEmpresaAdmin):
+    cargos_acesso_total = {'Gestor'}
     list_display = ("nome", "empresa", "telefone", "email", "ativo", "get_whatsapp_link")
     list_filter = ("ativo", "empresa")
     search_fields = ("nome", "telefone", "email")
@@ -1091,3 +1157,12 @@ class FornecedorAdmin(BaseEmpresaAdmin):
         )
 
 admin.site.register(User, CustomUserAdmin)
+
+
+@admin.register(ChecklistItem)
+class ChecklistItemAdmin(PermissaoPorCargoMixin, BaseEmpresaAdmin):
+    cargos_acesso_total = {'Gestor'}
+    list_display = ["descricao", "tipo", "ordem", "ativo"]
+    list_editable = ["tipo", "ordem", "ativo"]
+    list_filter = ["tipo", "ativo"]
+    search_fields = ["descricao"]
