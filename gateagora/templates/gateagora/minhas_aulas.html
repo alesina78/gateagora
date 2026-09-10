@@ -90,11 +90,16 @@
         <p style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted);margin:0">{{ empresa.nome }}</p>
       </div>
     </div>
-    <form method="post" action="{% url 'logout' %}" style="margin:0">{% csrf_token %}
-      <button type="submit" style="font-size:9px;font-weight:700;text-transform:uppercase;padding:5px 10px;border-radius:.6rem;cursor:pointer;display:flex;align-items:center;gap:5px;background-color:var(--card-alt);color:var(--text-muted);border:1px solid var(--border);">
-        <i class="fa-solid fa-right-from-bracket"></i> Sair
-      </button>
-    </form>
+    <div style="display:flex;align-items:center;gap:8px">
+      <a href="{% url 'password_change' %}" style="font-size:9px;font-weight:700;text-transform:uppercase;padding:5px 10px;border-radius:.6rem;cursor:pointer;display:flex;align-items:center;gap:5px;background-color:var(--card-alt);color:var(--text-muted);border:1px solid var(--border);text-decoration:none;">
+        <i class="fa-solid fa-key"></i> Senha
+      </a>
+      <form method="post" action="{% url 'logout' %}" style="margin:0">{% csrf_token %}
+        <button type="submit" style="font-size:9px;font-weight:700;text-transform:uppercase;padding:5px 10px;border-radius:.6rem;cursor:pointer;display:flex;align-items:center;gap:5px;background-color:var(--card-alt);color:var(--text-muted);border:1px solid var(--border);">
+          <i class="fa-solid fa-right-from-bracket"></i> Sair
+        </button>
+      </form>
+    </div>
   </nav>
   <div style="padding:16px 16px 24px">
     {% if aluno %}
@@ -265,6 +270,9 @@
           {% else %}
             <p style="text-align:center;font-size:11px;font-weight:600;color:rgba(255,255,255,.6);margin:0"><i class="fa-solid fa-clock" style="margin-right:4px"></i>Confirmação abre {{ prazo_horas }}h antes</p>
           {% endif %}
+          <a href="{% url 'checklist_aluno' aula.id %}" style="display:block;margin-top:8px;text-align:center;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:.75rem;padding:9px;font-size:11px;font-weight:700;color:#fff;text-decoration:none;">
+            <i class="fa-solid fa-clipboard-check" style="margin-right:5px"></i>Meu Checklist
+          </a>
         </div>
         <div class="countdown-bar" style="margin-bottom:16px">
           <div style="width:34px;height:34px;flex-shrink:0;border-radius:.6rem;background-color:var(--indigo-soft);display:flex;align-items:center;justify-content:center;color:var(--indigo-text);font-size:14px"><i class="fa-solid fa-hourglass-half"></i></div>
@@ -315,11 +323,16 @@
         <p style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted);margin:0">{{ empresa.nome }}</p>
       </div>
     </div>
-    <form method="post" action="{% url 'logout' %}" style="margin:0">{% csrf_token %}
-      <button type="submit" style="font-size:9px;font-weight:700;text-transform:uppercase;padding:5px 10px;border-radius:.6rem;cursor:pointer;display:flex;align-items:center;gap:5px;background-color:var(--card-alt);color:var(--text-muted);border:1px solid var(--border);">
-        <i class="fa-solid fa-right-from-bracket"></i> Sair
-      </button>
-    </form>
+    <div style="display:flex;align-items:center;gap:8px">
+      <a href="{% url 'password_change' %}" style="font-size:9px;font-weight:700;text-transform:uppercase;padding:5px 10px;border-radius:.6rem;cursor:pointer;display:flex;align-items:center;gap:5px;background-color:var(--card-alt);color:var(--text-muted);border:1px solid var(--border);text-decoration:none;">
+        <i class="fa-solid fa-key"></i> Senha
+      </a>
+      <form method="post" action="{% url 'logout' %}" style="margin:0">{% csrf_token %}
+        <button type="submit" style="font-size:9px;font-weight:700;text-transform:uppercase;padding:5px 10px;border-radius:.6rem;cursor:pointer;display:flex;align-items:center;gap:5px;background-color:var(--card-alt);color:var(--text-muted);border:1px solid var(--border);">
+          <i class="fa-solid fa-right-from-bracket"></i> Sair
+        </button>
+      </form>
+    </div>
   </nav>
   <div style="padding:16px 16px 24px">
     <div class="section-hd"><div class="dot" style="background:var(--indigo-text)"></div><h3 style="color:var(--indigo-text)">Próximas</h3>{% if proximas %}<span class="section-count">{{ proximas|length }}</span>{% endif %}</div>
@@ -369,6 +382,9 @@
             {% else %}
               <p style="font-size:11px;font-weight:600;text-align:center;color:var(--text-muted);margin:4px 0"><i class="fa-solid fa-clock" style="margin-right:4px"></i>Confirmação disponível {{ prazo_horas }}h antes da aula</p>
             {% endif %}
+            <a href="{% url 'checklist_aluno' aula.id %}" style="display:block;margin-top:8px;text-align:center;background-color:var(--card-alt);border:1px solid var(--border);border-radius:.6rem;padding:9px;font-size:11px;font-weight:700;color:var(--text-muted);text-decoration:none;">
+              <i class="fa-solid fa-clipboard-check" style="margin-right:5px"></i>Meu Checklist
+            </a>
           </div>
         </div>
       {% endwith %}{% endfor %}
@@ -411,11 +427,16 @@
         <p style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted);margin:0">{{ empresa.nome }}</p>
       </div>
     </div>
-    <form method="post" action="{% url 'logout' %}" style="margin:0">{% csrf_token %}
-      <button type="submit" style="font-size:9px;font-weight:700;text-transform:uppercase;padding:5px 10px;border-radius:.6rem;cursor:pointer;display:flex;align-items:center;gap:5px;background-color:var(--card-alt);color:var(--text-muted);border:1px solid var(--border);">
-        <i class="fa-solid fa-right-from-bracket"></i> Sair
-      </button>
-    </form>
+    <div style="display:flex;align-items:center;gap:8px">
+      <a href="{% url 'password_change' %}" style="font-size:9px;font-weight:700;text-transform:uppercase;padding:5px 10px;border-radius:.6rem;cursor:pointer;display:flex;align-items:center;gap:5px;background-color:var(--card-alt);color:var(--text-muted);border:1px solid var(--border);text-decoration:none;">
+        <i class="fa-solid fa-key"></i> Senha
+      </a>
+      <form method="post" action="{% url 'logout' %}" style="margin:0">{% csrf_token %}
+        <button type="submit" style="font-size:9px;font-weight:700;text-transform:uppercase;padding:5px 10px;border-radius:.6rem;cursor:pointer;display:flex;align-items:center;gap:5px;background-color:var(--card-alt);color:var(--text-muted);border:1px solid var(--border);">
+          <i class="fa-solid fa-right-from-bracket"></i> Sair
+        </button>
+      </form>
+    </div>
   </nav>
   <div style="padding:16px 16px 24px">
     {% if cavalo %}
