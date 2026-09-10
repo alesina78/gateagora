@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Checklist de Logística — Gate 4</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            background: #0d1117; color: #e6edf3;
+            font-family: -apple-system, 'Segoe UI', Roboto, sans-serif;
+            display: flex; align-items: center; justify-content: center;
+            min-height: 100vh; margin: 0; padding: 1.5rem;
+        }
+        .card {
+            background: #161b22; border: 1px solid #30363d; border-radius: 14px;
+            padding: 2rem; width: 100%; max-width: 460px;
+        }
+        h1 { font-size: 1.3rem; margin-bottom: .2rem; }
+        p.sub { color: #8b949e; font-size: .85rem; margin-bottom: 1.4rem; }
+        .item {
+            display: flex; align-items: center; gap: .8rem;
+            padding: .7rem .5rem; border-bottom: 1px solid #21262d;
+        }
+        .item input[type=checkbox] { width: 20px; height: 20px; accent-color: #8B5A2B; }
+        .item label { font-size: .95rem; cursor: pointer; }
+        .item.concluido label { color: #6b7280; text-decoration: line-through; }
+        button.salvar {
+            width: 100%; margin-top: 1.4rem; padding: .8rem; border-radius: 10px;
+            border: none; background: #8B5A2B; color: #fff; font-weight: 700;
+            font-size: .95rem; cursor: pointer;
+        }
+        button.salvar:hover { background: #6E4520; }
+        .whatsapp {
+            display: block; text-align: center; margin-top: .9rem;
+            padding: .7rem; border-radius: 10px; background: #21262d;
+            color: #25d366; text-decoration: none; font-weight: 600; font-size: .9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>🚚 Checklist de Logística</h1>
+        <p class="sub">{{ aula.aluno.nome }} — {{ aula.cavalo.nome }} — {{ aula.data_hora|date:"d/m/Y H:i" }}</p>
+
+        <form method="post">
+            {% csrf_token %}
+            {% for c in checklist %}
+                <div class="item {% if c.concluido %}concluido{% endif %}">
+                    <input type="checkbox" name="item_id" value="{{ c.item.id }}"
+                           id="item{{ c.item.id }}" {% if c.concluido %}checked{% endif %}>
+                    <label for="item{{ c.item.id }}">{{ c.item.descricao }}</label>
+                </div>
+            {% empty %}
+                <p style="color:#8b949e;">Nenhum item de checklist configurado ainda.</p>
+            {% endfor %}
+            <button type="submit" class="salvar">Salvar checklist</button>
+        </form>
+
+        <a class="whatsapp" href="{% url 'checklist_whatsapp' aula.id 'LOGISTICA' %}">
+            📤 Enviar por WhatsApp
+        </a>
+    </div>
+</body>
+</html>
