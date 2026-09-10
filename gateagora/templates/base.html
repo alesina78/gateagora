@@ -604,6 +604,11 @@
                   <i class="fa-solid fa-check"></i> Finalizada
                 </button>
               </form>
+              <a href="{% url 'checklist_logistica' aula.id %}"
+                 class="text-[9px] font-black uppercase px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition"
+                 style="background-color:rgba(139,90,43,0.15);color:#8B5A2B;border:1px solid rgba(139,90,43,0.3);">
+                <i class="fa-solid fa-clipboard-check"></i> Checklist
+              </a>
             </div>
           </div>
           {% empty %}

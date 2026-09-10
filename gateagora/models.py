@@ -360,7 +360,11 @@ class Aula(models.Model):
         ('pista_salto', 'Pista de Salto'),
     ]
     empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE)
-    TIPO_AULA_CHOICES = [('NORMAL', 'Aula Normal'), ('RECUPERAR', 'Aula a Recuperar')]
+    TIPO_AULA_CHOICES = [
+        ('NORMAL', 'Aula Normal'),
+        ('RECUPERAR', 'Aula a Recuperar'),
+        ('TREINO_INTERNO', 'Treino Interno (sem custo)'),
+    ]
 
     aluno = models.ForeignKey(Aluno, on_delete=models.CASCADE, related_name='aulas')
     cavalo = models.ForeignKey(Cavalo, on_delete=models.SET_NULL, null=True, blank=True, related_name='aulas')
@@ -935,3 +939,47 @@ class Fornecedor(models.Model):
     @property
     def telefone_limpo(self):
         return "".join(filter(str.isdigit, self.telefone or ""))
+
+
+class ChecklistItem(models.Model):
+    """
+    Um item de checklist, configurável pelo Gestor no admin.
+    'tipo' define pra quem esse item aparece: Aluno (o que ele mesmo leva/veste)
+    ou Logística (o que Gestor/Tratador precisam conferir antes de sair do haras).
+    Funciona tanto pra treino comum quanto pra dia de competição -- é vinculado
+    a uma Aula específica, não a um "tipo de evento" separado.
+    """
+    class Tipo(models.TextChoices):
+        ALUNO = 'ALUNO', 'Checklist do Aluno'
+        LOGISTICA = 'LOGISTICA', 'Checklist de Logística (Gestor/Tratador)'
+
+    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE)
+    tipo = models.CharField(max_length=20, choices=Tipo.choices)
+    descricao = models.CharField(max_length=200)
+    ordem = models.PositiveIntegerField(default=0)
+    ativo = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ['tipo', 'ordem']
+        verbose_name = "Item de Checklist ✅"
+        verbose_name_plural = "Itens de Checklist ✅"
+
+    def __str__(self):
+        return f"[{self.get_tipo_display()}] {self.descricao}"
+
+
+class ChecklistPreenchido(models.Model):
+    """Marca se um item específico do checklist já foi conferido, para uma Aula."""
+    aula = models.ForeignKey(Aula, on_delete=models.CASCADE, related_name='checklists')
+    item = models.ForeignKey(ChecklistItem, on_delete=models.CASCADE)
+    concluido = models.BooleanField(default=False)
+    concluido_em = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        unique_together = ('aula', 'item')
+        verbose_name = "Checklist Preenchido"
+        verbose_name_plural = "Checklists Preenchidos"
+
+    def __str__(self):
+        marca = "✅" if self.concluido else "⬜"
+        return f"{marca} {self.item.descricao} — Aula #{self.aula_id}"

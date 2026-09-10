@@ -69,4 +69,9 @@ urlpatterns = [
     path('estoque/movimentar/',        views.movimentar_estoque, name='movimentar_estoque'),
     path('estoque/fechamento/',        views.fechamento_dia,     name='fechamento_dia'),
     path('estoque/fechamento/salvar/', views.salvar_fechamento,  name='salvar_fechamento'),
+
+    # Checklist (Aluno e Logística), por aula/treino/prova
+    path('checklist/aluno/<int:aula_id>/',              views.checklist_aluno,     name='checklist_aluno'),
+    path('checklist/logistica/<int:aula_id>/',          views.checklist_logistica, name='checklist_logistica'),
+    path('checklist/whatsapp/<int:aula_id>/<str:tipo>/', views.checklist_whatsapp,  name='checklist_whatsapp'),
 ]

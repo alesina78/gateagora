@@ -219,7 +219,7 @@ def dashboard(request):
                     aluno=fatura.aluno, empresa=empresa, concluida=True,
                     data_hora__year=fatura.data_vencimento.year,
                     data_hora__month=fatura.data_vencimento.month,
-                ).count()
+                ).exclude(tipo='TREINO_INTERNO').count()
                 v_total = v_hotel + Decimal(str(n_aulas)) * Decimal(str(fatura.aluno.valor_aula or 0))
 
         tel_c = fatura.aluno.telefone_limpo if hasattr(fatura.aluno, 'telefone_limpo') else ""
@@ -598,6 +598,9 @@ def dashboard(request):
                 aulas__data_hora__date__gte=data_inicio,
                 aulas__data_hora__date__lte=hoje,
             )
+            # Sem exclusão de TREINO_INTERNO aqui de propósito: essa contagem
+            # mede se o cavalo está sendo exercitado, não faturamento. Um
+            # treino sem custo ainda conta como o cavalo tendo se movimentado.
         ),
         receita_periodo=Coalesce(
             # Soma valor_aula do aluno por treino concluído — evita inflar com
@@ -608,7 +611,7 @@ def dashboard(request):
                     aulas__concluida=True,
                     aulas__data_hora__date__gte=data_inicio,
                     aulas__data_hora__date__lte=hoje,
-                )
+                ) & ~Q(aulas__tipo='TREINO_INTERNO')
             ),
             Value(0, output_field=DecimalField())
         ),
@@ -1070,6 +1073,12 @@ def concluir_aula(request, aula_id):
     if not aula.concluida:
         aula.concluida = True
         aula.save(update_fields=['concluida'])
+
+        if aula.tipo == 'TREINO_INTERNO':
+            # Treino interno/sem custo: conclui a aula normalmente (fica no
+            # histórico e libera o cavalo), mas NUNCA gera fatura pra ninguém.
+            messages.success(request, f"Treino interno de {aula.aluno.nome} concluído (sem cobrança).")
+            return redirect("dashboard")
 
         # Busca ou cria a fatura do mês do aluno
         from datetime import date
@@ -2927,3 +2936,111 @@ def relatorio_estoque_pdf(request):
 
     c.save()
     return response
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# CHECKLIST — Aluno e Logística (Gestor/Tratador), por Aula
+# ═══════════════════════════════════════════════════════════════════════
+
+def _checklist_view(request, aula_id, tipo):
+    """Monta o checklist de um tipo (ALUNO ou LOGISTICA) pra uma Aula específica,
+    criando os registros de acompanhamento na hora se ainda não existirem."""
+    from .models import ChecklistItem, ChecklistPreenchido
+
+    empresa = getattr(request, "empresa", request.user.perfil.empresa)
+    aula = get_object_or_404(Aula, id=aula_id, empresa=empresa)
+
+    itens = ChecklistItem.objects.filter(empresa=empresa, tipo=tipo, ativo=True)
+
+    for item in itens:
+        ChecklistPreenchido.objects.get_or_create(aula=aula, item=item)
+
+    checklist = (
+        ChecklistPreenchido.objects
+        .filter(aula=aula, item__tipo=tipo, item__ativo=True)
+        .select_related('item')
+        .order_by('item__ordem')
+    )
+    return aula, checklist
+
+
+@login_required
+def checklist_aluno(request, aula_id):
+    """Tela que o próprio Aluno acessa pra marcar seu checklist antes da aula/prova."""
+    from .models import ChecklistPreenchido
+
+    aula, checklist = _checklist_view(request, aula_id, 'ALUNO')
+
+    if request.method == 'POST':
+        marcados = set(request.POST.getlist('item_id'))
+        for c in checklist:
+            deveria_estar_marcado = str(c.item_id) in marcados
+            if deveria_estar_marcado != c.concluido:
+                c.concluido = deveria_estar_marcado
+                c.concluido_em = timezone.now() if deveria_estar_marcado else None
+                c.save()
+        messages.success(request, "Checklist atualizado!")
+        return redirect('checklist_aluno', aula_id=aula.id)
+
+    return render(request, 'gateagora/checklist_aluno.html', {
+        'aula': aula,
+        'checklist': checklist,
+    })
+
+
+@login_required
+def checklist_logistica(request, aula_id):
+    """Tela que Gestor/Tratador acessam pra conferir a logística antes de sair do haras."""
+    from .models import ChecklistPreenchido
+
+    aula, checklist = _checklist_view(request, aula_id, 'LOGISTICA')
+
+    if request.method == 'POST':
+        marcados = set(request.POST.getlist('item_id'))
+        for c in checklist:
+            deveria_estar_marcado = str(c.item_id) in marcados
+            if deveria_estar_marcado != c.concluido:
+                c.concluido = deveria_estar_marcado
+                c.concluido_em = timezone.now() if deveria_estar_marcado else None
+                c.save()
+        messages.success(request, "Checklist atualizado!")
+        return redirect('checklist_logistica', aula_id=aula.id)
+
+    return render(request, 'gateagora/checklist_logistica.html', {
+        'aula': aula,
+        'checklist': checklist,
+    })
+
+
+def _checklist_whatsapp_texto(aula, checklist, titulo):
+    linhas = [
+        f"🐎 *{aula.empresa.nome.upper()}*",
+        f"📋 *{titulo}*",
+        f"👤 {aula.aluno.nome} — 🐴 {aula.cavalo.nome}",
+        f"📅 {timezone.localtime(aula.data_hora).strftime('%d/%m/%Y %H:%M')}",
+        "━━━━━━━━━━━━━━━━━━━━━━━━",
+    ]
+    for c in checklist:
+        marca = "✅" if c.concluido else "⬜"
+        linhas.append(f"{marca} {c.item.descricao}")
+    return "\n".join(linhas)
+
+
+@login_required
+def checklist_whatsapp(request, aula_id, tipo):
+    """Gera o link do WhatsApp com o checklist formatado, no mesmo padrão
+    já usado pro Guia de Encilhamento."""
+    from urllib.parse import quote
+
+    tipo = tipo.upper()
+    titulo = "Checklist do Aluno" if tipo == 'ALUNO' else "Checklist de Logística"
+    aula, checklist = _checklist_view(request, aula_id, tipo)
+
+    telefone = request.GET.get('telefone', '').strip()
+    if not telefone:
+        # Sem telefone específico informado: usa o do próprio aluno, se existir
+        telefone = "".join(filter(str.isdigit, aula.aluno.telefone or ""))
+
+    texto = _checklist_whatsapp_texto(aula, checklist, titulo)
+    url = f"https://wa.me/{telefone}?text={quote(texto)}" if telefone else f"https://wa.me/?text={quote(texto)}"
+    return redirect(url)
