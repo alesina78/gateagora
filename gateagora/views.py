@@ -234,6 +234,7 @@ def dashboard(request):
             "valor":      formata_real(v_total),
             "atrasado":   fatura.data_vencimento < hoje,
             "link_zap":   link_zap,
+            "tem_whatsapp": bool(tel_c),
         })
     
 
