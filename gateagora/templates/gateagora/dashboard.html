@@ -1278,23 +1278,23 @@
           </div>
           <div style="max-height:160px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border) transparent;padding-right:4px;">
           {% for al in alunos_risco %}
-          <div class="flex items-center justify-between px-2 py-1.5 rounded-lg mb-1"
-               style="background:var(--card-alt);">
-            <div>
-              <span class="text-[11px] font-bold" style="color:var(--text-main)">{{ al.nome|truncatechars:22 }}</span>
-              {% if al.dias_inativo %}
-              <span class="text-[9px] ml-1 font-bold" style="color:#ef4444">{{ al.dias_inativo }}d</span>
+            <div class="flex items-center justify-between px-2 py-1.5 rounded-lg mb-1"
+                style="background:var(--card-alt);">
+              <div>
+                <span class="text-[11px] font-bold" style="color:var(--text-main)">{{ al.nome|truncatechars:22 }}</span>
+                {% if al.dias_inativo %}
+                <span class="text-[9px] ml-1 font-bold" style="color:#ef4444">{{ al.dias_inativo }}d</span>
+                {% endif %}
+              </div>
+              {% if al.telefone %}
+              <a href="https://wa.me/55{{ al.telefone|cut:' '|cut:'-'|cut:'('|cut:')' }}?text=Ol%C3%A1%2C+{{ al.nome|urlencode }}!+Estamos+com+saudades+de+te+ver+por+aqui+%F0%9F%90%8E+Sabemos+que+a+vida+fica+corrida%2C+mas+seu+cavalo+est%C3%A1+te+esperando%21+Podemos+marcar+um+hor%C3%A1rio%3F"
+                target="_blank"
+                style="font-size:9px;padding:2px 7px;border-radius:5px;background:rgba(239,68,68,0.1);color:#ef4444;">
+                <i class="fa-brands fa-whatsapp"></i>
+              </a>
               {% endif %}
             </div>
-            {% if al.telefone %}
-            <a href="https://wa.me/55{{ al.telefone|cut:' '|cut:'-'|cut:'('|cut:')' }}?text=Ol%C3%A1%2C+{{ al.nome|urlencode }}!+Estamos+com+saudades+de+te+ver+por+aqui+%F0%9F%90%8E+Sabemos+que+a+vida+fica+corrida%2C+mas+seu+cavalo+est%C3%A1+te+esperando%21+Podemos+marcar+um+hor%C3%A1rio%3F"
-               target="_blank"
-               style="font-size:9px;padding:2px 7px;border-radius:5px;background:rgba(239,68,68,0.1);color:#ef4444;">
-              <i class="fa-brands fa-whatsapp"></i>
-            </a>
-            {% endif %}
-          </div>
-          {% endfor %}
+            {% endfor %}
           </div>
         </div>
       </div>
