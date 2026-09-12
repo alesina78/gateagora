@@ -749,10 +749,10 @@
                       style="background:#4f46e5;color:#fff;letter-spacing:.04em">
                   {{ aula.data_hora|date:"H:i" }}
                 </span>
-                {% if aula.instrutor %}
-                  <span class="text-[9px]" style="color:var(--text-muted)">
-                    Prof. {{ aula.instrutor.get_full_name|default:aula.instrutor.nome|default:aula.instrutor.username }}
-                  </span>
+                {% if aula.nome_instrutor %}
+                <span class="text-[9px]" style="color:var(--text-muted)">
+                  Prof. {{ aula.nome_instrutor }}
+                </span>
                 {% endif %}
               </div>
               {% if aula.concluida %}
