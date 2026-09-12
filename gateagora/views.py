@@ -1553,7 +1553,8 @@ def encilhamento_whatsapp(request):
             f"   {material}",
         ]
         if aula.instrutor:
-            linhas.append(f"   Prof. {aula.instrutor.user.get_full_name()}")
+            nome_prof = aula.instrutor.user.get_full_name() or aula.instrutor.user.username
+            linhas.append(f"   Prof. {nome_prof}")
         if aula.relatorio_treino:
             linhas.append(f"📝 _{aula.relatorio_treino}_")
         linhas.append("─" * 26)
@@ -1674,7 +1675,8 @@ def encilhamento_pdf(request):
         p.setFont("Helvetica", 9)
         tipo_inst = aula.get_tipo_display()
         if aula.instrutor:
-            tipo_inst += f"  |  Prof. {aula.instrutor.user.first_name}"
+            nome_prof = aula.instrutor.user.get_full_name() or aula.instrutor.user.username
+            tipo_inst += f"  |  Prof. {nome_prof}"
         p.drawString(margem_x + 12, y - 59, tipo_inst)
 
         # Separador fino
