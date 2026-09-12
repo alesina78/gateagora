@@ -751,7 +751,7 @@
                 </span>
                 {% if aula.nome_instrutor %}
                 <span class="text-[9px]" style="color:var(--text-muted)">
-                  Prof. {{ aula.instrutor.nome|default:aula.nome_instrutor|default:"Não atribuído" }}
+                  <pre style="font-size: 10px;">{{ aula.__dict__ }}</pre> Prof. {{ aula.nome_instrutor }}
                 </span>
                 {% endif %}
               </div>
