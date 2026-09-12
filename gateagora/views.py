@@ -1540,12 +1540,14 @@ def encilhamento_whatsapp(request):
 
         sela     = getattr(c,'tipo_sela',None)     or "Padrao escola"
         cabecada = getattr(c,'tipo_cabecada',None)  or "Padrao escola"
+        nome_aluno_str  = aula.aluno.nome if aula.aluno else "Aluno não informado"
+        nome_cavalo_str = c.nome if c else "Cavalo não informado"
 
         linhas += [
             f"",
             f"{status_icon} *AULA {i} — {hora}*  |  {aula.get_local_display() or 'Picadeiro'}",
-            f"👤 {aula.aluno.nome}",
-            f"🐴 *{c.nome}*  ({local})",
+            f"👤 {nome_aluno_str}",
+            f"🐴 *{nome_cavalo_str}*  ({local})",
             f"   Sela: {sela}",
             f"   Cabecada: {cabecada}",
             f"   {material}",
@@ -1663,7 +1665,8 @@ def encilhamento_pdf(request):
         # Nome do aluno
         p.setFillColor(COR_TEXTO)
         p.setFont("Helvetica-Bold", 11.5)
-        nome_aluno = (aula.aluno.nome[:40] + "...") if len(aula.aluno.nome) > 40 else aula.aluno.nome
+        nome_aluno_raw = aula.aluno.nome if aula.aluno else "Aluno não informado"
+        nome_aluno = (nome_aluno_raw[:40] + "...") if len(nome_aluno_raw) > 40 else nome_aluno_raw
         p.drawString(margem_x + 12, y - 47, nome_aluno.upper())
 
         # Tipo de aula e instrutor
@@ -1679,10 +1682,11 @@ def encilhamento_pdf(request):
         p.setLineWidth(0.4)
         p.line(margem_x + 12, y - 65, margem_x + largura - 12, y - 65)
 
-        # Cavalo + local
+                # Cavalo + local
         p.setFillColor(COR_TEXTO)
         p.setFont("Helvetica-Bold", 10)
-        nome_cav = (c.nome[:30] + "...") if len(c.nome) > 30 else c.nome
+        nome_cav_raw = c.nome if c else "Cavalo não informado"
+        nome_cav = (nome_cav_raw[:30] + "...") if len(nome_cav_raw) > 30 else nome_cav_raw
         p.drawString(margem_x + 12, y - 79, f"Cavalo: {nome_cav}")
         p.setFillColor(COR_SUB)
         p.setFont("Helvetica", 9)
