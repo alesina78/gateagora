@@ -751,7 +751,7 @@
                 </span>
                 {% if aula.nome_instrutor %}
                 <span class="text-[9px]" style="color:var(--text-muted)">
-                  Prof. {{ aula.professor.get_full_name|default:aula.professor.nome|default:aula.professor.username }}
+                  Prof. {{ aula.instrutor.nome|default:aula.nome_instrutor|default:"Não atribuído" }}
                 </span>
                 {% endif %}
               </div>
