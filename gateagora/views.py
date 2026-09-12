@@ -1442,6 +1442,13 @@ def _get_aulas_encilhamento(empresa, data_str):
         else:
             aula.ui_estado = "nao_confirmada" 
 
+        # Nome do professor pronto pro template (get_full_name() não
+        # funciona direto em Django Template Language)
+        if aula.instrutor:
+            aula.nome_instrutor = aula.instrutor.user.get_full_name() or aula.instrutor.user.username
+        else:
+            aula.nome_instrutor = ""
+
     return aulas, data
 
 
