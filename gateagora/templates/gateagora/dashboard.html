@@ -751,11 +751,11 @@
                 </span>
                 {% if aula.instrutor %}
                   <span class="text-[9px]" style="color:var(--text-muted)">
-                    Prof. {{ aula.instrutor.get_full_name|default:aula.instrutor.first_name|default:aula.instrutor.nome|default:aula.instrutor }}
+                    Prof. {{ aula.instrutor.user.get_full_name|default:aula.instrutor.user.first_name|default:aula.instrutor.nome|default:aula.instrutor }}
                   </span>
                 {% elif aula.professor %}
                   <span class="text-[9px]" style="color:var(--text-muted)">
-                    Prof. {{ aula.professor.get_full_name|default:aula.professor.first_name|default:aula.professor.nome|default:aula.professor }}
+                    Prof. {{ aula.professor.user.get_full_name|default:aula.professor.user.first_name|default:aula.professor.nome|default:aula.professor }}
                   </span>
                 {% endif %}
               </div>
