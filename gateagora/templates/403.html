@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Acesso Restrito — Gate 4</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            background: #0d1117; color: #e6edf3;
+            font-family: -apple-system, 'Segoe UI', Roboto, sans-serif;
+            display: flex; align-items: center; justify-content: center;
+            min-height: 100vh; margin: 0; padding: 1.5rem; text-align: center;
+        }
+        .card {
+            background: #161b22; border: 1px solid #30363d; border-radius: 14px;
+            padding: 2.5rem 2rem; max-width: 420px;
+        }
+        .icone { font-size: 2.8rem; margin-bottom: 1rem; }
+        h1 { font-size: 1.3rem; margin-bottom: .6rem; }
+        p { color: #8b949e; font-size: .9rem; line-height: 1.5; margin-bottom: 1.6rem; }
+        a.voltar {
+            display: inline-block; padding: .7rem 1.6rem; border-radius: 10px;
+            background: #10b981; color: #0d1117; font-weight: 700; text-decoration: none;
+        }
+        a.voltar:hover { background: #0ea371; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="icone">🔒</div>
+        <h1>Acesso não permitido</h1>
+        <p>Você não tem permissão para acessar esta página com o seu perfil de acesso atual. Se acha que isso é um engano, fale com o gestor da sua hípica.</p>
+        <a class="voltar" href="{% url 'dashboard' %}">Voltar ao painel</a>
+    </div>
+</body>
+</html>

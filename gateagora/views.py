@@ -866,6 +866,11 @@ def dashboard(request):
         and request.user.perfil.cargo in cargos_com_acesso_financeiro
     )
 
+    # Professor só vê a agenda do dia — resto do dashboard fica oculto
+    pode_ver_dashboard_completo = not (
+        hasattr(request.user, 'perfil') and request.user.perfil.cargo == 'Professor'
+    )
+
     context = {
         "brand_name":               BRAND_NAME,
         "pode_ver_financeiro":      pode_ver_financeiro,
@@ -931,6 +936,7 @@ def dashboard(request):
         # Turmas / bem-estar
         "capacity_utilization":     capacity_utilization,
         "cavalos_sobrecarga":       cavalos_sobrecarga,
+        "pode_ver_dashboard_completo": pode_ver_dashboard_completo,
     }
 
     return render(request, "gateagora/dashboard.html", context)
@@ -1004,6 +1010,7 @@ def confirmar_presenca_dashboard(request, aula_id):
     try:
         perfil = request.user.perfil
     except Exception:
+        messages.error(request, "Sua conta não está vinculada a um perfil de acesso. Contate o gestor da hípica.")
         return redirect("login")
 
     if perfil.cargo not in ("Gestor", "Instrutor", "Admin"):
@@ -1559,9 +1566,8 @@ def encilhamento_whatsapp(request):
             f"   Cabecada: {cabecada}",
             f"   {material}",
         ]
-        if aula.instrutor:
-            nome_prof = aula.instrutor.user.get_full_name() or aula.instrutor.user.username
-            linhas.append(f"   Prof. {nome_prof}")
+        if aula.nome_instrutor:
+            linhas.append(f"   Prof. {aula.nome_instrutor}")
         if aula.relatorio_treino:
             linhas.append(f"📝 _{aula.relatorio_treino}_")
         linhas.append("─" * 26)
@@ -1681,9 +1687,8 @@ def encilhamento_pdf(request):
         p.setFillColor(COR_SUB)
         p.setFont("Helvetica", 9)
         tipo_inst = aula.get_tipo_display()
-        if aula.instrutor:
-            nome_prof = aula.instrutor.user.get_full_name() or aula.instrutor.user.username
-            tipo_inst += f"  |  Prof. {nome_prof}"
+        if aula.nome_instrutor:
+            tipo_inst += f"  |  Prof. {aula.nome_instrutor}"
         p.drawString(margem_x + 12, y - 59, tipo_inst)
 
         # Separador fino
@@ -2077,7 +2082,8 @@ def movimentar_estoque(request):
             )
 
         except Exception as e:
-            messages.error(request, f"Erro ao registrar movimentação: {e}")
+            print(f"[ERRO movimentação financeira] {e}")
+            messages.error(request, "Não foi possível registrar a movimentação. Confira os valores e tente novamente.")
 
     return redirect("dashboard")
 
@@ -2210,6 +2216,13 @@ def salvar_fechamento(request):
         item.save(update_fields=["quantidade_atual"])
         ajustes_salvos += 1
 
+    if ajustes_salvos > 0:
+        messages.success(request, f"Fechamento realizado com sucesso! {ajustes_salvos} item(ns) ajustado(s).")
+    else:
+        messages.info(request, "Nenhum ajuste de estoque foi necessário no fechamento.")
+
+    return redirect("fechamento_dia")
+
     if ajustes_salvos:
         messages.success(request, f"Fechamento do dia salvo! {ajustes_salvos} item(ns) ajustado(s).")
     else:
@@ -2239,6 +2252,7 @@ def minhas_aulas(request):
     try:
         perfil = request.user.perfil
     except Exception:
+        messages.error(request, "Sua conta não está vinculada a um perfil de acesso. Contate o gestor da hípica.")
         return redirect('login')
 
     # 2. Aluno vinculado ao usuário via perfil_usuario
