@@ -1036,6 +1036,7 @@ def confirmar_presenca_turma(request, aula_id):
     try:
         perfil = request.user.perfil
     except Exception:
+        messages.error(request, "Sua conta não está vinculada a um perfil de acesso. Contate o gestor da hípica.")
         return redirect("login")
 
     if perfil.cargo not in ("Gestor", "Instrutor", "Admin"):
@@ -2451,6 +2452,7 @@ def confirmar_presenca(request, aula_id):
     try:
         perfil = request.user.perfil
     except Exception:
+        messages.error(request, "Sua conta não está vinculada a um perfil de acesso. Contate o gestor da hípica.")
         return redirect('login')
 
     if perfil.cargo != 'Aluno':
