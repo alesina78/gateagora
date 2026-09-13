@@ -438,59 +438,47 @@ class ConfirmacaoPresenca(models.Model):
         return f"✅ {self.aluno.nome} confirmou {self.aula}"
 
 
+from urllib.parse import quote
+
 class ItemEstoque(models.Model):
-    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE)
+    # seus campos existentes...
     nome = models.CharField(max_length=100)
-
-    fornecedor_padrao = models.ForeignKey(
-        'Fornecedor', 
-        on_delete=models.SET_NULL, 
-        null=True, 
-        blank=True, 
-        verbose_name="Fornecedor Padrão"
-    )
-
-    alerta_minimo = models.IntegerField(default=5)
-    unidade = models.CharField(
-        max_length=20,
-        default="Unidade",
-        help_text="Ex: KG, Sacos, Fardos"
-    )
-    fornecedor_contato = models.CharField(max_length=20, blank=True, verbose_name="Telefone do Fornecedor")
+    estoque_disponivel = models.IntegerField(default=0)
+    alerta_minimo = models.IntegerField(default=0)
+    unidade = models.CharField(max_length=20, default='Pares')
+    fornecedor_telefone = models.CharField(max_length=20, blank=True, null=True)
 
     @property
     def whatsapp_fornecedor(self):
-        if not self.fornecedor_padrao or not self.fornecedor_padrao.telefone:
+        # Retorna None se não houver telefone cadastrado
+        if not self.fornecedor_telefone:
             return None
-        tel = "".join(filter(str.isdigit, str(self.fornecedor_padrao.telefone)))
-        if not tel.startswith("55"):
-            tel = f"55{tel}"
 
-        from urllib.parse import quote
+        # Limpa o telefone para manter apenas dígitos
+        telefone_limpo = ''.join(filter(str.isdigit, str(self.fornecedor_telefone)))
+        if not telefone_limpo:
+            return None
 
-        aviso_vencido = (
-            f"⚠️ *Atenção: lote atual VENCIDO* — {self.quantidade_vencida} {self.unidade} para descarte.\n"
-            if self.quantidade_vencida > 0 else ""
-        )
+        # Calcula a quantidade a pedir
+        qtd_pedir = max(0, self.alerta_minimo - self.estoque_disponivel)
 
-        msg = (
-            f"📦 *Pedido de Reposição — {self.empresa.nome}* 🐎\n\n"
+        # Monta a mensagem formatada
+        mensagem = (
+            f"📦 *Pedido de Reposição — Hípica Paraíso RS* 📦\n\n"
             f"Olá! Gostaríamos de solicitar a reposição do seguinte item:\n\n"
             f"*Produto:* {self.nome}\n"
             f"*Estoque disponível (válido):* {self.estoque_disponivel} {self.unidade}\n"
             f"*Estoque mínimo:* {self.alerta_minimo} {self.unidade}\n"
-            f"{aviso_vencido}"
-        )
-        if self.dias_para_vencer is not None and self.status_validade != 'vencido':
-            msg += f"*Validade mais próxima:* {self.dias_para_vencer} dias\n"
-        msg += (
-            f"*Quantidade a pedir:* {self.lote_economico or '???'} {self.unidade}\n\n"
+            f"*Quantidade a pedir:* {qtd_pedir} {self.unidade}\n\n"
             f"Por favor, confirme disponibilidade e prazo de entrega.\n"
-            f"⚠️ Antes de qualquer alteração, envie os documentos para conferência.\n\n"
-            f"📲 _Enviado via *Gate 4 — Gestão de Haras e Hípicas*_ 🐎"
+            f"📄 Antes de qualquer alteração, envie os documentos para conferência.\n\n"
+            f"📱 _Enviado via *Gate 4 — Gestão de Haras e Hípicas*_"
         )
-        return f"https://wa.me/{tel}?text={quote(msg)}"
 
+        # Codifica o texto para URL (trata acentos, quebras de linha e espaços)
+        mensagem_encoded = quote(mensagem)
+
+        return f"https://wa.me/55{telefone_limpo}?text={mensagem_encoded}"
     lote_economico = models.IntegerField(
         default=0,
         blank=True,
