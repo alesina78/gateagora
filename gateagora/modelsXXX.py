@@ -7,6 +7,7 @@ from django.db.models.signals import pre_save, post_save
 from django.db.models import Sum, Q
 from django.dispatch import receiver
 from django.core.validators import MinValueValidator, RegexValidator
+from urllib.parse import quote
 
 
 # --- 1. ESTRUTURA MULTI-EMPRESA ---
@@ -436,72 +437,29 @@ class ConfirmacaoPresenca(models.Model):
 
     def __str__(self):
         return f"✅ {self.aluno.nome} confirmou {self.aula}"
-
-
+    
+    
 class ItemEstoque(models.Model):
     empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE)
     nome = models.CharField(max_length=100)
-
-    fornecedor_padrao = models.ForeignKey(
-        'Fornecedor', 
-        on_delete=models.SET_NULL, 
-        null=True, 
-        blank=True, 
-        verbose_name="Fornecedor Padrão"
+    # REMOVIDO: estoque_disponivel (pois ele é a @property no final da classe)
+    alerta_minimo = models.IntegerField(default=0)
+    unidade = models.CharField(max_length=20, default='Pares')
+    fornecedor_telefone = models.CharField(
+        max_length=20, blank=True, null=True
     )
-
-    alerta_minimo = models.IntegerField(default=5)
-    unidade = models.CharField(
-        max_length=20,
-        default="Unidade",
-        help_text="Ex: KG, Sacos, Fardos"
-    )
-    fornecedor_contato = models.CharField(max_length=20, blank=True, verbose_name="Telefone do Fornecedor")
-
-    @property
-    def whatsapp_fornecedor(self):
-        if not self.fornecedor_padrao or not self.fornecedor_padrao.telefone:
-            return None
-        tel = "".join(filter(str.isdigit, str(self.fornecedor_padrao.telefone)))
-        if not tel.startswith("55"):
-            tel = f"55{tel}"
-
-        from urllib.parse import quote
-
-        aviso_vencido = (
-            f"⚠️ *Atenção: lote atual VENCIDO* — {self.quantidade_vencida} {self.unidade} para descarte.\n"
-            if self.quantidade_vencida > 0 else ""
-        )
-
-        msg = (
-            f"📦 *Pedido de Reposição — {self.empresa.nome}* 🐎\n\n"
-            f"Olá! Gostaríamos de solicitar a reposição do seguinte item:\n\n"
-            f"*Produto:* {self.nome}\n"
-            f"*Estoque disponível (válido):* {self.estoque_disponivel} {self.unidade}\n"
-            f"*Estoque mínimo:* {self.alerta_minimo} {self.unidade}\n"
-            f"{aviso_vencido}"
-        )
-        if self.dias_para_vencer is not None and self.status_validade != 'vencido':
-            msg += f"*Validade mais próxima:* {self.dias_para_vencer} dias\n"
-        msg += (
-            f"*Quantidade a pedir:* {self.lote_economico or '???'} {self.unidade}\n\n"
-            f"Por favor, confirme disponibilidade e prazo de entrega.\n"
-            f"⚠️ Antes de qualquer alteração, envie os documentos para conferência.\n\n"
-            f"📲 _Enviado via *Gate 4 — Gestão de Haras e Hípicas*_ 🐎"
-        )
-        return f"https://wa.me/{tel}?text={quote(msg)}"
 
     lote_economico = models.IntegerField(
         default=0,
         blank=True,
-        help_text="Quantidade padrão a pedir ao fornecedor"
+        help_text="Quantidade padrão a pedir ao fornecedor",
     )
 
     consumo_diario = models.DecimalField(
         max_digits=6,
         decimal_places=2,
         default=0,
-        help_text="Consumo médio diário (para calcular dias restantes)"
+        help_text="Consumo médio diário (para calcular dias restantes)",
     )
 
     # ⚠️ Campo legado — mantido para o formulário de fechamento do dia (input de ajuste manual).
@@ -521,8 +479,7 @@ class ItemEstoque(models.Model):
 
     @property
     def quantidade_valida(self):
-        """
-        Soma dos lotes ativos dentro do prazo de validade.
+        """Soma dos lotes ativos dentro do prazo de validade.
 
         Regras:
         - Lotes sem data_validade são considerados sempre válidos (ex: sal mineral).
@@ -545,8 +502,8 @@ class ItemEstoque(models.Model):
 
     @property
     def quantidade_vencida(self):
-        """
-        Soma dos lotes ativos que já venceram — quantidade a ser descartada.
+        """Soma dos lotes ativos que já venceram — quantidade a ser descartada.
+
         Retorna 0 se não há lotes vencidos.
         """
         hoje = timezone.localdate()
@@ -559,8 +516,7 @@ class ItemEstoque(models.Model):
 
     @property
     def estoque_disponivel(self):
-        """
-        Estoque que pode efetivamente ser usado.
+        """Estoque que pode efetivamente ser usado.
 
         Equivalente a quantidade_valida, mas explicitamente retorna 0
         quando status_validade == 'vencido' — usado pelos templates e pela
@@ -586,18 +542,21 @@ class ItemEstoque(models.Model):
 
     @property
     def dias_para_vencer(self):
-        """
-        Dias até o lote com validade mais próxima vencer.
+        """Dias até o lote com validade mais próxima vencer.
 
         CORRIGIDO: busca apenas lotes com data_validade definida,
         ordenando pelo mais próximo — seja ele já vencido (negativo)
         ou ainda válido. Lotes sem data_validade são ignorados aqui
         (eles nunca vencem, não fazem sentido no cálculo).
         """
-        lote_proximo = self.lotes.filter(
-            ativo=True,
-            data_validade__isnull=False,
-        ).order_by('data_validade').first()
+        lote_proximo = (
+            self.lotes.filter(
+                ativo=True,
+                data_validade__isnull=False,
+            )
+            .order_by('data_validade')
+            .first()
+        )
 
         if not lote_proximo:
             return None
@@ -605,8 +564,7 @@ class ItemEstoque(models.Model):
 
     @property
     def status_validade(self):
-        """
-        Estado de validade do item baseado no lote com data mais próxima.
+        """Estado de validade do item baseado no lote com data mais próxima.
 
         Retornos possíveis:
         'ok'             → dentro do prazo (> 30 dias) ou sem data de validade
@@ -623,8 +581,7 @@ class ItemEstoque(models.Model):
 
         # Busca o lote ativo com validade mais próxima
         lote = (
-            self.lotes
-            .filter(ativo=True)
+            self.lotes.filter(ativo=True)
             .exclude(data_validade__isnull=True)
             .order_by('data_validade')
             .first()
@@ -644,6 +601,41 @@ class ItemEstoque(models.Model):
             return 'alerta'
 
         return 'ok'
+
+    # MOVIDO PARA O FINAL: Para conseguir ler a @property self.estoque_disponivel que já foi definida acima
+    @property
+    def whatsapp_fornecedor(self):
+        # Retorna None se não houver telefone cadastrado
+        if not self.fornecedor_telefone:
+            return None
+
+        # Limpa o telefone para manter apenas dígitos
+        telefone_limpo = ''.join(
+            filter(str.isdigit, str(self.fornecedor_telefone))
+        )
+        if not telefone_limpo:
+            return None
+
+        # Calcula a quantidade a pedir
+        qtd_pedir = max(0, self.alerta_minimo - int(self.estoque_disponivel))
+
+        # Monta a mensagem formatada
+        mensagem = (
+            f"📦 *Pedido de Reposição — Hípica Paraíso RS* 📦\n\n"
+            f"Olá! Gostaríamos de solicitar a reposição do seguinte item:\n\n"
+            f"*Produto:* {self.nome}\n"
+            f"*Estoque disponível (válido):* {self.estoque_disponivel} {self.unidade}\n"
+            f"*Estoque mínimo:* {self.alerta_minimo} {self.unidade}\n"
+            f"*Quantidade a pedir:* {qtd_pedir} {self.unidade}\n\n"
+            f"Por favor, confirme disponibilidade e prazo de entrega.\n"
+            f"📄 Antes de qualquer alteração, envie os documentos para conferência.\n\n"
+            f"📱 _Enviado via *Gate 4 — Gestão de Haras e Hípicas*_"
+        )
+
+        # Codifica o texto para URL (trata acentos, quebras de linha e espaços)
+        mensagem_encoded = quote(mensagem)
+
+        return f"https://wa.me/55{telefone_limpo}?text={mensagem_encoded}"
 
 
 class MovimentacaoFinanceira(models.Model):
