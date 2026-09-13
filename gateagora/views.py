@@ -109,57 +109,67 @@ def _iter_ultimos_meses(base: date, n: int = 6):
 
 def _montar_msg_fatura_whatsapp(fatura, empresa):
     """
-    Monta mensagem WhatsApp detalhada da fatura, incluindo itens e cavalos.
+    Monta mensagem WhatsApp detalhada da fatura, agrupando itens do mesmo
+    tipo (ex: várias aulas) numa lista com bullets, em vez de repetir.
     """
     total = fatura.total
-    itens = list(fatura.itens.all().select_related('cavalo'))  # otimizado
+    itens = list(fatura.itens.all().select_related('cavalo'))
 
     linhas = [
-        f"🐎 *{empresa.nome}* — Lembrete Financeiro",
+        f"🐎 *{empresa.nome}*",
         "",
-        f"Olá, *{fatura.aluno.nome}*! Tudo bem?",
+        f"Olá, *{fatura.aluno.nome}*! Tudo bem? 😊",
         "",
-        "🧾 *Detalhamento da sua fatura*",
+        "Preparamos o resumo dos seus serviços:",
+        "",
+        f"🧾 *Fatura com vencimento em {fatura.data_vencimento.strftime('%d/%m/%Y')}*",
         "",
     ]
 
     if itens:
+        # Agrupa por tipo, mantendo a ordem de primeira aparição
+        grupos = {}
+        ordem_tipos = []
         for item in itens:
-            emoji = EMOJIS_TIPO_FATURA.get(item.tipo, '•')
-            tipo_display = item.get_tipo_display()
+            if item.tipo not in grupos:
+                grupos[item.tipo] = []
+                ordem_tipos.append(item.tipo)
+            grupos[item.tipo].append(item)
 
-            # Linha principal do item
-            linha_item = f"  {emoji} {tipo_display}: R$ {item.valor:,.2f}"
-            linhas.append(linha_item)
+        for tipo in ordem_tipos:
+            grupo = grupos[tipo]
+            emoji = EMOJIS_TIPO_FATURA.get(tipo, '•')
+            tipo_display = grupo[0].get_tipo_display()
 
-            # Descrição adicional (se existir)
-            if item.descricao:
-                linhas.append(f"      _{item.descricao}_")
-
-            # Cavalo relacionado (muito importante!)
-            if item.cavalo:
-                linhas.append(f"      🐴 *Cavalo:* {item.cavalo.nome}")
-            
-            # Linha em branco para separar itens
+            if len(grupo) == 1:
+                item = grupo[0]
+                data_txt = item.data.strftime('%d/%m/%Y') if item.data else ""
+                cavalo_txt = f"🐴 {item.cavalo.nome} — " if item.cavalo else ""
+                linhas.append(f"{emoji} *{tipo_display}* — {data_txt}")
+                linhas.append(f"{cavalo_txt}R$ {formata_real(item.valor)}")
+            else:
+                linhas.append(f"{emoji} *{tipo_display}*")
+                for item in grupo:
+                    data_txt = item.data.strftime('%d/%m/%Y') if item.data else ""
+                    cavalo_txt = f"{item.cavalo.nome} — " if item.cavalo else ""
+                    linhas.append(f"• {data_txt} — {cavalo_txt}R$ {formata_real(item.valor)}")
             linhas.append("")
-
     else:
-        # Fallback quando não tem itens detalhados
-        linhas.append(f"  💰 Total: R$ {total:,.2f}")
+        linhas.append(f"💰 Total: R$ {formata_real(total)}")
         linhas.append("")
 
-    # Rodapé da mensagem
     linhas += [
-        f"💰 *Total a pagar:* R$ {total:,.2f}",
-        f"📅 Vencimento: *{fatura.data_vencimento.strftime('%d/%m/%Y')}*",
+        "━━━━━━━━━━━━━━",
+        f"💰 *Total:* R$ {formata_real(total)}",
+        f"📅 *Vencimento:* {fatura.data_vencimento.strftime('%d/%m/%Y')}",
+        "━━━━━━━━━━━━━━",
         "",
-        "✅ Caso o pagamento já tenha sido realizado, por favor, envie o comprovante por aqui 😊",
+        "Se o pagamento já foi realizado, envie o comprovante por aqui para atualizarmos a fatura. 😊",
         "",
-        "Ficamos à disposição para qualquer dúvida.",
+        "Qualquer dúvida sobre os lançamentos, estamos à disposição.",
         "",
-        f"Atenciosamente,",
-        f"*{empresa.nome}*",
-        MSG_RODAPE,
+        f"🐎 *{empresa.nome}*",
+        "GATE4 — Gestão de Haras e Hípicas",
     ]
 
     return "\n".join(linhas)
