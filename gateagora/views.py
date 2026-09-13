@@ -17,6 +17,7 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.db.models import Case, When, IntegerField, Value
 
+
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.colors import HexColor, black, grey
@@ -88,12 +89,11 @@ def theme_context_processor(request):
     return {"current_theme": request.COOKIES.get("gate-theme", "zaino")}
 
 # ── Utilitários ───────────────────────────────────────────────────────────────
-
 def formata_real(valor):
     try:
         val = float(valor) if valor else 0.0
         return f"{val:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-    except:
+    except Exception:
         return "0,00"
 
 def _iter_ultimos_meses(base: date, n: int = 6):
@@ -143,16 +143,23 @@ def _montar_msg_fatura_whatsapp(fatura, empresa):
 
             if len(grupo) == 1:
                 item = grupo[0]
-                data_txt = item.data.strftime('%d/%m/%Y') if item.data else ""
+                data_txt = f" — {item.data.strftime('%d/%m/%Y')}" if item.data else ""
                 cavalo_txt = f"🐴 {item.cavalo.nome} — " if item.cavalo else ""
-                linhas.append(f"{emoji} *{tipo_display}* — {data_txt}")
+                
+                linhas.append(f"{emoji} *{tipo_display}*{data_txt}")
                 linhas.append(f"{cavalo_txt}R$ {formata_real(item.valor)}")
             else:
                 linhas.append(f"{emoji} *{tipo_display}*")
                 for item in grupo:
                     data_txt = item.data.strftime('%d/%m/%Y') if item.data else ""
                     cavalo_txt = f"{item.cavalo.nome} — " if item.cavalo else ""
-                    linhas.append(f"• {data_txt} — {cavalo_txt}R$ {formata_real(item.valor)}")
+                    
+                    # Formata a linha mantendo traços limpos se não houver data ou cavalo
+                    partes_bullet = [p for p in [data_txt, cavalo_txt[:-3] if cavalo_txt else ""] if p]
+                    prefixo = " — ".join(partes_bullet) + " — " if partes_bullet else ""
+                    
+                    linhas.append(f"• {prefixo}R$ {formata_real(item.valor)}")
+            
             linhas.append("")
     else:
         linhas.append(f"💰 Total: R$ {formata_real(total)}")
