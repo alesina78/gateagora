@@ -433,7 +433,7 @@ def dashboard(request):
             "vencimento": fatura.data_vencimento,
             "valor":      formata_real(v_total),
             "atrasado":   fatura.data_vencimento < hoje,
-            "link_zap":   link_zap,
+            "link_zap":   link_wa,
             "tem_whatsapp": bool(tel_c),
         })
     
