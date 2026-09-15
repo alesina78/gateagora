@@ -107,6 +107,73 @@ def _iter_ultimos_meses(base: date, n: int = 6):
         out.append(date(y, m, 1))
     return sorted(out)
 
+def _montar_msg_fornecedor(item):
+    """Monta o link de WhatsApp do pedido de reposição pro fornecedor padrão."""
+    from urllib.parse import quote
+
+    if not item.fornecedor_padrao or not item.fornecedor_padrao.telefone:
+        return None
+
+    tel = "".join(filter(str.isdigit, str(item.fornecedor_padrao.telefone)))
+    if not tel.startswith("55"):
+        tel = f"55{tel}"
+
+    quantidade = item.lote_economico or (item.alerta_minimo - item.estoque_disponivel)
+
+    linhas = [
+        "📦 *Pedido de Reposição de Estoque*",
+        f"🐎 {item.empresa.nome}",
+        "",
+        "Olá! Tudo bem?",
+        "",
+        "Precisamos fazer um pedido de reposição:",
+        "",
+        "━━━━━━━━━━━━━━",
+        "🛒 *PEDIDO*",
+        f"*Produto:* {item.nome}",
+        f"*Quantidade:* {quantidade} {item.unidade}",
+        "━━━━━━━━━━━━━━",
+        "",
+        "📊 Situação atual do estoque (só pra contexto):",
+        f"   • Disponível: {item.estoque_disponivel} {item.unidade}",
+        f"   • Mínimo recomendado: {item.alerta_minimo} {item.unidade}",
+    ]
+
+    if item.quantidade_vencida > 0:
+        linhas.append("")
+        linhas.append(f"⚠️ *Atenção:* lote atual vencido — {item.quantidade_vencida} {item.unidade} para descarte.")
+
+    if item.dias_para_vencer is not None and item.status_validade != 'vencido':
+        linhas.append(f"   • Validade mais próxima: {item.dias_para_vencer} dias")
+
+    linhas += [
+        "",
+        "Por favor, confirme:",
+        "✅ Disponibilidade",
+        "📅 Prazo de entrega",
+        "💰 Valor e condições",
+        "",
+        "📎 Antes de finalizar o pedido, pode enviar a documentação/nota para conferência.",
+        "",
+        "Obrigado!",
+        f"🐎 {item.empresa.nome}",
+        "_Gestão via GATE4 — Gestão de Haras e Hípicas_",
+    ]
+
+    return f"https://wa.me/{tel}?text={quote(chr(10).join(linhas))}"
+
+
+@login_required
+def fornecedor_whatsapp(request, item_id):
+    from .models import ItemEstoque
+    empresa = getattr(request, "empresa", request.user.perfil.empresa)
+    item = get_object_or_404(ItemEstoque, id=item_id, empresa=empresa)
+    link = _montar_msg_fornecedor(item)
+    if not link:
+        messages.error(request, "Este item não tem fornecedor ou telefone cadastrado.")
+        return redirect("dashboard")
+    return redirect(link)
+
 def _montar_msg_fatura_whatsapp(fatura, empresa):
     """
     Monta mensagem WhatsApp detalhada da fatura, agrupando itens do mesmo
@@ -240,9 +307,11 @@ def dashboard(request):
                 v_total = v_hotel + Decimal(str(n_aulas)) * Decimal(str(fatura.aluno.valor_aula or 0))
 
         tel_c = fatura.aluno.telefone_limpo if hasattr(fatura.aluno, 'telefone_limpo') else ""
+        if tel_c and not tel_c.startswith("55"):
+            tel_c = f"55{tel_c}"
         # Usa a função auxiliar para montar a mensagem
         msg_zap = _montar_msg_fatura_whatsapp(fatura, empresa)
-        link_zap = f"https://wa.me/55{tel_c}?text={quote(msg_zap)}" if tel_c else "#"
+        link_wa = f"https://wa.me/{tel_c}?text={quote(msg)}" if tel_c else "#"
 
         listagem_cobranca.append({
             "fatura_id":  fatura.id,
