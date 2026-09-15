@@ -639,13 +639,12 @@
                   </span>
                 {% endif %}
               </span>
-              <a href="{% url 'fornecedor_whatsapp' item.id %}">
+              <a href="{% url 'fornecedor_whatsapp' item.id %}"
                 target="_blank"
                 class="text-[8px] font-bold px-1.5 py-0.5 rounded transition-opacity hover:opacity-80"
                 style="background:rgba(16,185,129,0.1);color:var(--emerald-text);">
                 <i class="fa-brands fa-whatsapp mr-0.5"></i>Fornecedor
               </a>
-              {% endif %}
             </div>
             {% if item.alerta_minimo > 0 %}
             <div class="stock-bar-wrap mt-1.5">
