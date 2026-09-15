@@ -108,70 +108,184 @@ def _iter_ultimos_meses(base: date, n: int = 6):
     return sorted(out)
 
 def _montar_msg_fornecedor(item):
-    """Monta o link de WhatsApp do pedido de reposição pro fornecedor padrão."""
+    """
+    Monta o link de WhatsApp para solicitação de reposição
+    ao fornecedor padrão do item.
+
+    Regras:
+    - estoque_disponivel considera somente estoque válido;
+    - lote_economico, quando configurado, define a quantidade padrão do pedido;
+    - caso não exista lote econômico, solicita o necessário para atingir o estoque mínimo;
+    - informações de estoque são apresentadas apenas na área de controle interno.
+    """
     from urllib.parse import quote
 
+    # ---------------------------------------------------------
+    # 1. Validação do fornecedor
+    # ---------------------------------------------------------
     if not item.fornecedor_padrao or not item.fornecedor_padrao.telefone:
         return None
 
-    tel = "".join(filter(str.isdigit, str(item.fornecedor_padrao.telefone)))
+    # Normaliza telefone para WhatsApp
+    tel = "".join(
+        filter(str.isdigit, str(item.fornecedor_padrao.telefone))
+    )
+
     if not tel.startswith("55"):
         tel = f"55{tel}"
 
-    quantidade = item.lote_economico or (item.alerta_minimo - item.estoque_disponivel)
+    # ---------------------------------------------------------
+    # 2. Cálculo da reposição
+    # ---------------------------------------------------------
+    estoque_atual = item.estoque_disponivel
+    estoque_minimo = item.alerta_minimo
+    lote_economico = item.lote_economico or 0
 
+    # Quantidade necessária para voltar ao estoque mínimo
+    quantidade_necessaria = max(
+        0,
+        estoque_minimo - estoque_atual
+    )
+
+    # Se houver lote econômico cadastrado, ele é a quantidade
+    # padrão de compra.
+    #
+    # Caso contrário, usa somente a quantidade necessária
+    # para atingir o estoque mínimo.
+    if lote_economico > 0:
+        quantidade_solicitada = lote_economico
+    else:
+        quantidade_solicitada = quantidade_necessaria
+
+    unidade = item.unidade
+    empresa_nome = item.empresa.nome
+
+    # ---------------------------------------------------------
+    # 3. Cabeçalho da solicitação
+    # ---------------------------------------------------------
     linhas = [
-        "📦 *Pedido de Reposição de Estoque*",
-        f"🐎 {item.empresa.nome}",
+        "📦 *SOLICITAÇÃO DE REPOSIÇÃO*",
+        "",
+        f"🐎 *{empresa_nome}*",
         "",
         "Olá! Tudo bem?",
         "",
-        "Precisamos fazer um pedido de reposição:",
+        "Gostaríamos de solicitar o seguinte produto:",
         "",
-        "━━━━━━━━━━━━━━",
+        "━━━━━━━━━━━━━━━━━━",
         "🛒 *PEDIDO*",
-        f"*Produto:* {item.nome}",
-        f"*Quantidade:* {quantidade} {item.unidade}",
-        "━━━━━━━━━━━━━━",
+        "━━━━━━━━━━━━━━━━━━",
         "",
-        "📊 Situação atual do estoque (só pra contexto):",
-        f"   • Disponível: {item.estoque_disponivel} {item.unidade}",
-        f"   • Mínimo recomendado: {item.alerta_minimo} {item.unidade}",
+        f"💉 *Produto:* {item.nome}",
+        f"📦 *Quantidade solicitada:* {quantidade_solicitada} {unidade}",
     ]
 
-    if item.quantidade_vencida > 0:
-        linhas.append("")
-        linhas.append(f"⚠️ *Atenção:* lote atual vencido — {item.quantidade_vencida} {item.unidade} para descarte.")
+    # Mostra o lote econômico somente quando realmente
+    # estiver configurado no cadastro do item.
+    if lote_economico > 0:
+        linhas.append(
+            f"Lote econômico: {lote_economico} {unidade}"
+        )
 
-    if item.dias_para_vencer is not None and item.status_validade != 'vencido':
-        linhas.append(f"   • Validade mais próxima: {item.dias_para_vencer} dias")
-
+    # ---------------------------------------------------------
+    # 4. Confirmação do fornecedor
+    # ---------------------------------------------------------
     linhas += [
         "",
-        "Por favor, confirme:",
-        "✅ Disponibilidade",
-        "📅 Prazo de entrega",
-        "💰 Valor e condições",
+        "━━━━━━━━━━━━━━━━━━",
         "",
-        "📎 Antes de finalizar o pedido, pode enviar a documentação/nota para conferência.",
+        "Por favor, confirme:",
+        "",
+        "✅ Disponibilidade do produto",
+        "📅 Prazo de entrega",
+        "💰 Valor e condições de pagamento",
+        "",
+        "📎 *Importante:* antes da confirmação do pedido, "
+        "envie a documentação necessária para conferência.",
         "",
         "Obrigado!",
-        f"🐎 {item.empresa.nome}",
-        "_Gestão via GATE4 — Gestão de Haras e Hípicas_",
+        "",
+        f"🐎 *{empresa_nome}*",
+        "Gestão inteligente com *GATE4*",
     ]
 
-    return f"https://wa.me/{tel}?text={quote(chr(10).join(linhas))}"
+    # ---------------------------------------------------------
+    # 5. Controle interno
+    #
+    # Esta parte é enviada junto na mensagem, mas fica
+    # claramente separada do pedido.
+    # ---------------------------------------------------------
+    linhas += [
+        "",
+        "━━━━━━━━━━━━━━━━━━",
+        "🔒 *CONTROLE INTERNO — GATE4*",
+        "━━━━━━━━━━━━━━━━━━",
+        "",
+        f"📊 Estoque válido atual: *{estoque_atual} {unidade}*",
+        f"⚠️ Estoque mínimo definido: *{estoque_minimo} {unidade}*",
+    ]
+
+    if lote_economico > 0:
+        linhas.append(
+            f"📦 Lote econômico cadastrado: *{lote_economico} {unidade}*"
+        )
+
+    linhas += [
+        f"🛒 Reposição solicitada: *{quantidade_solicitada} {unidade}*",
+    ]
+
+    # Se a quantidade solicitada for suficiente para atingir
+    # o mínimo, informa isso no controle interno.
+    estoque_projetado = estoque_atual + quantidade_solicitada
+
+    if estoque_projetado >= estoque_minimo:
+        linhas += [
+            "",
+            f"➡️ Após a reposição: *{estoque_projetado} {unidade}*",
+            "✅ Estoque mínimo será atingido.",
+        ]
+    else:
+        linhas += [
+            "",
+            f"⚠️ Após a reposição: *{estoque_projetado} {unidade}*",
+            "⚠️ Estoque mínimo ainda não será atingido.",
+        ]
+
+    # ---------------------------------------------------------
+    # 6. Monta URL do WhatsApp
+    # ---------------------------------------------------------
+    mensagem = "\n".join(linhas)
+
+    return (
+        f"https://wa.me/{tel}?text={quote(mensagem)}"
+    )
 
 
 @login_required
 def fornecedor_whatsapp(request, item_id):
     from .models import ItemEstoque
-    empresa = getattr(request, "empresa", request.user.perfil.empresa)
-    item = get_object_or_404(ItemEstoque, id=item_id, empresa=empresa)
+
+    empresa = getattr(
+        request,
+        "empresa",
+        request.user.perfil.empresa
+    )
+
+    item = get_object_or_404(
+        ItemEstoque,
+        id=item_id,
+        empresa=empresa
+    )
+
     link = _montar_msg_fornecedor(item)
+
     if not link:
-        messages.error(request, "Este item não tem fornecedor ou telefone cadastrado.")
+        messages.error(
+            request,
+            "Este item não tem fornecedor ou telefone cadastrado."
+        )
         return redirect("dashboard")
+
     return redirect(link)
 
 def _montar_msg_fatura_whatsapp(fatura, empresa):
