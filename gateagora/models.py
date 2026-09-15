@@ -358,12 +358,14 @@ class Aula(models.Model):
         ('picadeiro_1', 'Picadeiro Principal'),
         ('picadeiro_2', 'Picadeiro Coberto'),
         ('pista_salto', 'Pista de Salto'),
+        ('Competição', 'Competição'),
     ]
     empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE)
     TIPO_AULA_CHOICES = [
         ('NORMAL', 'Aula Normal'),
         ('RECUPERAR', 'Aula a Recuperar'),
         ('TREINO_INTERNO', 'Treino Interno (sem custo)'),
+        ('TREINO_EXTERNO', 'Competição'),
     ]
 
     aluno = models.ForeignKey(Aluno, on_delete=models.CASCADE, related_name='aulas')
