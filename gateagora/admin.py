@@ -44,6 +44,7 @@ from .models import (
     Plano,
     RegistroOcorrencia,
     Fornecedor,
+    LocalAula,
 )
 
 # ── ACTION: DUPLICAR REGISTRO ───────────────────────────────────────────────
@@ -1157,6 +1158,13 @@ class FornecedorAdmin(PermissaoPorCargoMixin, BaseEmpresaAdmin):
         )
 
 admin.site.register(User, CustomUserAdmin)
+
+@admin.register(LocalAula)
+class LocalAulaAdmin(PermissaoPorCargoMixin, BaseEmpresaAdmin):
+    cargos_acesso_total = {'Gestor'}
+    list_display = ["nome", "ativo"]
+    list_editable = ["ativo"]
+    search_fields = ["nome"]
 
 
 @admin.register(ChecklistItem)

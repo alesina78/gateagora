@@ -352,6 +352,18 @@ class RegistroOcorrencia(models.Model):
 
 
 # --- 4. AULAS E ESTOQUE ---
+class LocalAula(models.Model):
+    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE)
+    nome = models.CharField(max_length=100)
+    ativo = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ['nome']
+        verbose_name = "Local de Aula 📍"
+        verbose_name_plural = "Locais de Aula 📍"
+
+    def __str__(self):
+        return self.nome
 
 class Aula(models.Model):
     LOCAIS_CHOICES = [
@@ -381,6 +393,11 @@ class Aula(models.Model):
 
     data_hora = models.DateTimeField(db_index=True)
     local = models.CharField(max_length=20, choices=LOCAIS_CHOICES, default='picadeiro_1')
+    local_novo = models.ForeignKey(
+        'LocalAula', null=True, blank=True,
+        on_delete=models.SET_NULL,
+        verbose_name="Local (novo)"
+    )
     tipo = models.CharField(max_length=15, choices=TIPO_AULA_CHOICES, default='NORMAL')
     concluida = models.BooleanField(default=False)
     relatorio_treino = models.TextField(blank=True)
