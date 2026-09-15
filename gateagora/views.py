@@ -425,7 +425,7 @@ def dashboard(request):
             tel_c = f"55{tel_c}"
         # Usa a função auxiliar para montar a mensagem
         msg_zap = _montar_msg_fatura_whatsapp(fatura, empresa)
-        link_wa = f"https://wa.me/{tel_c}?text={quote(msg)}" if tel_c else "#"
+        link_wa = f"https://wa.me/{tel_c}?text={quote(msg_zap)}" if tel_c else "#"
 
         listagem_cobranca.append({
             "fatura_id":  fatura.id,
