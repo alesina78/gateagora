@@ -276,9 +276,6 @@ class Cavalo(models.Model):
         verbose_name="Cabeçada Padrão"
     )
 
-    def __str__(self):
-        return self.nome
-
     raca = models.ForeignKey(
         'RacaCavalo',
         on_delete=models.SET_NULL,
