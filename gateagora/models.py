@@ -78,6 +78,21 @@ def criar_perfil_usuario(sender, instance, created, **kwargs):
 
 # --- 2. GESTÃO OPERACIONAL ---
 
+class Sela(models.Model):
+    nome = models.CharField(max_length=100)
+    descricao = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return self.nome
+
+
+class Cabecada(models.Model):
+    nome = models.CharField(max_length=100)
+    descricao = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return self.nome
+
 class Aluno(models.Model):
     empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE)
     nome = models.CharField(max_length=200)
@@ -197,6 +212,7 @@ class RacaCavalo(models.Model):
         return self.nome
 
 class Cavalo(models.Model):
+    nome = models.CharField(max_length=100)
     CATEGORIA_CHOICES = [
         ('PROPRIO', 'Próprio (Escola)'),
         ('HOTELARIA', 'Hotelaria (Particular)'),
@@ -242,6 +258,26 @@ class Cavalo(models.Model):
         verbose_name="Foto do Cavalo",
         help_text="⚠️ Tamanho máximo: 5MB. Formatos aceitos: JPG, PNG."
     )
+
+    sela_padrao = models.ForeignKey(
+        Sela, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name="cavalos_padrao",
+        verbose_name="Sela Padrão"
+    )
+    cabecada_padrao = models.ForeignKey(
+        Cabecada, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name="cavalos_padrao",
+        verbose_name="Cabeçada Padrão"
+    )
+
+    def __str__(self):
+        return self.nome
 
     raca = models.ForeignKey(
         'RacaCavalo',
@@ -383,6 +419,24 @@ class Aula(models.Model):
     aluno = models.ForeignKey(Aluno, on_delete=models.CASCADE, related_name='aulas')
     cavalo = models.ForeignKey(Cavalo, on_delete=models.SET_NULL, null=True, blank=True, related_name='aulas')
 
+    # NOVOS CAMPOS PARA SELA E CABEÇADA NA AULA
+    sela = models.ForeignKey(
+        Sela, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name="aulas",
+        verbose_name="Sela Utilizada"
+    )
+    cabecada = models.ForeignKey(
+        Cabecada, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name="aulas",
+        verbose_name="Cabeçada Utilizada"
+    )
+
     instrutor = models.ForeignKey(
         Perfil,
         on_delete=models.SET_NULL,
@@ -401,6 +455,15 @@ class Aula(models.Model):
     tipo = models.CharField(max_length=15, choices=TIPO_AULA_CHOICES, default='NORMAL')
     concluida = models.BooleanField(default=False)
     relatorio_treino = models.TextField(blank=True)
+
+    # NOVO MÉTODO SAVE: Herda a sela e cabeçada padrão do cavalo se não foram preenchidos
+    def save(self, *args, **kwargs):
+        if not self.pk:
+            if not self.sela and self.cavalo and self.cavalo.sela_padrao:
+                self.sela = self.cavalo.sela_padrao
+            if not self.cabecada and self.cavalo and self.cavalo.cabecada_padrao:
+                self.cabecada = self.cavalo.cabecada_padrao
+        super().save(*args, **kwargs)
 
     class Meta:
         ordering = ["data_hora"]
