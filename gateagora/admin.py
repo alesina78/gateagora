@@ -745,7 +745,7 @@ class DocumentoCavaloAdmin(PermissaoPorCargoMixin, BaseCavaloAdmin):
 
 @admin.register(RegistroOcorrencia)
 class RegistroOcorrenciaAdmin(PermissaoPorCargoMixin, BaseCavaloAdmin):
-    cargos_acesso_total = {'Gestor', 'Veterinario'}
+    cargos_acesso_total = {'Gestor', 'Veterinario', 'Professor'}
     cargos_somente_leitura = {'Tratador'}
     list_display = ["data", "titulo", "cavalo", "veterinario"]
     list_filter = ["data"]

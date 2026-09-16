@@ -289,6 +289,7 @@
         </h2>
       </div>
       <div class="flex items-center gap-2">
+        {% if pode_ver_dashboard_completo %}
         <a href="{% url 'relatorios' %}"
           class="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-xs uppercase tracking-wide"
           style="background:var(--card-alt);color:var(--indigo-text);border:1px solid rgba(99,102,241,.25);
@@ -297,6 +298,7 @@
           onmouseout="this.style.transform='';this.style.boxShadow=''">
           📈 Finanças
         </a>
+        {% endif %}
         <a href="{% url 'encilhamento' %}"
           class="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-xs uppercase tracking-wide"
           style="background:linear-gradient(135deg,#4f46e5,#6366f1);color:#fff;
@@ -628,7 +630,7 @@
                 {% if item.dias_para_vencer is not None %}
                   · <span>{{ item.dias_para_vencer }}d</span>
                 {% endif %}
-              </span>
+              </span>pode_ver_dashboard_completo
             </div>
             <div class="flex items-center justify-between">
               <span class="text-[9px]" style="color:var(--text-muted)">
