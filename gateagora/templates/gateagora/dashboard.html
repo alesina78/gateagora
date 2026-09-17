@@ -418,11 +418,11 @@
     [2] Docs Legais   → GTA, Mormo, Anemia, documentos com prazo formal — CONFORMIDADE
     [3] Estoque       → só itens em alerta + botão Fechar Dia embutido — OPERACIONAL
   -->
-  {% if pode_ver_dashboard_completo %}  
   <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
 
     <!-- ── 3a. SAÚDE & VET ──────────────────────────────────────────────────── -->
     <!-- Foco: cavalos que precisam de ação agora (procedimento vencido ou status ruim) -->
+    {% if pode_ver_dashboard_completo or e_professor %}
     <div class="card-static overflow-hidden {% if stats.cavalos_alerta > 0 %}pulse-red{% endif %}"
          style="border-left:3px solid #ef4444;">
       <button onclick="toggleAlerta('saude')" class="w-full px-4 py-3.5 flex items-center justify-between" style="background:transparent;">
@@ -629,7 +629,7 @@
                 {% if item.dias_para_vencer is not None %}
                   · <span>{{ item.dias_para_vencer }}d</span>
                 {% endif %}
-              </span>pode_ver_dashboard_completo
+              </span>
             </div>
             <div class="flex items-center justify-between">
               <span class="text-[9px]" style="color:var(--text-muted)">
@@ -673,9 +673,9 @@
       </div>
     </div>
     {% endif %}
-
-  </div><!-- /alertas -->
   {% endif %}
+  </div><!-- /alertas -->
+  
 
   <!-- ── 4. Bem-Estar Animal — Sobrecarga de Cavalos ───────────── -->
   {% if cavalos_sobrecarga %}
@@ -1301,7 +1301,7 @@
                 {% endif %}
               </div>
               {% if al.telefone %}
-              <a href="https://wa.me/55{{ al.telefone_limpo|default:al.telefone }}?text=Olá,%20*{{ al.nome|urlencode }}*!%20😊%20Estamos%20com%20saudades%20de%20te%20ver%20por%20aqui%20na%20*{{ empresa.nome }}*.%20Que%20tal%20agendarmos%20sua%20próxima%20aula?"
+              <a href="https://wa.me/55{{ al.telefone_limpo|default:al.telefone }}?text=Olá,%20*{{ al.nome|urlencode }}*!%20😊%20Estamos%20com%20saudades%20de%20te%20ver%20por%20aqui%20na%20*{{ empresa.nome|urlencode }}*.%20Que%20tal%20agendarmos%20sua%20próxima%20aula?"
                 target="_blank"
                 style="font-size:9px;padding:2px 7px;border-radius:5px;background:rgba(239,68,68,0.1);color:#ef4444;"
                 title="Enviar mensagem de reconquista">
