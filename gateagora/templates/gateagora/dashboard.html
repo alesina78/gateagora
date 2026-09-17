@@ -409,8 +409,6 @@
       </div>
     </div>
     {% endif %}
-  {% endif %}
-
   </div>
 
   <!-- ── 3. Alertas Expansíveis ───────────────────────────── -->
@@ -503,6 +501,7 @@
     <!-- ── 3b. DOCUMENTOS LEGAIS ─────────────────────────────────────────────── -->
     <!-- Foco: GTA, Exames (Mormo/Anemia), documentos formais com validade -->
     <!-- NÃO inclui procedimentos de manejo — esses ficam em Saúde & Vet       -->
+    {% if pode_ver_dashboard_completo %}
     <div class="card-static overflow-hidden {% if docs_vencendo %}pulse-amber{% endif %}"
          style="border-left:3px solid #f59e0b;">
       <button onclick="toggleAlerta('venc')" class="w-full px-4 py-3.5 flex items-center justify-between" style="background:transparent;">
@@ -673,6 +672,7 @@
         </div>
       </div>
     </div>
+    {% endif %}
 
   </div><!-- /alertas -->
   {% endif %}
