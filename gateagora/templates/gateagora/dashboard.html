@@ -421,7 +421,7 @@
     [2] Docs Legais   → GTA, Mormo, Anemia, documentos com prazo formal — CONFORMIDADE
     [3] Estoque       → só itens em alerta + botão Fechar Dia embutido — OPERACIONAL
   -->
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+  <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-4">
 
     <!-- ── 3a. SAÚDE & VET ──────────────────────────────────────────────────── -->
     <!-- Foco: cavalos que precisam de ação agora (procedimento vencido ou status ruim) -->
@@ -712,7 +712,6 @@
       </span>
       {% endfor %}
     </div>
-  </div>
   {% endif %}
 
   <!-- ── 5. Grade Principal ───────────────────────────────── -->
@@ -756,7 +755,8 @@
           {% for aula in proximas_aulas %}
           <div class="aula-card" id="aula-card-{{ aula.id }}" style="
             border-left: 3px solid {% if aula.concluida %}#818cf8{% elif aula.is_confirmada %}#10b981{% else %}#f59e0b{% endif %};
-            {% if aula.concluida %}opacity:.7;{% endif %}
+            background: {% if aula.concluida %}rgba(129, 140, 248, 0.05){% elif aula.is_confirmada %}rgba(16, 185, 129, 0.05){% else %}rgba(245, 158, 11, 0.05){% endif %};
+            {% if aula.concluida %}opacity:.75;{% endif %}
             position:relative;overflow:hidden;">
 
             {# Linha topo: horário + badge #}
@@ -845,27 +845,32 @@
                 {% if aula.cavalo.tipo_sela %}
                   <p style="color:var(--text-muted)">Sela: <span style="color:var(--text-main)">{{ aula.cavalo.tipo_sela|truncatechars:18 }}</span></p>
                 {% endif %}
+                {% if aula.cavalo.embocadura %}
+                  <p style="color:var(--text-muted)">Embocadura: <span style="color:var(--text-main)">{{ aula.cavalo.embocadura|truncatechars:18 }}</span></p>
+                {% endif %}
                 {% if aula.cavalo.material_proprio %}
                   <p class="font-bold" style="color:var(--amber-text)">⚠ Mat. Próprio</p>
                 {% endif %}
               </div>
 
               <div class="flex items-center gap-1.5">
-                {# BOTÃO WHATSAPP #}
-                {% if not aula.concluida and not aula.is_confirmada and not aula.nome_turma and aula.aluno.telefone %}
-                    <a href="https://wa.me/55{{ aula.aluno.telefone_limpo }}?text=🐴%20Olá,%20*{{ aula.aluno.nome|urlencode }}*!%0ASua%20aula%20na%20*{{ empresa.nome|urlencode }}*%20está%20chegando!%20😊%0A📅%20*Data:*%20{{ aula.data_hora|date:'d/m' }}%0A⏰%20*Horário:*%20{{ aula.data_hora|date:'H:i' }}%0A🐎%20*Cavalo:*%20{{ aula.cavalo.nome|urlencode }}%0A%0APara%20conseguirmos%20preparar%20tudo%20com%20tranquilidade,%20confirme%20sua%20presença%20pelo%20link%20abaixo:%0A👉%20https://tinyurl.com/minhas-aulas/%0A%0A💚%20*Importante:*%20a%20confirmação%20nos%20ajuda%20a%20reservar%20o%20cavalo%20para%20sua%20aula%20e%20organizar%20o%20encilhamento%20no%20horário%20correto.%0ACaso%20a%20aula%20não%20seja%20confirmada,%20o%20cavalo%20poderá%20ser%20liberado%20para%20a%20rotina%20normal%20da%20hípica,%20como%20pastagem,%20alimentação%20ou%20outros%20manejos.%0A%0AEsperamos%20você!%20🐴✨" 
-                      target="_blank"
-                      class="flex items-center gap-1 bg-green-500/10 text-green-500 border border-green-500/20 px-2 py-1.5 rounded-lg hover:bg-green-500 hover:text-white transition-all text-[9px] font-bold"
-                      title="Enviar lembrete profissional">
-                        <i class="fa-brands fa-whatsapp text-sm"></i>
-                    </a>
+                {# BOTÃO WHATSAPP - Visível tanto para alunos individuais quanto turmas #}
+                {% if not aula.concluida %}
+                    {% if aula.aluno.telefone %}
+                      <a href="https://wa.me/55{{ aula.aluno.telefone_limpo }}?text=🐴%20Olá,%20*{{ aula.aluno.nome|urlencode }}*!%0ASua%20aula%20na%20*{{ empresa.nome|urlencode }}*%20está%20chegando!%20😊%0A📅%20*Data:*%20{{ aula.data_hora|date:'d/m' }}%0A⏰%20*Horário:*%20{{ aula.data_hora|date:'H:i' }}%0A🐎%20*Cavalo:*%20{{ aula.cavalo.nome|urlencode }}%0A%0APara%20conseguirmos%20preparar%20tudo%20com%20tranquilidade,%20confirme%20sua%20presença%20pelo%20link%20abaixo:%0A👉%20https://tinyurl.com/minhas-aulas/%0A%0A💚%20*Importante:*%20a%20confirmação%20nos%20ajuda%20a%20reservar%20o%20cavalo%20para%20sua%20aula%20e%20organizar%20o%20encilhamento%20no%20horário%20correto.%0ACaso%20a%20aula%20não%20seja%20confirmada,%20o%20cavalo%20poderá%20ser%20liberado%20para%20a%20rotina%20normal%20da%20hípica,%20como%20pastagem,%20alimentação%20ou%20outros%20manejos.%0A%0AEsperamos%20você!%20🐴✨" 
+                        target="_blank"
+                        class="flex items-center justify-center w-7 h-7 bg-green-500/10 text-green-500 border border-green-500/20 rounded-lg hover:bg-green-500 hover:text-white transition-all text-xs"
+                        title="Enviar lembrete pelo WhatsApp">
+                          <i class="fa-brands fa-whatsapp"></i>
+                      </a>
+                    {% endif %}
                 {% endif %}
 
-                {# BOTÃO CONFIRMAR #}
-                {% if not aula.concluida and not aula.is_confirmada and not aula.nome_turma %}
-                  <form action="{% url 'confirmar_presenca_dashboard' aula.id %}" method="post">
+                {# BOTÃO CONFIRMAR - Tanto pelo gestor/professor quanto aluno #}
+                {% if not aula.concluida and not aula.is_confirmada %}
+                  <form action="{% url 'confirmar_presenca_dashboard' aula.id %}" method="post" class="inline">
                     {% csrf_token %}
-                    <button type="submit" class="btn-fin" style="background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.25);">
+                    <button type="submit" class="btn-fin" style="background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.25);" title="Confirmar Aula">
                       <i class="fa-solid fa-circle-check"></i>
                     </button>
                   </form>
@@ -873,7 +878,7 @@
 
                 {# BOTÃO FINALIZAR #}
                 {% if not aula.concluida %}
-                  <form action="{% url 'concluir_aula' aula.id %}" method="post" onsubmit="marcarConcluida({{ aula.id }}, this)">
+                  <form action="{% url 'concluir_aula' aula.id %}" method="post" onsubmit="marcarConcluida({{ aula.id }}, this)" class="inline">
                     {% csrf_token %}
                     <button type="submit" class="btn-fin" id="btn-fin-{{ aula.id }}">
                       <i class="fa-solid fa-check mr-1"></i>Finalizar
@@ -890,7 +895,6 @@
           </div>
           {% endfor %}
         </div>
-      </div>
 
       <!-- 5b. Fluxo Financeiro 6 Meses -->
       <!--
@@ -1096,22 +1100,22 @@
           {% endwith %}
           {% endfor %}
           </div>
-        {% else %}
-          <div style="text-align:center;padding:24px 0;">
-            <span style="font-size:28px">🐎</span>
-            <p style="font-size:12px;font-weight:700;color:var(--text-muted);margin-top:8px;">
-              Nenhuma aula concluída no período
-            </p>
-          </div>
+          {% else %}
+            <div style="text-align:center;padding:24px 0;">
+              <span style="font-size:28px">🐎</span>
+              <p style="font-size:12px;font-weight:700;color:var(--text-muted);margin-top:8px;">
+                Nenhuma aula concluída no período
+              </p>
+            </div>
+          {% endif %}
+        </div>
+        </div>
         {% endif %}
-      </div>
-
-    </div><!-- /col-span-8 -->
-    {% endif %}
-
-    <!-- ── Coluna lateral (4) ───────────────────────────── -->
-    {% if pode_ver_dashboard_completo %}
-    <div class="lg:col-span-4 space-y-5">
+      </div><!-- /col-span-8 -->
+      
+      <!-- ── Coluna lateral (4) ───────────────────────────── -->
+      {% if pode_ver_dashboard_completo %}
+      <div class="lg:col-span-4 space-y-5">
 
       <!-- Frame de Atalhos Operacionais -->
       <div class="card-static overflow-hidden" style="border-left:3px solid var(--indigo-text);">
@@ -1176,35 +1180,32 @@
                 {% for item in relatorio %}
                 <tr class="hover:bg-[var(--card-alt)] transition">
                   <td class="px-4 py-3">
-                    <!-- Nome do Aluno/Cavalo -->
-                    <p class="text-[11px] font-bold" style="color:var(--text-main)">
-                      {{ aula.aluno.nome }} {% if aula.cavalo %}- {{ aula.cavalo.nome }}{% endif %}
-                    </p>
+                    <!-- Nome do Aluno + Total Previsto -->
+                    <div class="flex justify-between items-center">
+                      <p class="text-[11px] font-bold" style="color:var(--text-main)">
+                        {{ item.aluno.nome }}
+                      </p>
+                      <p class="text-[10px] font-bold font-mono" style="color:var(--emerald-text)">
+                        R$ {{ item.valor_total|floatformat:2|default:"0,00" }}
+                      </p>
+                    </div>
 
-                    <!-- Detalhes Completos de Encilhamento e Saúde -->
-                    <div class="mt-2 pt-2 border-t border-[var(--border)] space-y-1.5 text-[9px]">
-                      
-                      <!-- Sela e Embocadura -->
-                      <div class="grid grid-cols-2 gap-2">
-                        <div>
-                          <span class="text-[var(--text-muted)] font-semibold">Sela:</span>
-                          <span class="font-bold text-[var(--text-main)]">{{ aula.cavalo.tipo_sela|default:"Padrão" }}</span>
-                        </div>
-                        <div>
-                          <span class="text-[var(--text-muted)] font-semibold">Embocadura:</span>
-                          <span class="font-bold text-[var(--text-main)]">{{ aula.cavalo.embocadura|default:"Não informada" }}</span>
-                        </div>
-                      </div>
+                    <!-- Resumo de Aulas e Serviços -->
+                    <div class="mt-1 flex items-center gap-2 text-[9px]" style="color:var(--text-muted)">
+                      <span><i class="fa-solid fa-calendar-check text-[8px]"></i> {{ item.total_aulas|default:0 }} aula(s)</span>
+                      {% if item.aluno.plano %}
+                        <span>· Plano: {{ item.aluno.plano }}</span>
+                      {% endif %}
                     </div>
                   </td>
                   <td class="px-4 py-3 text-right">
                     <div class="flex justify-end gap-1.5">
                       {% if item.aluno.telefone %}
-                      <a href="{{ item.whatsapp }}" target="_blank" class="w-7 h-7 flex items-center justify-center rounded-lg" style="background:rgba(16,185,129,0.1); color:var(--emerald-text);" title="ZAP">
+                      <a href="https://wa.me/55{{ item.aluno.telefone_limpo }}?text=Olá%20{{ item.aluno.nome|urlencode }},%20segue%20o%20resumo%20da%20sua%20fatura%20deste%20mês." target="_blank" class="w-7 h-7 flex items-center justify-center rounded-lg" style="background:rgba(16,185,129,0.1); color:var(--emerald-text);" title="Enviar pelo WhatsApp">
                         <i class="fa-brands fa-whatsapp text-xs"></i>
                       </a>
                       {% endif %}
-                      <a href="{% url 'gerar_relatorio_pdf' item.aluno.id %}" class="w-7 h-7 flex items-center justify-center rounded-lg" style="background:rgba(99,102,241,0.1); color:var(--indigo-text);" title="PDF">
+                      <a href="{% url 'gerar_relatorio_pdf' item.aluno.id %}" class="w-7 h-7 flex items-center justify-center rounded-lg" style="background:rgba(99,102,241,0.1); color:var(--indigo-text);" title="Gerar PDF">
                         <i class="fa-solid fa-file-pdf text-xs"></i>
                       </a>
                     </div>
@@ -1214,7 +1215,7 @@
               </tbody>
             </table>
           {% else %}
-            <p class="text-[10px] text-center py-6 font-bold uppercase opacity-40">Nenhum faturamento</p>
+            <p class="text-[10px] text-center py-6 font-bold uppercase opacity-40">Nenhum faturamento registrado</p>
           {% endif %}
         </div>
       </div>
@@ -1407,14 +1408,9 @@
           {% endif %}
         </div>
       </div>
-      
       </div>
-      {% endif %}
-
-
-
-
     </div><!-- /col-span-4 -->
+    {% endif %}
   </div><!-- /grade principal -->
 
 </div><!-- /main -->
