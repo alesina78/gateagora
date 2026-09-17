@@ -368,6 +368,15 @@ def _montar_msg_fatura_whatsapp(fatura, empresa):
 def dashboard(request):
     empresa = request.empresa
     hoje = date.today()
+    # A agenda pode ser consultada em qualquer dia, sem alterar os demais
+    # indicadores do dashboard (que continuam considerando a data de hoje).
+    data_param = request.GET.get('data', '')
+    try:
+        data_selecionada = date.fromisoformat(data_param) if data_param else hoje
+    except ValueError:
+        data_selecionada = hoje
+    dia_anterior = data_selecionada - timedelta(days=1)
+    proximo_dia = data_selecionada + timedelta(days=1)
     mes_selecionado = int(request.GET.get('mes', hoje.month))
     ano_selecionado = int(request.GET.get('ano', hoje.year))
 
@@ -438,10 +447,10 @@ def dashboard(request):
         })
     
 
-    # ── 1) Aulas de hoje — inclui concluídas para não sumirem da lista ─────────
+    # ── 1) Aulas da data escolhida — inclui concluídas para não sumirem da lista ─
     proximas_aulas = list(
         Aula.objects
-        .filter(empresa=empresa, data_hora__date=hoje)
+        .filter(empresa=empresa, data_hora__date=data_selecionada)
         .select_related('aluno', 'cavalo')
         .order_by('data_hora')
     )
@@ -1076,6 +1085,9 @@ def dashboard(request):
         "pode_ver_financeiro":      pode_ver_financeiro,
         "empresa":                  empresa,
         "hoje":                     hoje,
+        "data_selecionada":         data_selecionada,
+        "dia_anterior":             dia_anterior,
+        "proximo_dia":              proximo_dia,
         "mes_selecionado":          mes_selecionado,
         "ano_selecionado":          ano_selecionado,
         "proximas_aulas":           proximas_aulas,

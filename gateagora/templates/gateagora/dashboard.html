@@ -741,12 +741,12 @@
           </div>
 
           <!-- Controles de Ação & Navegação da Agenda -->
-          <div class="flex items-center gap-3">
+          <div class="flex flex-col items-end gap-1">
             <a href="/admin/gateagora/aula/?concluida=False" class="text-[9px] font-bold uppercase transition-colors hover:text-indigo-400" style="color:var(--text-muted);">
               Ver todas <i class="fa-solid fa-arrow-right ml-1"></i>
             </a>
 
-            <!-- Navegação entre Dias (Setas + Hoje) -->
+            <!-- Navegação entre dias, exibida abaixo de "Ver todas" -->
             <div class="flex items-center gap-1 bg-[var(--card-alt)] p-1 rounded-xl border border-[var(--border)]">
               <!-- Dia Anterior -->
               <a href="?data={{ dia_anterior|date:'Y-m-d' }}&periodo={{ periodo_atual }}" 
