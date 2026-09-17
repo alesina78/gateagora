@@ -729,50 +729,25 @@
               <h3 class="text-sm font-bold" style="color:var(--text-strong)">
                 <i class="fa-solid fa-calendar-day mr-2" style="color:var(--indigo-text)"></i>Atividades da Agenda
               </h3>
-              <!-- Data Atual em Badge -->
-              <span class="text-[10px] font-bold font-mono px-2 py-0.5 rounded-md" style="background:rgba(99,102,241,0.15); color:var(--indigo-text);">
-                {{ data_selecionada|default:hoje|date:"d/m/Y" }}
-              </span>
+              
+              <!-- Seletor de Data por Calendário com Envio Automático -->
+              <form method="GET" action="{% url 'dashboard' %}" class="inline-block">
+                <input type="hidden" name="periodo" value="{{ periodo_atual }}">
+                <input type="date" 
+                      name="data" 
+                      value="{{ data_selecionada|default:hoje|date:'Y-m-d' }}" 
+                      onchange="this.form.submit()" 
+                      class="text-[10px] font-bold font-mono px-2 py-1 rounded-md cursor-pointer outline-none transition-all"
+                      style="background:rgba(99,102,241,0.15); color:var(--indigo-text); border:1px solid rgba(99,102,241,0.3);"
+                      title="Escolher data diretamente no calendário">
+              </form>
             </div>
+            
             <p class="text-[9px] mt-0.5" style="color:var(--text-muted)">
               <span style="color:#10b981">{{ aulas_confirmadas_hoje }} confirmada{{ aulas_confirmadas_hoje|pluralize }}</span>
               · <span style="color:#818cf8">{{ aulas_concluidas_hoje }} concluída{{ aulas_concluidas_hoje|pluralize }}</span>
               · {{ total_aulas_hoje }} total
             </p>
-          </div>
-
-          <!-- Controles de Ação & Navegação da Agenda -->
-          <div class="flex flex-col items-end gap-1">
-            <a href="/admin/gateagora/aula/?concluida=False" class="text-[9px] font-bold uppercase transition-colors hover:text-indigo-400" style="color:var(--text-muted);">
-              Ver todas <i class="fa-solid fa-arrow-right ml-1"></i>
-            </a>
-
-            <!-- Navegação entre dias, exibida abaixo de "Ver todas" -->
-            <div class="flex items-center gap-1 bg-[var(--card-alt)] p-1 rounded-xl border border-[var(--border)]">
-              <!-- Dia Anterior -->
-              <a href="?data={{ dia_anterior|date:'Y-m-d' }}&periodo={{ periodo_atual }}" 
-                 class="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-indigo-500/20 hover:text-indigo-400 transition-all text-xs" 
-                 style="color:var(--text-main)"
-                 title="Dia Anterior ({{ dia_anterior|date:'d/m' }})">
-                <i class="fa-solid fa-chevron-left"></i>
-              </a>
-
-              <!-- Botão Ir Para Hoje -->
-              <a href="?data={{ hoje|date:'Y-m-d' }}&periodo={{ periodo_atual }}" 
-                 class="px-2 py-1 text-[9px] font-bold uppercase rounded-lg hover:bg-indigo-500/20 hover:text-indigo-400 transition-all flex items-center gap-1"
-                 style="color:var(--text-muted)"
-                 title="Voltar para Hoje">
-                <i class="fa-solid fa-rotate-left text-[8px]"></i> Hoje
-              </a>
-
-              <!-- Próximo Dia -->
-              <a href="?data={{ proximo_dia|date:'Y-m-d' }}&periodo={{ periodo_atual }}" 
-                 class="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-indigo-500/20 hover:text-indigo-400 transition-all text-xs" 
-                 style="color:var(--text-main)"
-                 title="Próximo Dia ({{ proximo_dia|date:'d/m' }})">
-                <i class="fa-solid fa-chevron-right"></i>
-              </a>
-            </div>
           </div>
         </div>
 
@@ -1201,8 +1176,26 @@
                 {% for item in relatorio %}
                 <tr class="hover:bg-[var(--card-alt)] transition">
                   <td class="px-4 py-3">
-                    <p class="text-[11px] font-bold" style="color:var(--text-main)">{{ item.aluno.nome }}</p>
-                    <p class="text-[10px] font-mono" style="color:var(--text-muted)">Total: R$ {{ item.valor|floatformat:2 }}</p>
+                    <!-- Nome do Aluno/Cavalo -->
+                    <p class="text-[11px] font-bold" style="color:var(--text-main)">
+                      {{ aula.aluno.nome }} {% if aula.cavalo %}- {{ aula.cavalo.nome }}{% endif %}
+                    </p>
+
+                    <!-- Detalhes Completos de Encilhamento e Saúde -->
+                    <div class="mt-2 pt-2 border-t border-[var(--border)] space-y-1.5 text-[9px]">
+                      
+                      <!-- Sela e Embocadura -->
+                      <div class="grid grid-cols-2 gap-2">
+                        <div>
+                          <span class="text-[var(--text-muted)] font-semibold">Sela:</span>
+                          <span class="font-bold text-[var(--text-main)]">{{ aula.cavalo.tipo_sela|default:"Padrão" }}</span>
+                        </div>
+                        <div>
+                          <span class="text-[var(--text-muted)] font-semibold">Embocadura:</span>
+                          <span class="font-bold text-[var(--text-main)]">{{ aula.cavalo.embocadura|default:"Não informada" }}</span>
+                        </div>
+                      </div>
+                    </div>
                   </td>
                   <td class="px-4 py-3 text-right">
                     <div class="flex justify-end gap-1.5">
