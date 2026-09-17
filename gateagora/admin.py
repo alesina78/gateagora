@@ -88,20 +88,20 @@ duplicar_registro.short_description = "📋 Duplicar registros selecionados"
 class GerarAulasForm(forms.Form):
     """
     Formulário exibido como tela intermediária no Admin.
-    O gestor escolhe: dias da semana, horário, cavalo, período e instrutor.
+    O gestor escolhe: dias da semana, horário, cavalo, período, instrutor e local.
     """
     DIAS_CHOICES = [
-        (0, 'Segunda'),
-        (1, 'Terça'),
-        (2, 'Quarta'),
-        (3, 'Quinta'),
-        (4, 'Sexta'),
+        (0, 'Segunda-feira'),
+        (1, 'Terça-feira'),
+        (2, 'Quarta-feira'),
+        (3, 'Quinta-feira'),
+        (4, 'Sexta-feira'),
         (5, 'Sábado'),
         (6, 'Domingo'),
     ]
 
     FREQUENCIA_CHOICES = [
-        ('semanal',   'Semanal — toda semana'),
+        ('semanal', 'Semanal — toda semana'),
         ('quinzenal', 'Quinzenal — a cada 2 semanas'),
     ]
 
@@ -118,41 +118,78 @@ class GerarAulasForm(forms.Form):
     )
     horario = forms.TimeField(
         label="Horário",
-        widget=forms.TimeInput(attrs={'type': 'time'}),
+        widget=forms.TimeInput(attrs={'type': 'time'}, format='%H:%M'),
         help_text="Ex: 17:00"
     )
     data_inicio = forms.DateField(
         label="Data de início",
-        widget=forms.DateInput(attrs={'type': 'date'}),
+        widget=forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
     )
     data_fim = forms.DateField(
         label="Data de fim",
-        widget=forms.DateInput(attrs={'type': 'date'}),
+        widget=forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
         help_text="Máximo recomendado: 3 meses"
     )
     cavalo = forms.ModelChoiceField(
-        queryset=None,  # preenchido dinamicamente na action
+        queryset=Cavalo.objects.none(),  # Definido no __init__ ou na action
         label="Cavalo",
         required=False,
         empty_label="— definir depois —",
         help_text="Pode ser alterado aula a aula depois",
-        widget=forms.Select(attrs={'required': False})
     )
     instrutor = forms.ModelChoiceField(
-        queryset=None,  # preenchido dinamicamente na action
+        queryset=Perfil.objects.none(),  # Definido no __init__ ou na action
         label="Instrutor",
         required=False,
+        empty_label="— selecionar instrutor —",
         help_text="Opcional"
     )
     local = forms.ChoiceField(
-        choices=[
-            ('picadeiro_1', 'Picadeiro Principal'),
-            ('picadeiro_2', 'Picadeiro Coberto'),
-            ('pista_salto', 'Pista de Salto'),
-        ],
+        choices=Aula.LOCAIS_CHOICES,  # Importado diretamente do Model Aula
         label="Local",
         initial='picadeiro_1',
     )
+
+    def __init__(self, *args, empresa=None, cavalo_queryset=None, instrutor_queryset=None, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # Atualiza os querysets se informados via parâmetro ou filtra pela empresa
+        if cavalo_queryset is not None:
+            self.fields['cavalo'].queryset = cavalo_queryset
+        elif empresa:
+            self.fields['cavalo'].queryset = Cavalo.objects.filter(empresa=empresa)
+
+        if instrutor_queryset is not None:
+            self.fields['instrutor'].queryset = instrutor_queryset
+        elif empresa:
+            cargo_professor = getattr(Perfil.Cargo, 'PROFESSOR', 'Professor')
+            self.fields['instrutor'].queryset = Perfil.objects.filter(
+                empresa=empresa, 
+                cargo=cargo_professor
+            )
+
+    def clean_dias_semana(self):
+        """
+        Converte os valores retornados pelo MultipleChoiceField para inteiros.
+        """
+        dias = self.cleaned_data.get('dias_semana', [])
+        return [int(dia) for dia in dias]
+
+    def clean(self):
+        """
+        Valida se a data de fim é posterior ou igual à data de início.
+        """
+        cleaned_data = super().clean()
+        data_inicio = cleaned_data.get('data_inicio')
+        data_fim = cleaned_data.get('data_fim')
+
+        if data_inicio and data_fim:
+            if data_fim < data_inicio:
+                raise ValidationError({
+                    'data_fim': "A data de fim não pode ser anterior à data de início."
+                })
+
+        return cleaned_data
 
 
 # ── BASES MULTI-EMPRESA ─────────────────────────────────────────────────────

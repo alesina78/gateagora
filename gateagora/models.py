@@ -399,13 +399,14 @@ class LocalAula(models.Model):
         return self.nome
 
 class Aula(models.Model):
+    # --- CHOICES ---
     LOCAIS_CHOICES = [
         ('picadeiro_1', 'Picadeiro Principal'),
         ('picadeiro_2', 'Picadeiro Coberto'),
         ('pista_salto', 'Pista de Salto'),
-        ('Competição', 'Competição'),
+        ('competicao', 'Competição'),  # Corrigido: 'competicao' em snake_case e sem acento
     ]
-    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE)
+
     TIPO_AULA_CHOICES = [
         ('NORMAL', 'Aula Normal'),
         ('RECUPERAR', 'Aula a Recuperar'),
@@ -413,10 +414,30 @@ class Aula(models.Model):
         ('TREINO_EXTERNO', 'Competição'),
     ]
 
-    aluno = models.ForeignKey(Aluno, on_delete=models.CASCADE, related_name='aulas')
-    cavalo = models.ForeignKey(Cavalo, on_delete=models.SET_NULL, null=True, blank=True, related_name='aulas')
+    # --- RELACIONAMENTOS PRINCIPAIS ---
+    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE)
+    aluno = models.ForeignKey(
+        Aluno, 
+        on_delete=models.CASCADE, 
+        related_name='aulas'
+    )
+    cavalo = models.ForeignKey(
+        Cavalo, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='aulas'
+    )
+    instrutor = models.ForeignKey(
+        Perfil,
+        on_delete=models.SET_NULL,
+        null=True, 
+        blank=True,
+        related_name='aulas_ministradas',
+        limit_choices_to={'cargo': 'Professor'}
+    )
 
-    # NOVOS CAMPOS PARA SELA E CABEÇADA NA AULA
+    # --- EQUIPAMENTOS UTILIZADOS ---
     sela = models.ForeignKey(
         Sela, 
         on_delete=models.SET_NULL, 
@@ -434,64 +455,86 @@ class Aula(models.Model):
         verbose_name="Cabeçada Utilizada"
     )
 
-    instrutor = models.ForeignKey(
-        Perfil,
-        on_delete=models.SET_NULL,
-        null=True, blank=True,
-        related_name='aulas_ministradas',
-        limit_choices_to={'cargo': 'Professor'}
-    )
-
+    # --- DETALHES DA AULA ---
     data_hora = models.DateTimeField(db_index=True)
-    local = models.CharField(max_length=20, choices=LOCAIS_CHOICES, default='picadeiro_1')
+    local = models.CharField(
+        max_length=50, 
+        choices=LOCAIS_CHOICES, 
+        default='picadeiro_1'
+    )
     local_novo = models.ForeignKey(
-        'LocalAula', null=True, blank=True,
+        'LocalAula', 
         on_delete=models.SET_NULL,
+        null=True, 
+        blank=True,
         verbose_name="Local (novo)"
     )
-    tipo = models.CharField(max_length=15, choices=TIPO_AULA_CHOICES, default='NORMAL')
+    tipo = models.CharField(
+        max_length=30, 
+        choices=TIPO_AULA_CHOICES, 
+        default='NORMAL'
+    )
     concluida = models.BooleanField(default=False)
     relatorio_treino = models.TextField(blank=True)
 
-    # NOVO MÉTODO SAVE: Herda a sela e cabeçada padrão do cavalo se não foram preenchidos
-    def save(self, *args, **kwargs):
-        if not self.pk:
-            if not self.sela and self.cavalo and self.cavalo.sela_padrao:
-                self.sela = self.cavalo.sela_padrao
-            if not self.cabecada and self.cavalo and self.cavalo.cabecada_padrao:
-                self.cabecada = self.cavalo.cabecada_padrao
-        super().save(*args, **kwargs)
-
     class Meta:
         ordering = ["data_hora"]
-        indexes = [models.Index(fields=["empresa", "data_hora"])]
+        indexes = [
+            models.Index(fields=["empresa", "data_hora"]),
+        ]
         verbose_name = "Aula 📅"
         verbose_name_plural = "Aulas 📅"
 
+    def save(self, *args, **kwargs):
+        """
+        Herda automaticamente a sela e a cabeçada padrão do cavalo 
+        se não forem informadas manualmente.
+        """
+        if self.cavalo:
+            if not self.sela and getattr(self.cavalo, 'sela_padrao', None):
+                self.sela = self.cavalo.sela_padrao
+            if not self.cabecada and getattr(self.cavalo, 'cabecada_padrao', None):
+                self.cabecada = self.cavalo.cabecada_padrao
+                
+        super().save(*args, **kwargs)
+
     def clean(self):
         """
-        Garante integridade:
-        - Aluno, Cavalo e Instrutor (se houver) devem pertencer à mesma Empresa da Aula
-        - Instrutor precisa ter cargo 'Professor'
+        Garante a integridade dos dados e do multi-tenant (Empresa):
+        - Aluno, Cavalo, Instrutor, Sela e Cabeçada devem pertencer à mesma empresa da aula.
+        - Instrutor precisa ter o cargo de 'Professor'.
         """
         erros = {}
-        if self.aluno and self.empresa and self.aluno.empresa_id != self.empresa_id:
-            erros['aluno'] = "Aluno deve pertencer à mesma empresa da aula."
-        if self.cavalo and self.empresa and self.cavalo.empresa_id != self.empresa_id:
-            erros['cavalo'] = "Cavalo deve pertencer à mesma empresa da aula."
-        if self.instrutor:
-            if self.instrutor.empresa_id != self.empresa_id:
-                erros['instrutor'] = "Instrutor deve pertencer à mesma empresa da aula."
-            if self.instrutor.cargo != Perfil.Cargo.PROFESSOR:
-                erros['instrutor'] = "Instrutor deve ter cargo 'Professor'."
+
+        if self.empresa_id:
+            if self.aluno and getattr(self.aluno, 'empresa_id', None) != self.empresa_id:
+                erros['aluno'] = "Aluno deve pertencer à mesma empresa da aula."
+
+            if self.cavalo and getattr(self.cavalo, 'empresa_id', None) != self.empresa_id:
+                erros['cavalo'] = "Cavalo deve pertencer à mesma empresa da aula."
+
+            if self.sela and getattr(self.sela, 'empresa_id', None) and self.sela.empresa_id != self.empresa_id:
+                erros['sela'] = "A sela informada pertence a outra empresa."
+
+            if self.cabecada and getattr(self.cabecada, 'empresa_id', None) and self.cabecada.empresa_id != self.empresa_id:
+                erros['cabecada'] = "A cabeçada informada pertence a outra empresa."
+
+            if self.instrutor:
+                if self.instrutor.empresa_id != self.empresa_id:
+                    erros['instrutor'] = "Instrutor deve pertencer à mesma empresa da aula."
+                
+                # Validação usando a Enum/Constant do Perfil (se definida) ou fallback
+                cargo_professor = getattr(Perfil.Cargo, 'PROFESSOR', 'Professor')
+                if self.instrutor.cargo != cargo_professor:
+                    erros['instrutor'] = "Instrutor deve ter o cargo 'Professor'."
+
         if erros:
-            from django.core.exceptions import ValidationError
             raise ValidationError(erros)
 
     def __str__(self):
-        data = self.data_hora.strftime('%d/%m') if self.data_hora else 's/ data'
-        return f"{self.aluno.nome} - {data}"
-
+        data = self.data_hora.strftime('%d/%m/%Y %H:%M') if self.data_hora else 's/ data'
+        aluno_nome = self.aluno.nome if self.aluno else 'Sem Aluno'
+        return f"{aluno_nome} - {data}"
 
 class ConfirmacaoPresenca(models.Model):
     """
