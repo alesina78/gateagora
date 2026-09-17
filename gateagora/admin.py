@@ -800,6 +800,7 @@ class AulaAdmin(PermissaoPorCargoMixin, BaseEmpresaAdmin):
     search_fields = ["aluno__nome", "cavalo__nome"]
     date_hierarchy = "data_hora"
     actions = ["marcar_como_concluida", duplicar_registro]
+    exclude = ["local_novo"]  # temporário — some quando a migração do LocalAula terminar (Passo 4)
 
     @admin.action(description="Marcar selecionadas como concluídas")
     def marcar_como_concluida(self, request, queryset):
