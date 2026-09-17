@@ -200,9 +200,10 @@
 
 <!-- ══════════════════════════════════════════════════════ NAVBAR -->
 <nav class="glass sticky top-0 z-50 px-5 py-3">
-  <div class="max-w-screen-xl mx-auto flex justify-between items-center">
+  <div class="max-w-screen-xl mx-auto flex justify-between items-center gap-2">
 
-    <a href="{% url 'dashboard' %}" class="flex items-center gap-3 group">
+    <!-- Brand / Logo -->
+    <a href="{% url 'dashboard' %}" class="flex items-center gap-3 group flex-shrink-0">
       <div class="w-11 h-11 bg-emerald-700 rounded-2xl flex items-center justify-center overflow-hidden shadow-inner border border-emerald-600/50 group-hover:scale-105 transition-all duration-200">
         <img 
             src="{% static 'images/apple-icon-180x180.png' %}" 
@@ -210,12 +211,13 @@
             class="w-9 h-9 object-contain drop-shadow-md"
         >
       </div>
-      <div class="leading-tight">
+      <div class="leading-tight hidden sm:block">
         <p class="text-sm font-bold tracking-tight" style="color:var(--text-strong)">{{ brand_name|default:"Gate 4" }}</p>
         <p class="text-[9px] font-semibold uppercase tracking-widest" style="color:var(--text-muted)">{{ empresa.nome }}</p>
       </div>
     </a>
     
+    <!-- Menu Navegação Central -->
     <div class="flex items-center gap-1.5 md:gap-3 overflow-x-auto pb-1 custom-scrollbar">
       
       <!-- Manejo -->
@@ -255,20 +257,21 @@
 
     </div>
 
-      <div class="flex items-center gap-2 pl-3" style="border-left:1px solid var(--border)">
-        <div class="hidden md:block text-right leading-tight">
-          <p class="text-[10px] font-bold" style="color:var(--text-main)">{{ user.get_full_name|default:user.username }}</p>
-          <p class="text-[8px] uppercase tracking-wider" style="color:var(--indigo-text)">{{ user.perfil.get_cargo_display|default:"Gestor" }}</p>
-        </div>
-        <form action="{% url 'logout' %}" method="post">
-          {% csrf_token %}
-          <button type="submit" class="w-8 h-8 rounded-lg flex items-center justify-center"
-                  style="background:rgba(239,68,68,0.1);color:var(--red-text);">
-            <i class="fa-solid fa-power-off text-xs"></i>
-          </button>
-        </form>
+    <!-- Usuário & Logout -->
+    <div class="flex items-center gap-2 pl-3 flex-shrink-0" style="border-left:1px solid var(--border)">
+      <div class="hidden md:block text-right leading-tight">
+        <p class="text-[10px] font-bold" style="color:var(--text-main)">{{ user.get_full_name|default:user.username }}</p>
+        <p class="text-[8px] uppercase tracking-wider" style="color:var(--indigo-text)">{{ user.perfil.get_cargo_display|default:"Gestor" }}</p>
       </div>
+      <form action="{% url 'logout' %}" method="post">
+        {% csrf_token %}
+        <button type="submit" class="w-8 h-8 rounded-lg flex items-center justify-center"
+                style="background:rgba(239,68,68,0.1);color:var(--red-text);">
+          <i class="fa-solid fa-power-off text-xs"></i>
+        </button>
+      </form>
     </div>
+
   </div>
 </nav>
 
