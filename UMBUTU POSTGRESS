@@ -1,0 +1,61 @@
+Aqui está um resumo técnico, direto e sem enrolação para a Claude (ou qualquer outra ferramenta/dev) assumir e resolver o problema sem perder tempo:
+
+---
+
+### **Contexto do Ambiente**
+
+* **Projeto:** Django 5.2.5 (`GATEAGORA` / `GAT4`) rodando com Gunicorn e Nginx em Ubuntu 22.04 LTS (Oracle Cloud).
+* **IP do Servidor:** `137.131.251.83` (Usuário: `ubuntu`).
+* **Chave SSH Local (Windows):** `C:\_oracle\ssh-key-2026-03-23.key`
+* **Caminho Local (Windows):** `C:\_GestaoHipica\GATEAGORA`
+* **Caminho no Servidor:** `/home/ubuntu/gateagora`
+
+---
+
+### **O Histórico de Problemas**
+
+1. **Erro Inicial no Template (HTML):**
+* Ocorreu um `TemplateSyntaxError` no arquivo `dashboard.html` (`gateagora/templates/gateagora/dashboard.html`) devido a uma tag `{% endif %}` sobressalente na linha ~648 (próximo à URL `fornecedor_whatsapp`). Isso impede a renderização da página.
+
+
+2. **Tentativa de Restauração de Banco de Dados (`db.sqlite3`):**
+* Foi feito o envio via `scp` do arquivo `db.sqlite3` local (Windows) para `/tmp/db.sqlite3` no servidor e, em seguida, copiado para `/home/ubuntu/gateagora/db.sqlite3` (`cp /tmp/db.sqlite3 ~/gateagora/db.sqlite3`).
+* Os serviços `gunicorn` e `nginx` foram reiniciados. O arquivo atual tem ~760KB.
+
+
+3. **Inclusão do `.gitignore`:**
+* O arquivo `.gitignore` foi atualizado localmente no Windows para incluir `db.sqlite3` e commitado (`c57a1de`) na branch `main` do GitHub para evitar conflitos de sincronização no `git pull`.
+
+
+
+---
+
+### **O que a Claude Precisa Fazer Agora para Corrigir**
+
+1. **Inspecionar os Logs de Erro do Gunicorn / Django:**
+Entrar via SSH e verificar a causa exata da falha HTTP 500 / Template Error:
+```bash
+ssh -i C:\_oracle\ssh-key-2026-03-23.key ubuntu@137.131.251.83
+sudo journalctl -u gunicorn -n 50 --no-pager
+
+```
+
+
+2. **Corrigir a Sintaxe no Template `dashboard.html`:**
+Verificar se o template em `gateagora/templates/gateagora/dashboard.html` (no bloco da tag `fornecedor_whatsapp`) ainda contém o `{% endif %}` quebrado ou se há algum outro bloco `{% if %}` sem fechamento/sobrando.
+3. **Verificar se as Migrações ou Dependências Estão Alinhadas:**
+```bash
+cd ~/gateagora
+source venv/bin/activate
+python3 manage.py check
+python3 manage.py migrate
+
+```
+
+
+4. **Reiniciar a Aplicação:**
+```bash
+sudo systemctl restart gunicorn
+sudo systemctl restart nginx
+
+```
