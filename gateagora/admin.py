@@ -27,6 +27,7 @@ from .models import (
     Aula,
     Baia,
     RacaCavalo,
+    Cabecada,
     Cavalo,
     ChecklistItem,
     ConfigPrazoManejo,
@@ -43,6 +44,7 @@ from .models import (
     Piquete,
     Plano,
     RegistroOcorrencia,
+    Sela,
     Fornecedor,
     LocalAula,
 )
@@ -312,7 +314,18 @@ class PermissaoPorCargoMixin:
             return True
         return self._cargo_do_usuario(request) in self.cargos_acesso_total
 
+@admin.register(Sela)
+class SelaAdmin(PermissaoPorCargoMixin, BaseEmpresaAdmin):
+    cargos_acesso_total = {'Gestor'}
+    list_display = ["nome"]
+    search_fields = ["nome"]
 
+
+@admin.register(Cabecada)
+class CabecadaAdmin(PermissaoPorCargoMixin, BaseEmpresaAdmin):
+    cargos_acesso_total = {'Gestor'}
+    list_display = ["nome"]
+    search_fields = ["nome"]
 
 # ── INLINES ─────────────────────────────────────────────────────────────────
 
@@ -1047,6 +1060,15 @@ class PerfilInline(TabularInline):
                 )
                 kwargs["widget"] = forms.HiddenInput()
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+    def get_formset(self, request, obj=None, **kwargs):
+        formset = super().get_formset(request, obj, **kwargs)
+        # Como o campo empresa fica oculto pro Gestor, precisa vir
+        # PRÉ-PREENCHIDO -- senão o formulário some com o valor e o
+        # Django recusa salvar (campo obrigatório vazio).
+        if not request.user.is_superuser and hasattr(request.user, 'perfil'):
+            formset.form.base_fields['empresa'].initial = request.user.perfil.empresa_id
+        return formset
 
 
 class CustomUserAdmin(BaseUserAdmin, UnfoldModelAdmin):

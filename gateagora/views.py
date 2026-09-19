@@ -39,7 +39,7 @@ from .models import (
 BRAND_NAME = "Gate 4"
 
 # Rodapé padrão para TODAS as mensagens WhatsApp do sistema
-MSG_RODAPE = "\n📲 _Enviado via *Gate 4 — Gestão de Haras e Hípicas*_ 🐎"
+MSG_RODAPE = "\n📲 _Enviado via *Gate 4 — Gestão de Centros Equestres*_ 🐎"
 
 # Emojis por tipo de item de fatura — usado em mensagens WhatsApp e PDF
 EMOJIS_TIPO_FATURA = {
@@ -52,6 +52,96 @@ EMOJIS_TIPO_FATURA = {
     'OUTROS':        '📦',
 }
 
+def montar_msg_aluno_inativo(aluno, empresa):
+    """
+    Mensagem pessoal e acolhedora para alunos que estão
+    entre 14 e 29 dias sem participar das aulas.
+    """
+    dias = getattr(aluno, 'dias_inativo', None)
+    tempo_txt = f"há {dias} dias" if dias else "há algum tempo"
+
+    linhas = [
+        f"🐎 *{empresa.nome}*",
+        "",
+        f"Olá, *{aluno.nome}*! Tudo bem? 😊",
+        "",
+        f"Percebemos que você está sem vir às aulas {tempo_txt} e sentimos sua falta por aqui. 💛",
+        "",
+        "Esperamos que esteja tudo bem com você!",
+        "",
+        "Os cavalos e a nossa equipe estão esperando para te receber novamente. 🐴",
+        "",
+        "Se estiver com vontade de voltar aos treinos, é só nos chamar. Podemos encontrar juntos um dia e horário que fique bom para você. 📅",
+        "",
+        "Vai ser muito bom ter você de volta ao picadeiro! 💛",
+        "",
+        "Um abraço,",
+        f"Equipe *{empresa.nome}*",
+        MSG_RODAPE
+    ]
+    return "\n".join(linhas)
+
+
+def montar_msg_risco_perda(aluno, empresa):
+    """
+    Mensagem pessoal de reaproximação para alunos com 30+ dias
+    sem participar das aulas.
+    """
+    dias = getattr(aluno, 'dias_inativo', None)
+    tempo_txt = f"há {dias} dias" if dias else "há algum tempo"
+
+    linhas = [
+        f"🐎 *{empresa.nome}*",
+        "",
+        f"Olá, *{aluno.nome}*! Tudo bem? 😊",
+        "",
+        "Passando para dizer que sentimos sua falta! 💛",
+        "",
+        f"Percebemos que você está sem vir às aulas {tempo_txt} e ficamos pensando em você.",
+        "",
+        "Esperamos que esteja tudo bem. Sabemos que às vezes a rotina muda, surgem compromissos ou simplesmente precisamos de um tempo.",
+        "",
+        "Por aqui, os cavalos e toda a nossa equipe continuam esperando por você. 🐴✨",
+        "",
+        "Se você tiver vontade de voltar, mesmo que aos poucos, fale com a gente. Podemos conversar e encontrar um dia e horário que funcione para você. 📅",
+        "",
+        "Será uma alegria receber você novamente no picadeiro! 💛",
+        "",
+        "Um abraço,",
+        f"Equipe *{empresa.nome}*",
+        MSG_RODAPE
+    ]
+    return "\n".join(linhas)
+
+
+def aluno_whatsapp(request, aluno_id):
+    """
+    View que centraliza a decisão do tipo de mensagem com base nos dias de inatividade
+    e redireciona diretamente para o WhatsApp do aluno.
+    """
+    aluno = get_object_or_404(Aluno, id=aluno_id)
+
+    if not aluno.telefone:
+        messages.error(request, "Este aluno não possui telefone cadastrado.")
+        return redirect("dashboard")
+
+    # Garante a verificação de dias inativos
+    dias_inativo = getattr(aluno, 'dias_inativo', 0) or 0
+
+    if dias_inativo >= 30:
+        mensagem = montar_msg_risco_perda(aluno, aluno.empresa)
+    else:
+        mensagem = montar_msg_aluno_inativo(aluno, aluno.empresa)
+
+    # Trata o telefone para o formato internacional do WhatsApp
+    telefone = getattr(aluno, 'telefone_limpo', None) or aluno.telefone
+    telefone_limpo = ''.join(filter(str.isdigit, str(telefone)))
+    
+    if not telefone_limpo.startswith('55'):
+        telefone_limpo = f"55{telefone_limpo}"
+
+    url = f"https://wa.me/{telefone_limpo}?text={quote(mensagem)}"
+    return redirect(url)
 
 # ── Login ─────────────────────────────────────────────────────────────────────
 
@@ -357,7 +447,7 @@ def _montar_msg_fatura_whatsapp(fatura, empresa):
         "Qualquer dúvida sobre os lançamentos, estamos à disposição.",
         "",
         f"🐎 *{empresa.nome}*",
-        "GATE4 — Gestão de Haras e Hípicas",
+        "Gate4 — Gestão Inteligente para Centros Equestres",
     ]
 
     return "\n".join(linhas)
@@ -1765,8 +1855,8 @@ def encilhamento_whatsapp(request):
         status_icon = "✅" if confirmada else "⏳"
         material = "⚠️ *MATERIAL PRÓPRIO — nao usar equipamento da escola*"                    if getattr(c,'material_proprio',False) else "Material da Escola"
 
-        sela     = getattr(c,'tipo_sela',None)     or "Padrao escola"
-        cabecada = getattr(c,'tipo_cabecada',None)  or "Padrao escola"
+        sela     = str(aula.sela) if aula.sela else "Padrão escola"
+        cabecada = str(aula.cabecada) if aula.cabecada else "Padrão escola"
         nome_aluno_str  = aula.aluno.nome if aula.aluno else "Aluno não informado"
         nome_cavalo_str = c.nome if c else "Cavalo não informado"
 
@@ -1847,8 +1937,8 @@ def encilhamento_pdf(request):
         c    = aula.cavalo
 
         local    = f"Baia {c.baia.numero}" if getattr(c, 'baia', None) else                    (f"Piquete: {c.piquete.nome}" if getattr(c, 'piquete', None) else "N/D")
-        sela      = getattr(c, 'tipo_sela', None)     or "Padrao escola"
-        cabecada  = getattr(c, 'tipo_cabecada', None)  or "Padrao escola"
+        sela      = str(aula.sela) if aula.sela else "Padrão escola"
+        cabecada  = str(aula.cabecada) if aula.cabecada else "Padrão escola"
         tem_obs   = bool(getattr(aula, 'relatorio_treino', None))
         material_proprio = getattr(c, 'material_proprio', False)
 
@@ -2993,7 +3083,7 @@ def relatorio_pdf(request):
 
     story.append(Spacer(1, 1*cm))
     story.append(Paragraph(
-        f"Gerado em {hoje.strftime('%d/%m/%Y')} · Gate 4 — Gestão de Haras e Hípicas",
+        f"Gerado em {hoje.strftime('%d/%m/%Y')} · Gate4 — Gestão Inteligente para Centros Equestres",
         ParagraphStyle('rod', fontSize=7, textColor=HexColor('#94a3b8'), alignment=TA_CENTER)
     ))
     doc.build(story)
@@ -3174,7 +3264,7 @@ def relatorio_estoque_pdf(request):
     c.setFillColor(COR_MUTED)
     c.setFont('Helvetica', 7)
     c.drawCentredString(w / 2, 30,
-        'Gate 4 — Gestão de Haras e Hípicas  ·  Este relatório é confidencial')
+        'Gate4 — Gestão Inteligente para Centros Equestres  ·  Este relatório é confidencial')
 
     c.save()
     return response

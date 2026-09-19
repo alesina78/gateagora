@@ -75,4 +75,7 @@ urlpatterns = [
     path('checklist/aluno/<int:aula_id>/',              views.checklist_aluno,     name='checklist_aluno'),
     path('checklist/logistica/<int:aula_id>/',          views.checklist_logistica, name='checklist_logistica'),
     path('checklist/whatsapp/<int:aula_id>/<str:tipo>/', views.checklist_whatsapp,  name='checklist_whatsapp'),
+
+    # WhatsApp do Aluno
+    path('aluno/whatsapp/<int:aluno_id>/', views.aluno_whatsapp, name='aluno_whatsapp'),
 ]

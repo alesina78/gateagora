@@ -1290,11 +1290,14 @@
               <span class="text-[9px] ml-1" style="color:var(--text-muted)">{{ al.dias_inativo }}d</span>
               {% endif %}
             </div>
+            <!-- NOVO BOTÃO PADRONIZADO E LIMPO -->
             {% if al.telefone %}
-            <a href="https://wa.me/55{{ al.telefone|cut:' '|cut:'-'|cut:'('|cut:')' }}?text=Ol%C3%A1%2C+{{ al.nome|urlencode }}!+Sentimos+sua+falta+nas+aulas+%F0%9F%90%8E+Que+tal+agendar+um+hor%C3%A1rio%3F+Estamos+te+esperando+na+h%C3%ADpica%21"
-               target="_blank"
-               style="font-size:9px;padding:2px 7px;border-radius:5px;background:rgba(16,185,129,0.1);color:#10b981;">
-              <i class="fa-brands fa-whatsapp"></i>
+            <a href="{% url 'aluno_whatsapp' al.id %}"
+              target="_blank"
+              class="flex items-center justify-center w-7 h-7 rounded-lg hover:opacity-80 transition-all"
+              style="background:rgba(16,185,129,0.10); color:#10b981; border:1px solid rgba(16,185,129,0.18);"
+              title="Enviar mensagem pelo WhatsApp">
+                <i class="fa-brands fa-whatsapp text-[11px]"></i>
             </a>
             {% endif %}
           </div>
@@ -1325,24 +1328,23 @@
           </div>
           <div style="max-height:160px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border) transparent;padding-right:4px;">
           {% for al in alunos_risco %}
-            <div class="flex items-center justify-between px-2 py-1.5 rounded-lg mb-1"
-                style="background:var(--card-alt);">
-              <div>
-                <span class="text-[11px] font-bold" style="color:var(--text-main)">{{ al.nome|truncatechars:22 }}</span>
-                {% if al.dias_inativo %}
-                <span class="text-[9px] ml-1 font-bold" style="color:#ef4444">{{ al.dias_inativo }}d</span>
-                {% endif %}
-              </div>
-              {% if al.telefone %}
-              <a href="https://wa.me/55{{ al.telefone_limpo|default:al.telefone }}?text=Olá,%20*{{ al.nome|urlencode }}*!%20😊%20Estamos%20com%20saudades%20de%20te%20ver%20por%20aqui%20na%20*{{ empresa.nome|urlencode }}*.%20Que%20tal%20agendarmos%20sua%20próxima%20aula?"
-                target="_blank"
-                style="font-size:9px;padding:2px 7px;border-radius:5px;background:rgba(239,68,68,0.1);color:#ef4444;"
-                title="Enviar mensagem de reconquista">
-                <i class="fa-brands fa-whatsapp"></i>
-              </a>
+          <div class="flex items-center justify-between px-2 py-1.5 rounded-lg mb-1" style="background:var(--card-alt);">
+            <div>
+              <span class="text-[11px] font-bold" style="color:var(--text-main)">{{ al.nome|truncatechars:22 }}</span>
+              {% if al.dias_inativo %}
+              <span class="text-[9px] ml-1 font-bold" style="color:#ef4444">{{ al.dias_inativo }}d</span>
               {% endif %}
             </div>
-            {% endfor %}
+            {% if al.link_reconquista %}
+            <a href="{{ al.link_reconquista }}"
+              target="_blank"
+              style="font-size:9px;padding:2px 7px;border-radius:5px;background:rgba(239,68,68,0.1);color:#ef4444;"
+              title="Enviar mensagem de reconquista">
+              <i class="fa-brands fa-whatsapp"></i>
+            </a>
+            {% endif %}
+          </div>
+          {% endfor %}
           </div>
         </div>
       </div>
@@ -1418,7 +1420,7 @@
 <!-- ══════════════════════════════════════════════════════ FOOTER -->
 <footer class="mt-10 py-6 text-center" style="border-top:1px solid var(--border)">
   <p class="text-[9px] font-bold uppercase tracking-[0.25em]" style="color:var(--text-muted)">
-    Gate 4 · Gestão de Haras e Hípicas · {{ hoje.year }}
+    Gate4 — Gestão Inteligente para Centros Equestres · {{ hoje.year }}
   </p>
 </footer>
 
