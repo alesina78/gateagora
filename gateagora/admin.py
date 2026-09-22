@@ -14,6 +14,7 @@ from django.http import HttpResponseRedirect
 from django.contrib import messages
 from django.utils.crypto import get_random_string
 from django.utils.safestring import mark_safe
+from django.core.exceptions import ValidationError
 
 from datetime import date, timedelta
 from datetime import datetime
@@ -576,13 +577,6 @@ class AlunoAdmin(PermissaoPorCargoMixin, BaseEmpresaAdmin):
         )
         return perfil
 
-    def save_model(self, request, obj, form, change):
-        is_novo = obj.pk is None
-        super().save_model(request, obj, form, change)
-        # Login agora é obrigatório: todo Aluno novo, sem perfil_usuario já
-        # escolhido manualmente no formulário, ganha um login automático.
-        if is_novo and not obj.perfil_usuario:
-            self._criar_login_para_aluno(request, obj)
 
     @admin.action(description="🔑 Criar Login (usuário + senha)")
     def criar_login_aluno(self, request, queryset):
@@ -689,21 +683,46 @@ class AlunoAdmin(PermissaoPorCargoMixin, BaseEmpresaAdmin):
         })
     
     def save_model(self, request, obj, form, change):
-        foto = request.FILES.get('foto')
+        """
+        Faz duas coisas que precisam acontecer juntas na MESMA chamada:
+          1) Valida tamanho de foto (máx 5MB). Se passar do limite,
+             restaura a foto antiga (em edição) ou deixa vazio (em criação)
+             e aborta sem salvar o resto.
+          2) Após salvar o Aluno, se for NOVO e não tiver login ainda,
+             cria User + Perfil automaticamente. Isso evita cadastro órfão.
+
+        Nota histórica: antes havia 2 métodos com o mesmo nome nesta classe.
+        Como Python mantém só o último definido, o comportamento de criar
+        login estava sendo silenciosamente perdido. Este aqui é o único.
+        """
+        is_novo = obj.pk is None
+        foto    = request.FILES.get('foto')
+
+        # ── Validação de tamanho da foto ─────────────────────────────
         if foto and foto.size > 5 * 1024 * 1024:
-            from django.contrib import messages
             self.message_user(
                 request,
                 "❌ A foto não foi salva: tamanho máximo permitido é 5MB.",
-                messages.ERROR
+                messages.ERROR,
             )
+            # Em edição, restaura a foto anterior. Em criação, fica vazia.
             if change:
                 obj.foto = Aluno.objects.get(pk=obj.pk).foto
             else:
                 obj.foto = None
-            obj.save()
+
+            # Salva só o necessário — o resto dos dados do form continua válido.
+            super().save_model(request, obj, form, change)
             return
+
+        # ── Salva o Aluno normalmente ────────────────────────────────
         super().save_model(request, obj, form, change)
+
+        # ── Cria login se ainda não houver ───────────────────────────
+        # Só faz sentido para Aluno NOVO sem perfil vinculado.
+        # Se o Gestor já escolheu um perfil manualmente, respeita a escolha.
+        if is_novo and not obj.perfil_usuario:
+            self._criar_login_para_aluno(request, obj)
 
 
 @admin.register(Baia)
@@ -740,7 +759,14 @@ class CavaloAdmin(PermissaoPorCargoMixin, BaseEmpresaAdmin):
     fieldsets = (
         ("Informações Básicas", {"fields": ("nome", "foto", "proprietario", "categoria", "raca", "peso", "fator_atividade")}),
         ("Localização", {"fields": ("onde_dorme", "baia", "piquete")}),
-        ("Equipamentos", {"fields": ("tipo_sela", "tipo_cabecada", "material_proprio")}),
+        ("Equipamentos Padrão", {
+            "fields": ("sela_padrao", "cabecada_padrao", "material_proprio"),
+            "description": (
+                "Estes equipamentos serão herdados automaticamente por cada nova Aula. "
+                "Se o instrutor quiser trocar para uma aula específica, basta escolher "
+                "outro equipamento na própria Aula (bloco 'Equipamentos Utilizados')."
+            ),
+        }),
         ("Saúde", {"fields": ("status_saude", "usa_ferradura", "ultima_vacina", "ultimo_vermifugo", "ultimo_ferrageamento", "ultimo_casqueamento")}),
         ("Plano Alimentar", {"fields": ("racao_tipo", "racao_qtd_manha", "racao_qtd_noite", "feno_tipo", "feno_qtd", "complemento_nutricional")}),
         ("Financeiro", {"fields": ("mensalidade_baia",)}),
@@ -766,23 +792,6 @@ class CavaloAdmin(PermissaoPorCargoMixin, BaseEmpresaAdmin):
             '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-{}-100 text-{}-800">{}',
             color, color, status_display
         )
-    
-    def save_model(self, request, obj, form, change):
-        foto = request.FILES.get('foto')
-        if foto and foto.size > 5 * 1024 * 1024:
-            self.message_user(
-                request,
-                "❌ A foto não foi salva: tamanho máximo permitido é 5MB.",
-                messages.ERROR
-            )
-            if change:
-                obj.foto = Cavalo.objects.get(pk=obj.pk).foto
-            else:
-                obj.foto = None
-            obj.save()
-            return
-        super().save_model(request, obj, form, change)
-
 
 @admin.register(DocumentoCavalo)
 class DocumentoCavaloAdmin(PermissaoPorCargoMixin, BaseCavaloAdmin):
@@ -807,13 +816,31 @@ class RegistroOcorrenciaAdmin(PermissaoPorCargoMixin, BaseCavaloAdmin):
 @admin.register(Aula)
 class AulaAdmin(PermissaoPorCargoMixin, BaseEmpresaAdmin):
     cargos_acesso_total = {'Gestor'}
-    list_display = ["data_hora", "aluno", "cavalo", "tipo", "concluida"]
-    list_filter = ["concluida", "tipo", "data_hora"]
-    list_editable = ["concluida"]
-    search_fields = ["aluno__nome", "cavalo__nome"]
-    date_hierarchy = "data_hora"
-    actions = ["marcar_como_concluida", duplicar_registro]
-    exclude = ["local_novo"]  # temporário — some quando a migração do LocalAula terminar (Passo 4)
+    list_display    = ["data_hora", "aluno", "cavalo", "tipo", "concluida"]
+    list_filter     = ["concluida", "tipo", "data_hora"]
+    list_editable   = ["concluida"]
+    search_fields   = ["aluno__nome", "cavalo__nome"]
+    date_hierarchy  = "data_hora"
+    actions         = ["marcar_como_concluida", duplicar_registro]
+
+    # ⚠️ Se o campo local_novo AINDA existe no model, descomente a linha abaixo
+    # exclude = ["local_novo"]
+
+    fieldsets = (
+        ("Quando e Quem", {
+            "fields": ("empresa", "data_hora", "aluno", "cavalo", "instrutor"),
+        }),
+        ("Equipamentos Utilizados", {
+            "fields": ("sela", "cabecada"),
+            "description": (
+                "Deixe em branco para usar o padrão do cavalo "
+                "(configurado no Cavalo → 'Equipamentos Padrão')."
+            ),
+        }),
+        ("Detalhes da Aula", {
+            "fields": ("local", "tipo", "concluida", "relatorio_treino"),
+        }),
+    )
 
     @admin.action(description="Marcar selecionadas como concluídas")
     def marcar_como_concluida(self, request, queryset):
@@ -1045,11 +1072,36 @@ except admin.sites.NotRegistered:
 
 
 class PerfilInline(TabularInline):
+    """
+    Inline que aparece DENTRO da página de edição do User.
+    Só exibe formulário quando o User JÁ existe mas ainda não tem Perfil.
+    Isso evita o erro 'After you've created a user...' — o Django não
+    consegue renderizar inline durante a CRIAÇÃO (o User não tem PK ainda).
+    """
     model = Perfil
     fields = ["empresa", "cargo", "telefone"]
     can_delete = False
-    extra = 1       # mostra 1 formulário em branco quando o Usuário ainda não tem Perfil
-    max_num = 1     # nunca mostra um segundo, mesmo depois que o Perfil já existir
+    max_num = 1
+
+    def get_extra(self, request, obj=None, **kwargs):
+        """
+        Controla quantos formulários EM BRANCO mostrar.
+        - Criando User (obj=None): 0 — não mostra inline nenhum.
+        - Editando User SEM perfil: 1 — mostra 1 form para o Gestor preencher.
+        - Editando User COM perfil: 0 — o form já está preenchido.
+        """
+        if obj is not None and not hasattr(obj, 'perfil'):
+            return 1
+        return 0
+
+    def has_add_permission(self, request, obj=None):
+        """
+        Bloqueia 'add' durante a criação do User (obj=None).
+        Evita erro de IntegrityError na tabela Perfil.
+        """
+        if obj is None:
+            return False
+        return super().has_add_permission(request, obj)
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == "empresa":
@@ -1063,9 +1115,8 @@ class PerfilInline(TabularInline):
 
     def get_formset(self, request, obj=None, **kwargs):
         formset = super().get_formset(request, obj, **kwargs)
-        # Como o campo empresa fica oculto pro Gestor, precisa vir
-        # PRÉ-PREENCHIDO -- senão o formulário some com o valor e o
-        # Django recusa salvar (campo obrigatório vazio).
+        # Campo empresa fica oculto pro Gestor — precisa vir pré-preenchido,
+        # senão o Django recusa salvar (campo obrigatório vazio).
         if not request.user.is_superuser and hasattr(request.user, 'perfil'):
             formset.form.base_fields['empresa'].initial = request.user.perfil.empresa_id
         return formset
@@ -1077,6 +1128,19 @@ class CustomUserAdmin(BaseUserAdmin, UnfoldModelAdmin):
     search_fields = ("username", "email")
     ordering = ("username",)
     actions = ["redefinir_senha"]
+
+    # ✅ ESTE É O SEGREDO PARA MATAR O ERRO
+    # "After you've created a user, you'll be able to edit more user options."
+    #
+    # Este `add_fieldsets` define QUAIS CAMPOS aparecem na TELA DE CRIAÇÃO.
+    # Como só listamos username + senha, o Django não tenta renderizar o
+    # inline de Perfil durante a criação — só depois que o User existe.
+    add_fieldsets = (
+        (None, {
+            'classes': ('wide',),
+            'fields': ('username', 'password1', 'password2'),
+        }),
+    )
 
     @admin.action(description="🔑 Redefinir senha deste usuário")
     def redefinir_senha(self, request, queryset):
@@ -1124,6 +1188,32 @@ class CustomUserAdmin(BaseUserAdmin, UnfoldModelAdmin):
                 "opts": self.model._meta,
             },
         )
+
+    def save_model(self, request, obj, form, change):
+        """
+        Após salvar o User:
+          - Se acabou de ser CRIADO (change=False) e ainda não tiver Perfil,
+            cria um Perfil mínimo com cargo 'Aluno' (o mais seguro).
+          - Empresa usada: a do Gestor logado. Se for superuser sem perfil,
+            cai na primeira Empresa do banco.
+        O Gestor pode trocar cargo e telefone depois, editando o User
+        (o inline de Perfil aparece automaticamente na tela de edição).
+        """
+        super().save_model(request, obj, form, change)
+
+        if not change and not hasattr(obj, 'perfil'):
+            empresa = None
+            if not request.user.is_superuser and hasattr(request.user, 'perfil'):
+                empresa = request.user.perfil.empresa
+            else:
+                empresa = Empresa.objects.first()
+
+            if empresa:
+                Perfil.objects.create(
+                    user    = obj,
+                    empresa = empresa,
+                    cargo   = 'Aluno',
+                )
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)

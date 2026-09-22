@@ -9,6 +9,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <title>{{ brand_name|default:"Gate 4" }} - {{ empresa.nome|default:"Enterprise" }}</title>
+    <!-- Dashboard revisado por Copilot: agenda operacional, central de atencao e navegacao por data -->
 
     <!-- ===== FAVICONS (mesmo do base.html) ===== -->
     <link rel="icon" type="image/png" sizes="32x32"   href="{% static 'img/favicon-32x32.png' %}">
@@ -193,6 +194,18 @@
       box-shadow: 0 0 0 3px rgba(99,102,241,0.18);
       border-color: #6366f1 !important;
     }
+  
+    /* Agenda operacional revisada */
+    .agenda-dia { max-height:430px; overflow-y:auto; }
+    .agenda-nav-btn { width:30px;height:30px;border-radius:.65rem;border:1px solid var(--border);background:var(--card-alt);color:var(--text-main);font-size:11px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;transition:.2s; }
+    .agenda-nav-btn:hover { border-color:#6366f1;color:var(--indigo-text);transform:translateY(-1px); }
+    .attention-head { display:flex;align-items:center;justify-content:space-between;gap:12px;margin:2px 2px -4px; }
+    @media (min-width:1024px) {
+      .agenda-dia { display:block !important; }
+      .aula-card { display:grid;grid-template-columns:1.05fr 1.65fr 1.35fr 1.35fr;gap:12px;align-items:center;margin-bottom:8px;padding:.85rem 1rem; }
+      .aula-card > div:nth-child(1) { margin-bottom:0 !important; }
+      .aula-card > div:last-child { margin-top:0 !important;padding-top:0 !important;border-top:0 !important; }
+    }
   </style>
 </head>
 <body>
@@ -346,7 +359,7 @@
     <!-- Confirmações -->
     <div class="kpi-card" style="display:flex;flex-direction:column;justify-content:space-between;min-height:100px;">
       <div>
-        <p class="sec-title mb-2">Confirmações Hoje</p>
+        <p class="sec-title mb-2">Confirmações do Dia</p>
         <div class="flex items-end gap-1.5">
           <p class="text-2xl font-bold" style="color:var(--text-strong)">{{ aulas_confirmadas_hoje }}</p>
           <p class="text-xs mb-0.5" style="color:var(--text-muted)">/ {{ total_aulas_hoje }} aulas</p>
@@ -364,7 +377,7 @@
             {{ aulas_concluidas_hoje }} concluída{{ aulas_concluidas_hoje|pluralize }}
           </p>
         {% else %}
-          <p class="text-[9px]" style="color:var(--text-muted)">Sem aulas hoje</p>
+          <p class="text-[9px]" style="color:var(--text-muted)">Sem aulas nesta data</p>
         {% endif %}
       </div>
     </div>
@@ -421,7 +434,13 @@
     [2] Docs Legais   → GTA, Mormo, Anemia, documentos com prazo formal — CONFORMIDADE
     [3] Estoque       → só itens em alerta + botão Fechar Dia embutido — OPERACIONAL
   -->
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+  <div class="attention-head">
+    <div>
+      <p class="sec-title"><i class="fa-solid fa-triangle-exclamation mr-1" style="color:#f59e0b"></i>Central de Atenção</p>
+      <p class="text-[9px] mt-1" style="color:var(--text-muted)">Saúde, documentos e estoque: o que precisa de ação primeiro.</p>
+    </div>
+  </div>
+  <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-4">
 
     <!-- ── 3a. SAÚDE & VET ──────────────────────────────────────────────────── -->
     <!-- Foco: cavalos que precisam de ação agora (procedimento vencido ou status ruim) -->
@@ -445,7 +464,7 @@
           </div>
         </div>
         <div class="flex items-center gap-2">
-          <a href="{% url 'manejo_em_massa' %}" onclick="event.stopPropagation()"
+          <a href="{% url 'manejo_em_massa' %}" onclick="event.stopPropagation();"
              class="text-[8px] font-bold uppercase px-2 py-1 rounded-lg"
              style="background:rgba(99,102,241,0.12);color:var(--indigo-text);">
             <i class="fa-solid fa-syringe mr-0.5"></i>Manejo
@@ -500,6 +519,7 @@
         </div>
       </div>
     </div>
+    {% endif %}
 
     <!-- ── 3b. DOCUMENTOS LEGAIS ─────────────────────────────────────────────── -->
     <!-- Foco: GTA, Exames (Mormo/Anemia), documentos formais com validade -->
@@ -524,7 +544,7 @@
           </div>
         </div>
         <div class="flex items-center gap-2">
-          <a href="/admin/gateagora/documentocavalo/add/" onclick="event.stopPropagation()"
+          <a href="/admin/gateagora/documentocavalo/add/" onclick="event.stopPropagation();"
              class="text-[8px] font-bold uppercase px-2 py-1 rounded-lg"
              style="background:rgba(245,158,11,0.12);color:var(--amber-text);">
             <i class="fa-solid fa-file-circle-plus mr-0.5"></i>Novo Doc
@@ -601,12 +621,12 @@
           </div>
         </div>
         <div class="flex items-center gap-2">
-          <a href="{% url 'relatorio_estoque_pdf' %}" onclick="event.stopPropagation()"
+          <a href="{% url 'relatorio_estoque_pdf' %}" onclick="event.stopPropagation();"
              class="text-[8px] font-bold uppercase px-2 py-1 rounded-lg"
              style="background:rgba(239,68,68,0.1);color:#ef4444;">
             <i class="fa-solid fa-file-pdf mr-0.5"></i>PDF
           </a>
-          <a href="{% url 'fechamento_dia' %}" onclick="event.stopPropagation()"
+          <a href="{% url 'fechamento_dia' %}" onclick="event.stopPropagation();"
              class="text-[8px] font-bold uppercase px-2 py-1 rounded-lg"
              style="background:rgba(139,92,246,0.12);color:#8b5cf6;">
             <i class="fa-solid fa-calendar-check mr-0.5"></i>Fechar Dia
@@ -693,7 +713,7 @@
             Alerta de Bem-Estar Animal
           </p>
           <p class="text-[9px]" style="color:var(--text-muted)">
-            {{ cavalos_sobrecarga|length }} cavalo{{ cavalos_sobrecarga|length|pluralize }} com 3+ aulas hoje
+            {{ cavalos_sobrecarga|length }} cavalo{{ cavalos_sobrecarga|length|pluralize }} com 3+ aulas na data selecionada
           </p>
         </div>
       </div>
@@ -711,7 +731,6 @@
       </span>
       {% endfor %}
     </div>
-  </div>
   {% endif %}
 
   <!-- ── 5. Grade Principal ───────────────────────────────── -->
@@ -720,32 +739,43 @@
     <!-- ── Coluna principal (8) ─────────────────────────── -->
     <div class="lg:col-span-{% if pode_ver_dashboard_completo %}8{% else %}12{% endif %} space-y-5">
 
-      <!-- 5a. Atividades de Hoje — 4 aulas visíveis, restante no scroll -->
+      <!-- 5a. Atividades do Dia (Agenda) -->
       <div class="card-static p-5">
-        <div class="flex items-center justify-between mb-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
           <div>
-            <h3 class="text-sm font-bold" style="color:var(--text-strong)">
-              <i class="fa-solid fa-calendar-day mr-2" style="color:var(--indigo-text)"></i>Atividades de Hoje
-            </h3>
+            <div class="flex items-center gap-2">
+              <h3 class="text-sm font-bold" style="color:var(--text-strong)">
+                <i class="fa-solid fa-calendar-day mr-2" style="color:var(--indigo-text)"></i>Atividades da Agenda
+              </h3>
+              
+              <!-- Seletor de Data por Calendário com Envio Automático -->
+              <form method="GET" action="{% url 'dashboard' %}" class="inline-block">
+                <input type="hidden" name="periodo" value="{{ periodo_atual }}">
+                <input type="date" 
+                      name="data" 
+                      value="{{ data_selecionada|default:hoje|date:'Y-m-d' }}" 
+                      onchange="this.form.submit()" 
+                      class="text-[10px] font-bold font-mono px-2 py-1 rounded-md cursor-pointer outline-none transition-all"
+                      style="background:rgba(99,102,241,0.15); color:var(--indigo-text); border:1px solid rgba(99,102,241,0.3);"
+                      title="Escolher data diretamente no calendário">
+              </form>
+            </div>
+            
             <p class="text-[9px] mt-0.5" style="color:var(--text-muted)">
               <span style="color:#10b981">{{ aulas_confirmadas_hoje }} confirmada{{ aulas_confirmadas_hoje|pluralize }}</span>
               · <span style="color:#818cf8">{{ aulas_concluidas_hoje }} concluída{{ aulas_concluidas_hoje|pluralize }}</span>
               · {{ total_aulas_hoje }} total
             </p>
           </div>
-          <a href="/admin/gateagora/aula/?concluida=False" class="text-[9px] font-bold uppercase" style="color:var(--text-muted);">
-            Ver todas <i class="fa-solid fa-arrow-right ml-1"></i>
-          </a>
         </div>
-        <!--
-          4 aulas × aprox 130px/card em 2 cols = ~260px de altura visível.
-          O overflow-y fará o resto rolar.
-        -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 overflow-y-auto custom-scrollbar" style="max-height:300px;">
+
+        <!-- Lista de Aulas -->
+        <div class="agenda-dia grid grid-cols-1 gap-3 custom-scrollbar">
           {% for aula in proximas_aulas %}
           <div class="aula-card" id="aula-card-{{ aula.id }}" style="
             border-left: 3px solid {% if aula.concluida %}#818cf8{% elif aula.is_confirmada %}#10b981{% else %}#f59e0b{% endif %};
-            {% if aula.concluida %}opacity:.7;{% endif %}
+            background: {% if aula.concluida %}rgba(129, 140, 248, 0.05){% elif aula.is_confirmada %}rgba(16, 185, 129, 0.05){% else %}rgba(245, 158, 11, 0.05){% endif %};
+            {% if aula.concluida %}opacity:.75;{% endif %}
             position:relative;overflow:hidden;">
 
             {# Linha topo: horário + badge #}
@@ -834,27 +864,32 @@
                 {% if aula.cavalo.tipo_sela %}
                   <p style="color:var(--text-muted)">Sela: <span style="color:var(--text-main)">{{ aula.cavalo.tipo_sela|truncatechars:18 }}</span></p>
                 {% endif %}
+                {% if aula.cavalo.embocadura %}
+                  <p style="color:var(--text-muted)">Embocadura: <span style="color:var(--text-main)">{{ aula.cavalo.embocadura|truncatechars:18 }}</span></p>
+                {% endif %}
                 {% if aula.cavalo.material_proprio %}
                   <p class="font-bold" style="color:var(--amber-text)">⚠ Mat. Próprio</p>
                 {% endif %}
               </div>
 
               <div class="flex items-center gap-1.5">
-                {# BOTÃO WHATSAPP: MENSAGEM LIMPA E PROFISSIONAL #}
-                {% if not aula.concluida and not aula.is_confirmada and not aula.nome_turma and aula.aluno.telefone %}
-                    <a href="https://wa.me/55{{ aula.aluno.telefone_limpo }}?text=🐴%20Olá,%20*{{ aula.aluno.nome|urlencode }}*!%0ASua%20aula%20na%20*{{ empresa.nome|urlencode }}*%20está%20chegando!%20😊%0A📅%20*Data:*%20{{ aula.data_hora|date:'d/m' }}%0A⏰%20*Horário:*%20{{ aula.data_hora|date:'H:i' }}%0A🐎%20*Cavalo:*%20{{ aula.cavalo.nome|urlencode }}%0A%0APara%20conseguirmos%20preparar%20tudo%20com%20tranquilidade,%20confirme%20sua%20presença%20pelo%20link%20abaixo:%0A👉%20https://tinyurl.com/minhas-aulas/%0A%0A💚%20*Importante:*%20a%20confirmação%20nos%20ajuda%20a%20reservar%20o%20cavalo%20para%20sua%20aula%20e%20organizar%20o%20encilhamento%20no%20horário%20correto.%0ACaso%20a%20aula%20não%20seja%20confirmada,%20o%20cavalo%20poderá%20ser%20liberado%20para%20a%20rotina%20normal%20da%20hípica,%20como%20pastagem,%20alimentação%20ou%20outros%20manejos.%0A%0AEsperamos%20você!%20🐴✨" 
-                      target="_blank"
-                      class="flex items-center gap-1 bg-green-500/10 text-green-500 border border-green-500/20 px-2 py-1.5 rounded-lg hover:bg-green-500 hover:text-white transition-all text-[9px] font-bold"
-                      title="Enviar lembrete profissional">
-                        <i class="fa-brands fa-whatsapp text-sm"></i>
-                    </a>
+                {# BOTÃO WHATSAPP - Visível tanto para alunos individuais quanto turmas #}
+                {% if not aula.concluida %}
+                    {% if aula.aluno.telefone %}
+                      <a href="https://wa.me/55{{ aula.aluno.telefone_limpo }}?text=🐴%20Olá,%20*{{ aula.aluno.nome|urlencode }}*!%0ASua%20aula%20na%20*{{ empresa.nome|urlencode }}*%20está%20chegando!%20😊%0A📅%20*Data:*%20{{ aula.data_hora|date:'d/m' }}%0A⏰%20*Horário:*%20{{ aula.data_hora|date:'H:i' }}%0A🐎%20*Cavalo:*%20{{ aula.cavalo.nome|urlencode }}%0A%0APara%20conseguirmos%20preparar%20tudo%20com%20tranquilidade,%20confirme%20sua%20presença%20pelo%20link%20abaixo:%0A👉%20https://tinyurl.com/Gate4login/minhas-aulas/%0A%0A💚%20*Importante:*%20a%20confirmação%20nos%20ajuda%20a%20reservar%20o%20cavalo%20para%20sua%20aula%20e%20organizar%20o%20encilhamento%20no%20horário%20correto.%0ACaso%20a%20aula%20não%20seja%20confirmada,%20o%20cavalo%20poderá%20ser%20liberado%20para%20a%20rotina%20normal%20da%20hípica,%20como%20pastagem,%20alimentação%20ou%20outros%20manejos.%0A%0AEsperamos%20você!%20🐴✨" 
+                        target="_blank"
+                        class="flex items-center justify-center w-7 h-7 bg-green-500/10 text-green-500 border border-green-500/20 rounded-lg hover:bg-green-500 hover:text-white transition-all text-xs"
+                        title="Enviar lembrete pelo WhatsApp">
+                          <i class="fa-brands fa-whatsapp"></i>
+                      </a>
+                    {% endif %}
                 {% endif %}
 
-                {# BOTÃO CONFIRMAR (SÓ APARECE SE NÃO ESTIVER CONFIRMADA) #}
-                {% if not aula.concluida and not aula.is_confirmada and not aula.nome_turma %}
-                  <form action="{% url 'confirmar_presenca_dashboard' aula.id %}" method="post">
+                {# BOTÃO CONFIRMAR - Tanto pelo gestor/professor quanto aluno #}
+                {% if not aula.concluida and not aula.is_confirmada %}
+                  <form action="{% url 'confirmar_presenca_dashboard' aula.id %}" method="post" class="inline">
                     {% csrf_token %}
-                    <button type="submit" class="btn-fin" style="background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.25);">
+                    <button type="submit" class="btn-fin" style="background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.25);" title="Confirmar Aula">
                       <i class="fa-solid fa-circle-check"></i>
                     </button>
                   </form>
@@ -862,7 +897,7 @@
 
                 {# BOTÃO FINALIZAR #}
                 {% if not aula.concluida %}
-                  <form action="{% url 'concluir_aula' aula.id %}" method="post" onsubmit="marcarConcluida({{ aula.id }}, this)">
+                  <form action="{% url 'concluir_aula' aula.id %}" method="post" onsubmit="marcarConcluida({{ aula.id }}, this)" class="inline">
                     {% csrf_token %}
                     <button type="submit" class="btn-fin" id="btn-fin-{{ aula.id }}">
                       <i class="fa-solid fa-check mr-1"></i>Finalizar
@@ -873,14 +908,14 @@
             </div>
           </div>
           {% empty %}
-          <div class="col-span-2 flex flex-col items-center justify-center py-10" style="color:var(--text-muted)">
+          <div class="flex flex-col items-center justify-center py-10" style="color:var(--text-muted)">
             <i class="fa-solid fa-calendar-xmark text-4xl mb-3 opacity-20"></i>
-            <p class="text-xs font-bold uppercase">Sem atividades para hoje.</p>
+            <p class="text-xs font-bold uppercase">Sem atividades para esta data.</p>
           </div>
           {% endfor %}
         </div>
-      </div>
 
+      
       <!-- 5b. Fluxo Financeiro 6 Meses -->
       <!--
         NOTA IMPORTANTE: Este gráfico usa MovimentacaoFinanceira (Receita/Despesa),
@@ -1085,22 +1120,22 @@
           {% endwith %}
           {% endfor %}
           </div>
-        {% else %}
-          <div style="text-align:center;padding:24px 0;">
-            <span style="font-size:28px">🐎</span>
-            <p style="font-size:12px;font-weight:700;color:var(--text-muted);margin-top:8px;">
-              Nenhuma aula concluída no período
-            </p>
-          </div>
+          {% else %}
+            <div style="text-align:center;padding:24px 0;">
+              <span style="font-size:28px">🐎</span>
+              <p style="font-size:12px;font-weight:700;color:var(--text-muted);margin-top:8px;">
+                Nenhuma aula concluída no período
+              </p>
+            </div>
+          {% endif %}
+        </div>
+        </div>
         {% endif %}
-      </div>
-
-    </div><!-- /col-span-8 -->
-    {% endif %}
-
-    <!-- ── Coluna lateral (4) ───────────────────────────── -->
-    {% if pode_ver_dashboard_completo %}
-    <div class="lg:col-span-4 space-y-5">
+      </div><!-- /col-span-8 -->
+      
+      <!-- ── Coluna lateral (4) ───────────────────────────── -->
+      {% if pode_ver_dashboard_completo %}
+      <div class="lg:col-span-4 space-y-5">
 
       <!-- Frame de Atalhos Operacionais -->
       <div class="card-static overflow-hidden" style="border-left:3px solid var(--indigo-text);">
@@ -1165,17 +1200,32 @@
                 {% for item in relatorio %}
                 <tr class="hover:bg-[var(--card-alt)] transition">
                   <td class="px-4 py-3">
-                    <p class="text-[11px] font-bold" style="color:var(--text-main)">{{ item.aluno.nome }}</p>
-                    <p class="text-[10px] font-mono" style="color:var(--text-muted)">Total: R$ {{ item.valor|floatformat:2 }}</p>
+                    <!-- Nome do Aluno + Total Previsto -->
+                    <div class="flex justify-between items-center">
+                      <p class="text-[11px] font-bold" style="color:var(--text-main)">
+                        {{ item.aluno.nome }}
+                      </p>
+                      <p class="text-[10px] font-bold font-mono" style="color:var(--emerald-text)">
+                        R$ {{ item.valor_total|floatformat:2|default:"0,00" }}
+                      </p>
+                    </div>
+
+                    <!-- Resumo de Aulas e Serviços -->
+                    <div class="mt-1 flex items-center gap-2 text-[9px]" style="color:var(--text-muted)">
+                      <span><i class="fa-solid fa-calendar-check text-[8px]"></i> {{ item.total_aulas|default:0 }} aula(s)</span>
+                      {% if item.aluno.plano %}
+                        <span>· Plano: {{ item.aluno.plano }}</span>
+                      {% endif %}
+                    </div>
                   </td>
                   <td class="px-4 py-3 text-right">
                     <div class="flex justify-end gap-1.5">
                       {% if item.aluno.telefone %}
-                      <a href="{{ item.whatsapp }}" target="_blank" class="w-7 h-7 flex items-center justify-center rounded-lg" style="background:rgba(16,185,129,0.1); color:var(--emerald-text);" title="ZAP">
+                      <a href="https://wa.me/55{{ item.aluno.telefone_limpo }}?text=Olá%20{{ item.aluno.nome|urlencode }},%20segue%20o%20resumo%20da%20sua%20fatura%20deste%20mês." target="_blank" class="w-7 h-7 flex items-center justify-center rounded-lg" style="background:rgba(16,185,129,0.1); color:var(--emerald-text);" title="Enviar pelo WhatsApp">
                         <i class="fa-brands fa-whatsapp text-xs"></i>
                       </a>
                       {% endif %}
-                      <a href="{% url 'gerar_relatorio_pdf' item.aluno.id %}" class="w-7 h-7 flex items-center justify-center rounded-lg" style="background:rgba(99,102,241,0.1); color:var(--indigo-text);" title="PDF">
+                      <a href="{% url 'gerar_relatorio_pdf' item.aluno.id %}" class="w-7 h-7 flex items-center justify-center rounded-lg" style="background:rgba(99,102,241,0.1); color:var(--indigo-text);" title="Gerar PDF">
                         <i class="fa-solid fa-file-pdf text-xs"></i>
                       </a>
                     </div>
@@ -1185,7 +1235,7 @@
               </tbody>
             </table>
           {% else %}
-            <p class="text-[10px] text-center py-6 font-bold uppercase opacity-40">Nenhum faturamento</p>
+            <p class="text-[10px] text-center py-6 font-bold uppercase opacity-40">Nenhum faturamento registrado</p>
           {% endif %}
         </div>
       </div>
@@ -1260,11 +1310,14 @@
               <span class="text-[9px] ml-1" style="color:var(--text-muted)">{{ al.dias_inativo }}d</span>
               {% endif %}
             </div>
+            <!-- NOVO BOTÃO PADRONIZADO E LIMPO -->
             {% if al.telefone %}
-            <a href="https://wa.me/55{{ al.telefone|cut:' '|cut:'-'|cut:'('|cut:')' }}?text=Ol%C3%A1%2C+{{ al.nome|urlencode }}!+Sentimos+sua+falta+nas+aulas+%F0%9F%90%8E+Que+tal+agendar+um+hor%C3%A1rio%3F+Estamos+te+esperando+na+h%C3%ADpica%21"
-               target="_blank"
-               style="font-size:9px;padding:2px 7px;border-radius:5px;background:rgba(16,185,129,0.1);color:#10b981;">
-              <i class="fa-brands fa-whatsapp"></i>
+            <a href="{% url 'aluno_whatsapp' al.id %}"
+              target="_blank"
+              class="flex items-center justify-center w-7 h-7 rounded-lg hover:opacity-80 transition-all"
+              style="background:rgba(16,185,129,0.10); color:#10b981; border:1px solid rgba(16,185,129,0.18);"
+              title="Enviar mensagem pelo WhatsApp">
+                <i class="fa-brands fa-whatsapp text-[11px]"></i>
             </a>
             {% endif %}
           </div>
@@ -1295,24 +1348,23 @@
           </div>
           <div style="max-height:160px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border) transparent;padding-right:4px;">
           {% for al in alunos_risco %}
-            <div class="flex items-center justify-between px-2 py-1.5 rounded-lg mb-1"
-                style="background:var(--card-alt);">
-              <div>
-                <span class="text-[11px] font-bold" style="color:var(--text-main)">{{ al.nome|truncatechars:22 }}</span>
-                {% if al.dias_inativo %}
-                <span class="text-[9px] ml-1 font-bold" style="color:#ef4444">{{ al.dias_inativo }}d</span>
-                {% endif %}
-              </div>
-              {% if al.telefone %}
-              <a href="https://wa.me/55{{ al.telefone_limpo|default:al.telefone }}?text=Olá,%20*{{ al.nome|urlencode }}*!%20😊%20Estamos%20com%20saudades%20de%20te%20ver%20por%20aqui%20na%20*{{ empresa.nome|urlencode }}*.%20Que%20tal%20agendarmos%20sua%20próxima%20aula?"
-                target="_blank"
-                style="font-size:9px;padding:2px 7px;border-radius:5px;background:rgba(239,68,68,0.1);color:#ef4444;"
-                title="Enviar mensagem de reconquista">
-                <i class="fa-brands fa-whatsapp"></i>
-              </a>
+          <div class="flex items-center justify-between px-2 py-1.5 rounded-lg mb-1" style="background:var(--card-alt);">
+            <div>
+              <span class="text-[11px] font-bold" style="color:var(--text-main)">{{ al.nome|truncatechars:22 }}</span>
+              {% if al.dias_inativo %}
+              <span class="text-[9px] ml-1 font-bold" style="color:#ef4444">{{ al.dias_inativo }}d</span>
               {% endif %}
             </div>
-            {% endfor %}
+            {% if al.link_reconquista %}
+            <a href="{{ al.link_reconquista }}"
+              target="_blank"
+              style="font-size:9px;padding:2px 7px;border-radius:5px;background:rgba(239,68,68,0.1);color:#ef4444;"
+              title="Enviar mensagem de reconquista">
+              <i class="fa-brands fa-whatsapp"></i>
+            </a>
+            {% endif %}
+          </div>
+          {% endfor %}
           </div>
         </div>
       </div>
@@ -1378,14 +1430,9 @@
           {% endif %}
         </div>
       </div>
-      
       </div>
-      {% endif %}
-
-
-
-
     </div><!-- /col-span-4 -->
+    {% endif %}
   </div><!-- /grade principal -->
 
 </div><!-- /main -->
@@ -1393,7 +1440,7 @@
 <!-- ══════════════════════════════════════════════════════ FOOTER -->
 <footer class="mt-10 py-6 text-center" style="border-top:1px solid var(--border)">
   <p class="text-[9px] font-bold uppercase tracking-[0.25em]" style="color:var(--text-muted)">
-    Gate 4 · Gestão de Haras e Hípicas · {{ hoje.year }}
+    Gate4 — Gestão Inteligente para Centros Equestres · {{ hoje.year }}
   </p>
 </footer>
 
@@ -1408,30 +1455,29 @@
     if (i) i.style.transform = open ? 'rotate(180deg)' : '';
   }
 
-  /* ── Abas Contas a Receber / Faturamento ─ */
-  function trocarAba(aba) {
-    const cobranca    = document.getElementById('conteudo-cobranca');
-    const faturamento = document.getElementById('conteudo-faturamento');
-    const btnC = document.getElementById('aba-cobranca');
-    const btnF = document.getElementById('aba-faturamento');
-
-    if (aba === 'cobranca') {
-      cobranca.style.display    = 'block';
-      faturamento.style.display = 'none';
-      btnC.style.borderBottom   = '2px solid #ef4444';
-      btnF.style.borderBottom   = '2px solid transparent';
-      btnC.querySelector('span:first-of-type').style.color = 'var(--text-strong)';
-      btnF.querySelector('span:first-of-type').style.color = 'var(--text-main)';
-    } else {
-      cobranca.style.display    = 'none';
-      faturamento.style.display = 'block';
-      btnF.style.borderBottom   = '2px solid #6366f1';
-      btnC.style.borderBottom   = '2px solid transparent';
-      btnF.querySelector('span:first-of-type').style.color = 'var(--text-strong)';
-      btnC.querySelector('span:first-of-type').style.color = 'var(--text-main)';
-    }
+  /* ── Navegação rápida da agenda ──────────── */
+  function dataLocalISO(d) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
   }
-
+  function moverData(delta) {
+    const input = document.getElementById('data-agenda');
+    const form = document.getElementById('form-data-agenda');
+    if (!input || !form) return;
+    const base = input.value ? new Date(input.value + 'T12:00:00') : new Date();
+    base.setDate(base.getDate() + delta);
+    input.value = dataLocalISO(base);
+    form.submit();
+  }
+  function irParaHoje() {
+    const input = document.getElementById('data-agenda');
+    const form = document.getElementById('form-data-agenda');
+    if (!input || !form) return;
+    input.value = dataLocalISO(new Date());
+    form.submit();
+  }
   /* ── CSS var helper ─────────────────────── */
   function cv(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
 
