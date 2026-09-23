@@ -823,9 +823,6 @@ class AulaAdmin(PermissaoPorCargoMixin, BaseEmpresaAdmin):
     date_hierarchy  = "data_hora"
     actions         = ["marcar_como_concluida", duplicar_registro]
 
-    # ⚠️ Se o campo local_novo AINDA existe no model, descomente a linha abaixo
-    # exclude = ["local_novo"]
-
     fieldsets = (
         ("Quando e Quem", {
             "fields": ("empresa", "data_hora", "aluno", "cavalo", "instrutor"),
@@ -841,6 +838,34 @@ class AulaAdmin(PermissaoPorCargoMixin, BaseEmpresaAdmin):
             "fields": ("local", "tipo", "concluida", "relatorio_treino"),
         }),
     )
+
+    def get_changeform_initial_data(self, request):
+        initial = super().get_changeform_initial_data(request)
+        cavalo_id = request.GET.get('cavalo')
+        if cavalo_id:
+            try:
+                cavalo = Cavalo.objects.get(pk=cavalo_id)
+                if cavalo.sela_padrao:
+                    initial['sela'] = cavalo.sela_padrao.id
+                if cavalo.cabecada_padrao:
+                    initial['cabecada'] = cavalo.cabecada_padrao.id
+            except Cavalo.DoesNotExist:
+                pass
+        return initial
+
+    def changeform_view(self, request, object_id=None, form_url='', extra_context=None):
+        if object_id:
+            try:
+                aula = Aula.objects.select_related('cavalo__sela_padrao', 'cavalo__cabecada_padrao').get(pk=object_id)
+                if aula.cavalo:
+                    if not aula.sela and aula.cavalo.sela_padrao:
+                        aula.sela = aula.cavalo.sela_padrao
+                    if not aula.cabecada and aula.cavalo.cabecada_padrao:
+                        aula.cabecada = aula.cavalo.cabecada_padrao
+                    aula.save()
+            except Aula.DoesNotExist:
+                pass
+        return super().changeform_view(request, object_id, form_url, extra_context)
 
     @admin.action(description="Marcar selecionadas como concluídas")
     def marcar_como_concluida(self, request, queryset):

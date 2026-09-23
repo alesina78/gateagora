@@ -3,6 +3,7 @@ from datetime import date, timedelta
 from decimal import Decimal
 import json
 from urllib.parse import quote
+from urllib.parse import quote as url_quote
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -25,7 +26,6 @@ from django.utils import timezone
 from django.utils.timezone import localtime
 
 from reportlab.lib import colors
-from urllib.parse import quote  # se precisar
 
 from django.views.decorators.http import require_POST
 
@@ -208,7 +208,6 @@ def _montar_msg_fornecedor(item):
     - caso não exista lote econômico, solicita o necessário para atingir o estoque mínimo;
     - informações de estoque são apresentadas apenas na área de controle interno.
     """
-    from urllib.parse import quote
 
     # ---------------------------------------------------------
     # 1. Validação do fornecedor
@@ -379,75 +378,43 @@ def fornecedor_whatsapp(request, item_id):
     return redirect(link)
 
 def _montar_msg_fatura_whatsapp(fatura, empresa):
-    """
-    Monta mensagem WhatsApp detalhada da fatura, agrupando itens do mesmo
-    tipo (ex: várias aulas) numa lista com bullets, em vez de repetir.
-    """
     total = fatura.total
     itens = list(fatura.itens.all().select_related('cavalo'))
 
     linhas = [
         f"🐎 *{empresa.nome}*",
         "",
-        f"Olá, *{fatura.aluno.nome}*! Tudo bem? 😊",
+        f"Oi *{fatura.aluno.nome}*! Tudo bem? 😊",
         "",
-        "Preparamos o resumo dos seus serviços:",
+        f"Segue em detalhes o resumo da sua fatura deste mês:",
         "",
-        f"🧾 *Fatura com vencimento em {fatura.data_vencimento.strftime('%d/%m/%Y')}*",
+        f"📋 *Fatura nº {fatura.id}*",
+        f"📅 *Data de Emissão:* {fatura.data_criacao.strftime('%d/%m/%Y') if hasattr(fatura, 'data_criacao') else 'N/A'}",
         "",
     ]
 
     if itens:
-        # Agrupa por tipo, mantendo a ordem de primeira aparição
-        grupos = {}
-        ordem_tipos = []
+        linhas.append("*🧾 Serviços Prestados:*")
+        linhas.append("")
         for item in itens:
-            if item.tipo not in grupos:
-                grupos[item.tipo] = []
-                ordem_tipos.append(item.tipo)
-            grupos[item.tipo].append(item)
-
-        for tipo in ordem_tipos:
-            grupo = grupos[tipo]
-            emoji = EMOJIS_TIPO_FATURA.get(tipo, '•')
-            tipo_display = grupo[0].get_tipo_display()
-
-            if len(grupo) == 1:
-                item = grupo[0]
-                data_txt = f" — {item.data.strftime('%d/%m/%Y')}" if item.data else ""
-                cavalo_txt = f"🐴 {item.cavalo.nome} — " if item.cavalo else ""
-                
-                linhas.append(f"{emoji} *{tipo_display}*{data_txt}")
-                linhas.append(f"{cavalo_txt}R$ {formata_real(item.valor)}")
-            else:
-                linhas.append(f"{emoji} *{tipo_display}*")
-                for item in grupo:
-                    data_txt = item.data.strftime('%d/%m/%Y') if item.data else ""
-                    cavalo_txt = f"{item.cavalo.nome} — " if item.cavalo else ""
-                    
-                    # Formata a linha mantendo traços limpos se não houver data ou cavalo
-                    partes_bullet = [p for p in [data_txt, cavalo_txt[:-3] if cavalo_txt else ""] if p]
-                    prefixo = " — ".join(partes_bullet) + " — " if partes_bullet else ""
-                    
-                    linhas.append(f"• {prefixo}R$ {formata_real(item.valor)}")
-            
-            linhas.append("")
-    else:
-        linhas.append(f"💰 Total: R$ {formata_real(total)}")
+            cavalo_txt = f" — {item.cavalo.nome}" if item.cavalo else ""
+            data_txt = f" ({item.data.strftime('%d/%m')})" if item.data else ""
+            linhas.append(f"• {item.get_tipo_display()}{cavalo_txt}{data_txt}")
+            linhas.append(f"  R$ {formata_real(item.valor)}")
         linhas.append("")
 
     linhas += [
-        "━━━━━━━━━━━━━━",
-        f"💰 *Total:* R$ {formata_real(total)}",
+        "━━━━━━━━━━━━━━━━━━━━",
+        f"💰 *Valor Total:* R$ {formata_real(total)}",
         f"📅 *Vencimento:* {fatura.data_vencimento.strftime('%d/%m/%Y')}",
-        "━━━━━━━━━━━━━━",
+        "━━━━━━━━━━━━━━━━━━━━",
         "",
-        "Se o pagamento já foi realizado, envie o comprovante por aqui para atualizarmos a fatura. 😊",
+        "💳 *Como Pagar:*",
+        "Transferência, PIX ou dinheiro. Envie o comprovante quando efetuar o pagamento.",
         "",
-        "Qualquer dúvida sobre os lançamentos, estamos à disposição.",
+        "Dúvidas? Estamos à disposição! 💚",
         "",
-        f"🐎 *{empresa.nome}*",
-        "Gate4 — Gestão Inteligente para Centros Equestres",
+        f"*{empresa.nome}* — Gestão Inteligente para Centros Equestres",
     ]
 
     return "\n".join(linhas)
@@ -524,7 +491,8 @@ def dashboard(request):
             tel_c = f"55{tel_c}"
         # Usa a função auxiliar para montar a mensagem
         msg_zap = _montar_msg_fatura_whatsapp(fatura, empresa)
-        link_wa = f"https://wa.me/{tel_c}?text={quote(msg_zap)}" if tel_c else "#"
+        
+        link_wa = f"https://wa.me/{tel_c}?text={url_quote(msg_zap)}" if tel_c else "#"
 
         listagem_cobranca.append({
             "fatura_id":  fatura.id,
@@ -1130,6 +1098,7 @@ def dashboard(request):
         ultima = ultima_aula_map.get(al.id)
         dias = (hoje - ultima).days if ultima else None
         al.dias_inativo = dias
+           
         if al.id in ativos_14_30:
             alunos_inativos.append(al)
         else:
@@ -3362,7 +3331,6 @@ def _checklist_whatsapp_texto(aula, checklist, titulo):
 def checklist_whatsapp(request, aula_id, tipo):
     """Gera o link do WhatsApp com o checklist formatado, no mesmo padrão
     já usado pro Guia de Encilhamento."""
-    from urllib.parse import quote
 
     tipo = tipo.upper()
     titulo = "Checklist do Aluno" if tipo == 'ALUNO' else "Checklist de Logística"

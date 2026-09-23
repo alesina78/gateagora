@@ -434,12 +434,12 @@
     [2] Docs Legais   → GTA, Mormo, Anemia, documentos com prazo formal — CONFORMIDADE
     [3] Estoque       → só itens em alerta + botão Fechar Dia embutido — OPERACIONAL
   -->
-  <!-- ──<div class="attention-head">
+  <div class="attention-head">
     <div>
-      <p class="sec-title"><i class="fa-solid fa-triangle-exclamation mr-1" style="color:#f59e0b"></i>Saúde, documentos e estoque: o que precisa de ação primeiro.</p>
-     <!-- ── alg  <p class="text-[9px] mt-1" style="color:var(--text-muted)">Saúde, documentos e estoque: o que precisa de ação primeiro.</p>
+      <p class="sec-title"><i class="fa-solid fa-triangle-exclamation mr-1" style="color:#f59e0b"></i>Central de Atenção</p>
+      <p class="text-[9px] mt-1" style="color:var(--text-muted)">Saúde, documentos e estoque: o que precisa de ação primeiro.</p>
     </div>
-  </div>-->
+  </div>
   <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-4">
 
     <!-- ── 3a. SAÚDE & VET ──────────────────────────────────────────────────── -->
@@ -876,7 +876,7 @@
                 {# BOTÃO WHATSAPP - Visível tanto para alunos individuais quanto turmas #}
                 {% if not aula.concluida %}
                     {% if aula.aluno.telefone %}
-                      <a href="https://wa.me/55{{ aula.aluno.telefone_limpo }}?text=🐴%20Olá,%20*{{ aula.aluno.nome|urlencode }}*!%20Tudo%20bem%3F%0ASua%20aula%20na%20*{{ empresa.nome|urlencode }}*%20está%20chegando!%20😊%0A📅%20*Data:*%20{{ aula.data_hora|date:'d/m/Y' }}%0A⏰%20*Horário:*%20{{ aula.data_hora|date:'H:i' }}%0A🐎%20*Cavalo:*%20{{ aula.cavalo.nome|urlencode }}%0A%0APara%20deixarmos%20tudo%20preparado%20com%20tranquilidade,%20pedimos%20que%20confirme%20sua%20presença%20pelo%20link%20abaixo:%0A👉%20https://tinyurl.com/Gate4login/minhas-aulas/%0A%0A💚%20A%20confirmação%20nos%20ajuda%20a%20reservar%20o%20cavalo%20e%20organizar%20o%20encilhamento%20no%20horário%20da%20sua%20aula.%0ACaso%20não%20possa%20comparecer%20ou%20precise%20de%20alguma%20ajuda,%20é%20só%20nos%20avisar.%20😉%0A%0AEsperamos%20você!%20🐴✨" 
+                      <a href="https://wa.me/55{{ aula.aluno.telefone_limpo }}?text=🐴%20Oi%20*{{ aula.aluno.nome|urlencode }}*!%20Tudo%20bem%3F%0ADeixa%20só%20eu%20confirmar%20sua%20aula!%20😊%0A%0A📅%20*Data:*%20{{ aula.data_hora|date:'d/m/Y' }}%0A⏰%20*Horário:*%20{{ aula.data_hora|date:'H:i' }}%0A🐎%20*Cavalo:*%20{{ aula.cavalo.nome|urlencode }}%0A%0APara%20gente%20conseguir%20preparar%20tudo%20direitinho,%20confirma%20sua%20presença:%0A👉%20https://tinyurl.com/Gate4login/minhas-aulas/%0A%0AAssim%20a%20gente%20já%20reserva%20o%20cavalo%20e%20deixa%20o%20encilhamento%20pronto%20no%20seu%20horário!%20✨%0A%0AQualquer%20dúvida%20ou%20se%20não%20puder%20vir,%20é%20só%20chamar!%0A%0ATe%20esperamos!%20🐴💚" 
                         target="_blank"
                         class="flex items-center justify-center w-7 h-7 bg-green-500/10 text-green-500 border border-green-500/20 rounded-lg hover:bg-green-500 hover:text-white transition-all text-xs"
                         title="Enviar lembrete pelo WhatsApp">
@@ -1221,7 +1221,7 @@
                   <td class="px-4 py-3 text-right">
                     <div class="flex justify-end gap-1.5">
                       {% if item.aluno.telefone %}
-                      <a href="{{ item.whatsapp }}" target="_blank"
+                      <a href="https://wa.me/55{{ item.aluno.telefone_limpo }}?text=Oi%20*{{ item.aluno.nome|urlencode }}*%20😊%0A%0ASegue%20aqui%20o%20resumo%20da%20sua%20fatura%20deste%20mês:%0A%0A💰%20*Valor%20Total:*%20R$%20{{ item.valor_total|urlencode }}%0A📅%20*Aulas:*%20{{ item.total_aulas|urlencode }}%0A%0ADúvidas%20sobre%20a%20fatura%3F%20É%20só%20chamar!%20Estamos%20aqui%20pra%20ajudar.%20💚" target="_blank" class="w-7 h-7 flex items-center justify-center rounded-lg" style="background:rgba(16,185,129,0.1); color:var(--emerald-text);" title="Enviar pelo WhatsApp">
                         <i class="fa-brands fa-whatsapp text-xs"></i>
                       </a>
                       {% endif %}
@@ -1355,8 +1355,8 @@
               <span class="text-[9px] ml-1 font-bold" style="color:#ef4444">{{ al.dias_inativo }}d</span>
               {% endif %}
             </div>
-            {% if al.telefone %}
-            <a href="{% url 'aluno_whatsapp' al.id %}"
+            {% if al.telefone and al.link_reconquista %}
+            <a href="{{ al.link_reconquista }}"
               target="_blank"
               style="font-size:9px;padding:2px 7px;border-radius:5px;background:rgba(239,68,68,0.1);color:#ef4444;"
               title="Enviar mensagem de reconquista">
@@ -1405,7 +1405,7 @@
                   <td class="px-4 py-3 text-right">
                     <p class="text-[10px] font-bold font-mono mb-1" style="color:var(--red-text)">R$ {{ item.valor }}</p>
                     <div class="flex justify-end gap-1.5">
-                      {% if item.tem_whatsapp %}
+                      {% if item.aluno.telefone %}
                       <a href="{{ item.link_zap }}" target="_blank" class="w-6 h-6 flex items-center justify-center rounded bg-emerald-50 text-emerald-600 border border-emerald-200" title="Enviar pelo WhatsApp">
                         <i class="fa-brands fa-whatsapp text-[10px]"></i>
                       </a>
