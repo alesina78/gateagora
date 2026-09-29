@@ -33,7 +33,7 @@ from .models import (
     Empresa, Perfil, Aluno, Cavalo, Baia, Piquete, Aula,
     ItemEstoque, MovimentacaoFinanceira, MovimentacaoEstoque, DocumentoCavalo,
     ConfigPrazoManejo, ConfigPrecoManejo, Fatura, ItemFatura, ConfirmacaoPresenca,
-    RegistroOcorrencia
+    RegistroOcorrencia, TrocaTotalCama
 )
 
 BRAND_NAME = "Gate 4"
@@ -49,6 +49,7 @@ EMOJIS_TIPO_FATURA = {
     'VERMIFUGO':     '💊',
     'CASQUEIO':      '🦶',
     'FERRAGEAMENTO': '🧲',
+    'TROCA_CAMA':    '🛏️',
     'OUTROS':        '📦',
 }
 
@@ -1021,6 +1022,7 @@ def dashboard(request):
         'VERMIFUGO':     '💊 Vermífugo',
         'CASQUEIO':      '🦶 Casqueio',
         'FERRAGEAMENTO': '🧲 Ferrageamento',
+        'TROCA_CAMA':    '🛏️ Troca de Cama',
         'OUTROS':        '📦 Outros',
     }
     try:
@@ -1273,6 +1275,195 @@ def _atualizar_streak(aluno):
         print(f"[STREAK] Erro ao atualizar streak do aluno {aluno.id}: {e}")
 
 # ── Confirmar Presença pelo Dashboard (Gestor) ───────────────────────────────
+@login_required
+def agendar_aula_proprietario(request):
+    """
+    Permite que um proprietário de cavalo agende aula com seu próprio cavalo.
+    Reutiliza a lógica de aula existente.
+    """
+    try:
+        perfil = request.user.perfil
+    except Exception:
+        messages.error(request, "Sua conta não está vinculada a um perfil de acesso.")
+        return redirect('login')
+
+    if perfil.cargo != 'Aluno':
+        messages.error(request, "Apenas alunos/proprietários podem agendar aulas.")
+        return redirect('dashboard')
+
+    try:
+        aluno = Aluno.objects.get(perfil_usuario=perfil)
+    except Aluno.DoesNotExist:
+        messages.error(request, "Nenhum aluno encontrado para seu usuário.")
+        return redirect('dashboard')
+
+    empresa = perfil.empresa
+
+    # 1. Cavalos que este aluno é proprietário
+    cavalos_proprios = Cavalo.objects.filter(
+        empresa=empresa,
+        proprietario=aluno,
+        ativo=True
+    )
+
+    if not cavalos_proprios.exists():
+        messages.info(request, "Você não possui cavalos registrados para agendar aulas.")
+        return redirect('dashboard')
+
+    if request.method == 'POST':
+        # Processar agendamento
+        cavalo_id = request.POST.get('cavalo_id')
+        data_hora_str = request.POST.get('data_hora')
+        instrutor_id = request.POST.get('instrutor_id')
+        local_id = request.POST.get('local_id')
+
+        try:
+            cavalo = Cavalo.objects.get(id=cavalo_id, empresa=empresa, proprietario=aluno)
+            instrutor = Perfil.objects.get(id=instrutor_id, empresa=empresa, cargo='Professor') if instrutor_id else None
+            local = LocalAula.objects.get(id=local_id, empresa=empresa) if local_id else None
+
+            data_hora = timezone.datetime.fromisoformat(data_hora_str)
+
+            # Criar aula
+            aula = Aula(
+                empresa=empresa,
+                aluno=aluno,
+                cavalo=cavalo,
+                instrutor=instrutor,
+                data_hora=data_hora,
+                tipo='NORMAL',
+                agendado_por_proprietario=True,
+                local_novo=local,
+            )
+            aula.full_clean()
+            aula.save()
+
+            # Aviso se é mesmo dia
+            hoje = timezone.localdate()
+            eh_mesmo_dia = (data_hora.date() == hoje)
+            
+            config = ConfigPrazoManejo.objects.filter(empresa=empresa).first()
+            if eh_mesmo_dia and config and config.deve_mostrar_aviso_mesmo_dia():
+                msg_aviso = " ⚠️ Seu horário foi registrado. Como o agendamento foi realizado no próprio dia, pode não haver tempo suficiente para avisarmos os tratadores e cavalariços responsáveis pelo manejo do cavalo."
+                messages.success(request, f"✅ Aula agendada para {data_hora.strftime('%d/%m às %H:%M')}." + msg_aviso)
+            else:
+                messages.success(request, f"✅ Aula agendada para {data_hora.strftime('%d/%m às %H:%M')}!")
+
+            return redirect('minhas_aulas')
+
+        except Cavalo.DoesNotExist:
+            messages.error(request, "Cavalo não encontrado ou você não é o proprietário.")
+        except Perfil.DoesNotExist:
+            messages.error(request, "Professor não encontrado.")
+        except Exception as e:
+            messages.error(request, f"Erro ao agendar aula: {str(e)}")
+
+    # GET: Mostrar formulário
+    instrutores = Perfil.objects.filter(
+        empresa=empresa,
+        cargo='Professor'
+    ).select_related('user')
+
+    locais = LocalAula.objects.filter(empresa=empresa, ativo=True)
+
+    return render(request, 'gateagora/agendar_aula_proprietario.html', {
+        'aluno': aluno,
+        'empresa': empresa,
+        'cavalos': cavalos_proprios,
+        'instrutores': instrutores,
+        'locais': locais,
+    })
+
+@login_required
+def agendar_treino_solo_proprietario(request):
+    """
+    Permite que proprietário agende treinamento solo (sem professor).
+    Usa mesmo modelo Aula mas com tipo='TREINO_SOLO' e instrutor=None.
+    """
+    try:
+        perfil = request.user.perfil
+    except Exception:
+        messages.error(request, "Sua conta não está vinculada a um perfil de acesso.")
+        return redirect('login')
+
+    if perfil.cargo != 'Aluno':
+        messages.error(request, "Apenas alunos/proprietários podem agendar treinamentos.")
+        return redirect('dashboard')
+
+    try:
+        aluno = Aluno.objects.get(perfil_usuario=perfil)
+    except Aluno.DoesNotExist:
+        messages.error(request, "Nenhum aluno encontrado para seu usuário.")
+        return redirect('dashboard')
+
+    empresa = perfil.empresa
+
+    # 1. Cavalos que este aluno é proprietário
+    cavalos_proprios = Cavalo.objects.filter(
+        empresa=empresa,
+        proprietario=aluno,
+        ativo=True
+    )
+
+    if not cavalos_proprios.exists():
+        messages.info(request, "Você não possui cavalos registrados para agendar treinamentos.")
+        return redirect('dashboard')
+
+    if request.method == 'POST':
+        # Processar agendamento
+        cavalo_id = request.POST.get('cavalo_id')
+        data_hora_str = request.POST.get('data_hora')
+        local_id = request.POST.get('local_id')
+        observacao = request.POST.get('observacao', '')
+
+        try:
+            cavalo = Cavalo.objects.get(id=cavalo_id, empresa=empresa, proprietario=aluno)
+            local = LocalAula.objects.get(id=local_id, empresa=empresa) if local_id else None
+
+            data_hora = timezone.datetime.fromisoformat(data_hora_str)
+
+            # Criar aula como TREINO_SOLO (sem instrutor)
+            aula = Aula(
+                empresa=empresa,
+                aluno=aluno,
+                cavalo=cavalo,
+                instrutor=None,  # Sem professor
+                data_hora=data_hora,
+                tipo='TREINO_INTERNO',  # Reutilizar tipo existente (sem custo)
+                agendado_por_proprietario=True,
+                local_novo=local,
+                relatorio_treino=observacao,  # Campo existente para observações
+            )
+            aula.full_clean()
+            aula.save()
+
+            # Aviso se é mesmo dia
+            hoje = timezone.localdate()
+            eh_mesmo_dia = (data_hora.date() == hoje)
+            
+            config = ConfigPrazoManejo.objects.filter(empresa=empresa).first()
+            if eh_mesmo_dia and config and config.deve_mostrar_aviso_mesmo_dia():
+                msg_aviso = " ⚠️ Seu horário foi registrado. Como o agendamento foi realizado no próprio dia, pode não haver tempo suficiente para avisarmos os tratadores e cavalariços responsáveis pelo manejo do cavalo."
+                messages.success(request, f"✅ Treinamento solo registrado para {data_hora.strftime('%d/%m às %H:%M')}." + msg_aviso)
+            else:
+                messages.success(request, f"✅ Treinamento solo registrado para {data_hora.strftime('%d/%m às %H:%M')}!")
+
+            return redirect('minhas_aulas')
+
+        except Cavalo.DoesNotExist:
+            messages.error(request, "Cavalo não encontrado ou você não é o proprietário.")
+        except Exception as e:
+            messages.error(request, f"Erro ao registrar treinamento: {str(e)}")
+
+    # GET: Mostrar formulário
+    locais = LocalAula.objects.filter(empresa=empresa, ativo=True)
+
+    return render(request, 'gateagora/agendar_treino_solo.html', {
+        'aluno': aluno,
+        'empresa': empresa,
+        'cavalos': cavalos_proprios,
+        'locais': locais,
+    })
 
 @login_required
 @require_POST
@@ -2046,10 +2237,11 @@ def manejo_em_massa(request):
 
             # Mapeamento procedimento → (campo_cavalo, tipo_doc, titulo_doc)
             MAPA = {
-                "Vacinacao":     ("ultima_vacina",        "VACINA", "Vacinação"),
-                "Vermifugacao":  ("ultimo_vermifugo",     "EXAME",  "Vermifugação"),
-                "Ferrageamento": ("ultimo_ferrageamento", "OUTRO",  "Ferrageamento"),
-                "Casqueamento":  ("ultimo_casqueamento",  "OUTRO",  "Casqueamento"),
+                "Vacinacao":     ("ultima_vacina",        "VETERINARIO", "Vacinação"),
+                "Vermifugacao":  ("ultimo_vermifugo",     "VERMIFUGO",  "Vermifugação"),
+                "Ferrageamento": ("ultimo_ferrageamento", "FERRAGEAMENTO",  "Ferrageamento"),
+                "Casqueamento":  ("ultimo_casqueamento",  "CASQUEIO",  "Casqueamento"),
+                "Troca_Cama":    ("ultima_troca_cama",    "TROCA_CAMA",  "Troca de Cama"),
             }
 
             if procedimento not in MAPA:
@@ -2070,6 +2262,7 @@ def manejo_em_massa(request):
                 "Vermifugacao":  ("cobrar_vermifugo",     "valor_vermifugo",     "VERMIFUGO"),
                 "Ferrageamento": ("cobrar_ferrageamento", "valor_ferrageamento", "FERRAGEAMENTO"),
                 "Casqueamento":  ("cobrar_casqueamento",  "valor_casqueamento",  "CASQUEIO"),
+                "Troca_Cama":    ("cobrar_troca_cama",    "valor_troca_cama",    "TROCA_CAMA"),
             }
             campo_cobrar, campo_valor, tipo_fatura = MAPA_PRECO[procedimento]
 
@@ -2568,24 +2761,34 @@ def minhas_aulas(request):
 
     proximas = []
     historico = []
+    config_mesmo_dia = config.pode_confirmar_mesmo_dia() if config else True
 
     for aula in aulas:
         confirmacao = _conf_ma.get(aula.id)
         aula_passada = aula.data_hora < agora
+        
+        # Nova lógica: virada do dia
+        hoje = timezone.localdate()
+        data_aula = aula.data_hora.date()
+        eh_mesmo_dia = (data_aula == hoje)
+        eh_antes_do_dia = (data_aula > hoje)
+        
         pode_confirmar = (
             not aula_passada
             and not confirmacao
-            and (
-                prazo_horas == 0
-                or aula.data_hora <= agora + timezone.timedelta(hours=prazo_horas)
-            )
+            and (eh_antes_do_dia or (eh_mesmo_dia and config_mesmo_dia))
         )
+        
+        aviso_mesmo_dia = eh_mesmo_dia and config_mesmo_dia and config.deve_mostrar_aviso_mesmo_dia()
+        
         item = {
             "aula":         aula,
             "ja_confirmou": bool(confirmacao),
             "confirmacao":  confirmacao,
             "aula_passada": aula_passada,
             "pode_confirmar": pode_confirmar,
+            "eh_mesmo_dia": eh_mesmo_dia,
+            "aviso_mesmo_dia": aviso_mesmo_dia,
         }
         if aula_passada:
             historico.append(item)
@@ -2715,6 +2918,65 @@ def minhas_aulas(request):
         }
     )
 
+@login_required
+def agendar_treino_solo_proprietario(request):
+    aluno = Aluno.objects.filter(perfil_usuario=request.user).first()
+    if not aluno:
+        messages.error(request, "Usuário não vinculado como aluno.")
+        return redirect('minhas_aulas')
+    
+    empresa = request.empresa
+    
+    if request.method == 'GET':
+        cavalos_proprios = Cavalo.objects.filter(
+            empresa=empresa,
+            proprietario=aluno,
+            ativo=True
+        ).order_by('nome')
+        context = {'cavalos_proprios': cavalos_proprios, 'aluno': aluno, 'empresa': empresa}
+        return render(request, 'gateagora/minhas_aulas.html', context)
+    
+    elif request.method == 'POST':
+        cavalo_id = request.POST.get('cavalo_id')
+        data_hora_str = request.POST.get('data_hora')
+        observacao = request.POST.get('observacao', '')
+        
+        if not cavalo_id or not data_hora_str:
+            messages.error(request, "Cavalo e data/hora são obrigatórios.")
+            return redirect('agendar_treino_solo_proprietario')
+        
+        try:
+            cavalo = Cavalo.objects.get(id=cavalo_id, empresa=empresa, proprietario=aluno, ativo=True)
+        except Cavalo.DoesNotExist:
+            messages.error(request, "Cavalo inválido.")
+            return redirect('agendar_treino_solo_proprietario')
+        
+        try:
+            from datetime import datetime
+            data_hora = datetime.fromisoformat(data_hora_str).replace(tzinfo=timezone.get_current_timezone())
+        except (ValueError, AttributeError):
+            messages.error(request, "Data/hora inválida.")
+            return redirect('agendar_treino_solo_proprietario')
+        
+        aula = Aula.objects.create(
+            empresa=empresa,
+            aluno=aluno,
+            cavalo=cavalo,
+            instrutor=None,
+            data_hora=data_hora,
+            tipo='TREINO_INTERNO',
+            agendado_por_proprietario=True,
+            observacoes=observacao if observacao else None,
+        )
+        
+        ConfirmacaoPresenca.objects.create(
+            aula=aula,
+            aluno=aluno,
+            confirmado_em=timezone.now(),
+        )
+        
+        messages.success(request, f"✅ Treino agendado para {cavalo.nome}!")
+        return redirect('minhas_aulas')
 
 @login_required
 @require_POST
@@ -2740,16 +3002,36 @@ def confirmar_presenca(request, aula_id):
 
     aula  = get_object_or_404(Aula, id=aula_id, empresa=empresa, aluno=aluno)
     agora = timezone.now()
+    hoje = timezone.localdate()
+    data_aula = aula.data_hora.date()
+    eh_mesmo_dia = (data_aula == hoje)
 
-    if agora > aula.data_hora:
+    # Validação: aula não pode estar no passado
+    if aula.data_hora < agora:
         messages.warning(request, "Esta aula já aconteceu, não é possível confirmar.")
+        return redirect('minhas_aulas')
+
+    # Obter configuração
+    config = ConfigPrazoManejo.objects.filter(empresa=empresa).first()
+    pode_confirmar_mesmo_dia = config.pode_confirmar_mesmo_dia() if config else True
+
+    # Bloqueio: se é mesmo dia e sistema não permite
+    if eh_mesmo_dia and not pode_confirmar_mesmo_dia:
+        messages.error(request, "Confirmação de aulas só é permitida antes do dia da atividade.")
         return redirect('minhas_aulas')
 
     _, criado = ConfirmacaoPresenca.objects.get_or_create(aula=aula, aluno=aluno)
 
     if criado:
         _atualizar_streak(aluno)
-        messages.success(request, f"✅ Presença confirmada para {aula.data_hora.strftime('%d/%m às %H:%M')}!")
+        msg_base = f"✅ Presença confirmada para {aula.data_hora.strftime('%d/%m às %H:%M')}!"
+        
+        # Aviso se é mesmo dia
+        if eh_mesmo_dia and config.deve_mostrar_aviso_mesmo_dia():
+            msg_aviso = " ⚠️ Esta confirmação foi realizada no próprio dia da atividade. Pode não haver tempo suficiente para avisar a equipe responsável pelo manejo."
+            messages.success(request, msg_base + msg_aviso)
+        else:
+            messages.success(request, msg_base)
     else:
         messages.info(request, "Você já havia confirmado esta aula.")
 
@@ -2779,6 +3061,9 @@ def desconfirmar_presenca(request, aula_id):
 
     aula  = get_object_or_404(Aula, id=aula_id, empresa=empresa, aluno=aluno)
     agora = timezone.now()
+    hoje = timezone.localdate()
+    data_aula = aula.data_hora.date()
+    eh_mesmo_dia = (data_aula == hoje)
 
     if agora > aula.data_hora:
         messages.warning(request, "Esta aula já aconteceu.")
@@ -2787,7 +3072,15 @@ def desconfirmar_presenca(request, aula_id):
     deleted, _ = ConfirmacaoPresenca.objects.filter(aula=aula, aluno=aluno).delete()
 
     if deleted:
-        messages.info(request, f"Confirmação cancelada para {aula.data_hora.strftime('%d/%m às %H:%M')}.")
+        msg_base = f"Confirmação cancelada para {aula.data_hora.strftime('%d/%m às %H:%M')}."
+        
+        # Aviso se é mesmo dia
+        config = ConfigPrazoManejo.objects.filter(empresa=empresa).first()
+        if eh_mesmo_dia and config and config.deve_mostrar_aviso_mesmo_dia():
+            msg_aviso = " ⚠️ Como o cancelamento foi realizado no próprio dia da atividade, não podemos garantir que o horário poderá ser reorganizado ou reagendado."
+            messages.warning(request, msg_base + msg_aviso)
+        else:
+            messages.info(request, msg_base)
 
     return redirect('minhas_aulas')
 
@@ -2907,6 +3200,200 @@ def relatorios(request):
         'inadimplencia_pct': round(
             float(total_atrasado + total_pendente) / float(total_previsto) * 100, 1
         ) if total_previsto else 0,
+    })
+
+@login_required
+def manejo_troca_cama(request):
+    """
+    View de manejo em massa para registrar troca total da cama.
+    """
+    empresa = getattr(request, 'empresa', None)
+    if not empresa:
+        return redirect('dashboard')
+
+    # Verificar permissão
+    try:
+        perfil = request.user.perfil
+        if perfil.cargo not in ['Gestor', 'Tratador']:
+            messages.error(request, "Sem permissão para registrar troca de cama.")
+            return redirect('dashboard')
+    except Exception:
+        return redirect('login')
+
+    baias = Baia.objects.filter(empresa=empresa).order_by('numero')
+    
+    # Pré-carregar últimas trocas para cada baia (para mostrar status)
+    baias_com_status = []
+    for baia in baias:
+        ultima_troca = TrocaTotalCama.objects.filter(
+            baia=baia,
+            empresa=empresa
+        ).order_by('-data').first()
+        
+        baia.ultima_troca = ultima_troca
+        baia.proxima_data = ultima_troca.proxima_data if ultima_troca else None
+        baia.status_visual = ultima_troca.status_visual if ultima_troca else "⚪ Sem registros"
+        baias_com_status.append(baia)
+
+    if request.method == 'POST':
+        baia_ids = request.POST.getlist('baias')
+        data = request.POST.get('data')
+        horario = request.POST.get('horario', '08:00')
+        periodicidade = int(request.POST.get('periodicidade', 7))
+        observacao = request.POST.get('observacao', '')
+
+        if not baia_ids:
+            messages.warning(request, "Selecione pelo menos uma baia.")
+            return render(request, 'gateagora/manejo_troca_cama.html', {
+                'baias': baias_com_status,
+                'empresa': empresa,
+            })
+
+        try:
+            from datetime import datetime, timedelta
+            data_obj = datetime.strptime(data, '%Y-%m-%d').date() if data else timezone.localdate()
+            horario_obj = datetime.strptime(horario, '%H:%M').time() if horario else None
+            proxima_data = data_obj + timedelta(days=periodicidade)
+
+            registros_criados = 0
+            for baia_id in baia_ids:
+                try:
+                    baia = Baia.objects.get(id=baia_id, empresa=empresa)
+                    
+                    # Encontrar cavalo atualmente nesta baia
+                    cavalo = Cavalo.objects.filter(
+                        baia=baia,
+                        empresa=empresa
+                    ).first()
+
+                    troca = TrocaTotalCama(
+                        empresa=empresa,
+                        baia=baia,
+                        cavalo=cavalo,
+                        data=data_obj,
+                        horario=horario_obj,
+                        responsavel=perfil,
+                        periodicidade_dias=periodicidade,
+                        proxima_data=proxima_data,
+                        observacao=observacao,
+                    )
+                    troca.save()  # .save() calcula status automaticamente
+                    registros_criados += 1
+
+                except Baia.DoesNotExist:
+                    continue
+
+            if registros_criados:
+                messages.success(request, f"✅ Troca total registrada para {registros_criados} baia(s). Próxima: {proxima_data.strftime('%d/%m/%Y')}")
+            else:
+                messages.error(request, "Erro ao registrar trocas.")
+
+            return redirect('manejo_troca_cama')
+
+        except Exception as e:
+            messages.error(request, f"Erro ao registrar troca: {str(e)}")
+
+    return render(request, 'gateagora/manejo_troca_cama.html', {
+        'baias': baias_com_status,
+        'empresa': empresa,
+        'data_hoje': timezone.localdate(),
+    })
+
+
+@login_required
+def historico_troca_cama(request, baia_id):
+    """
+    Mostra histórico completo de trocas para uma baia específica.
+    """
+    empresa = getattr(request, 'empresa', None)
+    if not empresa:
+        return redirect('dashboard')
+
+    baia = get_object_or_404(Baia, id=baia_id, empresa=empresa)
+    
+    historico = TrocaTotalCama.objects.filter(
+        baia=baia,
+        empresa=empresa
+    ).select_related('responsavel', 'cavalo').order_by('-data')
+
+    ultima_troca = historico.first()
+
+    return render(request, 'gateagora/historico_troca_cama.html', {
+        'baia': baia,
+        'empresa': empresa,
+        'historico': historico,
+        'ultima_troca': ultima_troca,
+    })
+
+@login_required
+def manejo_limpeza_baias(request):
+    """
+    View de manejo em massa para registrar limpeza de baias.
+    """
+    empresa = getattr(request, 'empresa', None)
+    if not empresa:
+        return redirect('dashboard')
+
+    # Verificar permissão (Gestor, Tratador, etc)
+    try:
+        perfil = request.user.perfil
+        if perfil.cargo not in ['Gestor', 'Tratador']:
+            messages.error(request, "Sem permissão para registrar limpeza de baias.")
+            return redirect('dashboard')
+    except Exception:
+        return redirect('login')
+
+    baias = Baia.objects.filter(empresa=empresa).order_by('numero')
+
+    if request.method == 'POST':
+        baia_ids = request.POST.getlist('baias')
+        data = request.POST.get('data')
+        horario = request.POST.get('horario', '08:00')
+        observacao = request.POST.get('observacao', '')
+
+        if not baia_ids:
+            messages.warning(request, "Selecione pelo menos uma baia.")
+            return render(request, 'gateagora/manejo_limpeza_baias.html', {'baias': baias, 'empresa': empresa})
+
+        try:
+            from datetime import datetime
+            data_obj = datetime.strptime(data, '%Y-%m-%d').date() if data else timezone.localdate()
+            horario_obj = datetime.strptime(horario, '%H:%M').time() if horario else None
+
+            registros_criados = 0
+            for baia_id in baia_ids:
+                try:
+                    baia = Baia.objects.get(id=baia_id, empresa=empresa)
+                    
+                    limpeza, criado = LimpezaBaia.objects.get_or_create(
+                        baia=baia,
+                        data=data_obj,
+                        defaults={
+                            'empresa': empresa,
+                            'horario': horario_obj,
+                            'responsavel': perfil,
+                            'observacao': observacao,
+                        }
+                    )
+                    if criado:
+                        registros_criados += 1
+                except Baia.DoesNotExist:
+                    continue
+
+            if registros_criados:
+                messages.success(request, f"✅ {registros_criados} baia(s) marcada(s) como limpa(s).")
+            else:
+                messages.info(request, "Nenhum registro novo foi criado (pode já existir para esta data).")
+
+            return redirect('manejo_limpeza_baias')
+
+        except Exception as e:
+            messages.error(request, f"Erro ao registrar limpeza: {str(e)}")
+
+    return render(request, 'gateagora/manejo_limpeza_baias.html', {
+        'baias': baias,
+        'empresa': empresa,
+        'data_hoje': timezone.localdate(),
     })
 
 

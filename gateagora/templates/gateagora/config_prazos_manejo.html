@@ -116,7 +116,7 @@
         Intervalo entre Ferrageamentos
       </label>
       <div class="flex items-center gap-3">
-        <input type="number" name="prazo_ferrageamento" value="{{ cfg.prazo_ferrageamento }}" min="1" max="180" required
+        <input type="number" name="prazo_ferrageamento" value="{{ cfg.prazo_ferrageamento }}" min="1" max="365" required
           class="w-28 rounded-xl px-3 py-2.5 text-lg font-black text-center"
           style="background-color:var(--card-alt);color:var(--text-main);border:1px solid var(--border);">
         <span class="text-sm font-bold" style="color:var(--text-muted)">dias</span>
@@ -127,20 +127,38 @@
       </div>
     </div>
 
-    <!-- Casqueamento -->
+        <!-- Casqueamento -->
     <div>
       <label class="text-[10px] font-black uppercase block mb-1.5" style="color:var(--text-muted)">
         <i class="fa-solid fa-shoe-prints mr-1" style="color:var(--emerald-text)"></i>
         Intervalo entre Casqueamentos
       </label>
       <div class="flex items-center gap-3">
-        <input type="number" name="prazo_casqueamento" value="{{ cfg.prazo_casqueamento }}" min="1" max="180" required
+        <input type="number" name="prazo_casqueamento" value="{{ cfg.prazo_casqueamento }}" min="1" max="365" required
           class="w-28 rounded-xl px-3 py-2.5 text-lg font-black text-center"
           style="background-color:var(--card-alt);color:var(--text-main);border:1px solid var(--border);">
         <span class="text-sm font-bold" style="color:var(--text-muted)">dias</span>
         <span class="text-[9px] px-2 py-1 rounded-full font-bold ml-auto"
               style="background-color:var(--card-alt);color:var(--text-muted);">
           padrão: 60 dias
+        </span>
+      </div>
+    </div>
+
+    <!-- Troca de Cama -->
+    <div>
+      <label class="text-[10px] font-black uppercase block mb-1.5" style="color:var(--text-muted)">
+        <i class="fa-solid fa-bed mr-1" style="color:#a855f7"></i>
+        Intervalo entre Trocas de Cama
+      </label>
+      <div class="flex items-center gap-3">
+        <input type="number" name="prazo_troca_cama" value="{{ cfg.prazo_troca_cama }}" min="1" max="365" required
+          class="w-28 rounded-xl px-3 py-2.5 text-lg font-black text-center"
+          style="background-color:var(--card-alt);color:var(--text-main);border:1px solid var(--border);">
+        <span class="text-sm font-bold" style="color:var(--text-muted)">dias</span>
+        <span class="text-[9px] px-2 py-1 rounded-full font-bold ml-auto"
+              style="background-color:var(--card-alt);color:var(--text-muted);">
+          padrão: 7 dias
         </span>
       </div>
     </div>

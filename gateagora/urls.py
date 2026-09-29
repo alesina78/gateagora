@@ -40,13 +40,24 @@ urlpatterns = [
     path('minhas-aulas/confirmar/<int:aula_id>/', views.confirmar_presenca,    name='confirmar_presenca'),
     path('minhas-aulas/cancelar/<int:aula_id>/',  views.desconfirmar_presenca, name='desconfirmar_presenca'),
 
+    # Proprietário agendar aulas/treinamentos (NOVO)
+    path('agendar-aula-proprietario/',  views.agendar_aula_proprietario,       name='agendar_aula_proprietario'),
+    path('agendar-treino-solo/',        views.agendar_treino_solo_proprietario, name='agendar_treino_solo'),
+
     # Confirmação manual pelo gestor (dashboard)
     path('aula/confirmar/<int:aula_id>/', views.confirmar_presenca_dashboard, name='confirmar_presenca_dashboard'),
     path('aula/confirmar-turma/<int:aula_id>/', views.confirmar_presenca_turma, name='confirmar_presenca_turma'),
-    path('fornecedor/whatsapp/<int:item_id>/', views.fornecedor_whatsapp, name='fornecedor_whatsapp'),
 
-    # Manejo em massa
+        # Manejo em massa
     path('manejo-em-massa/', views.manejo_em_massa, name='manejo_em_massa'),
+
+    # Manejo: Limpeza de Baias (NOVO)
+    path('manejo/limpeza-baias/', views.manejo_limpeza_baias, name='manejo_limpeza_baias'),
+
+    # Manejo: Troca Total da Cama (NOVO)
+    path('manejo/troca-cama/',               views.manejo_troca_cama,      name='manejo_troca_cama'),
+    path('manejo/troca-cama/historico/<int:baia_id>/', views.historico_troca_cama, name='historico_troca_cama'),
+    path('agendar-treino-solo/', views.agendar_treino_solo_proprietario, name='agendar_treino_solo_proprietario'),
 
     # Configuração de prazos
     path('config-prazos-manejo/', views.config_prazos_manejo, name='config_prazos_manejo'),

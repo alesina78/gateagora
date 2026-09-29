@@ -96,6 +96,7 @@
     .badge-verm { background:rgba(245,158,11,0.15);  color:#f59e0b; }
     .badge-ferr { background:rgba(239,68,68,0.15);   color:#f87171; }
     .badge-casc { background:rgba(16,185,129,0.15);  color:#34d399; }
+    .badge-tro  { background:#a855f7;                color:#fff;   }
     .badge-stat { background:rgba(249,115,22,0.15);  color:#fb923c; }
 
     /* ── KPI cards ── */
@@ -473,11 +474,12 @@
         </div>
       </button>
       <div id="painel-saude" class="alerta-painel custom-scrollbar">
-        <div class="px-4 pb-2 flex flex-wrap gap-2">
+          <div class="px-4 pb-2 flex flex-wrap gap-2">
           <span class="legenda-badge"><span class="badge-proc badge-vac">Vac</span> Vacinação</span>
           <span class="legenda-badge"><span class="badge-proc badge-verm">Vrm</span> Vermífugo</span>
           <span class="legenda-badge"><span class="badge-proc badge-ferr">Fer</span> Ferrageamento</span>
           <span class="legenda-badge"><span class="badge-proc badge-casc">Csc</span> Casqueamento</span>
+          <span class="legenda-badge"><span class="badge-proc badge-tro">Tro</span> Troca Cama</span>
           <span class="legenda-badge"><span class="badge-proc badge-stat">Sts</span> Status</span>
         </div>
         <div class="px-4 pb-4 space-y-2">
@@ -494,17 +496,19 @@
                   {% elif "Verm" in d %}<span class="badge-proc badge-verm" title="{{ d }}">Vrm</span>
                   {% elif "Ferr" in d %}<span class="badge-proc badge-ferr" title="{{ d }}">Fer</span>
                   {% elif "Casc" in d %}<span class="badge-proc badge-casc" title="{{ d }}">Csc</span>
+                  {% elif "Troca" in d %}<span class="badge-proc badge-tro" title="{{ d }}">Tro</span>
                   {% else %}<span class="badge-proc badge-stat" title="{{ d }}">{{ d|slice:":8" }}</span>
                   {% endif %}
                 {% endfor %}
               </div>
             </div>
             <!-- Datas dos últimos procedimentos -->
-            <div class="grid grid-cols-4 gap-x-2 mt-1.5 mb-2 text-[8px] font-mono" style="color:var(--text-muted)">
+              <div class="grid grid-cols-5 gap-x-2 mt-1.5 mb-2 text-[8px] font-mono" style="color:var(--text-muted)">
               <div><span>VAC</span><br><span style="color:var(--text-main)">{{ cavalo.ultima_vacina|date:"d/m"|default:"—" }}</span></div>
               <div><span>VRM</span><br><span style="color:var(--text-main)">{{ cavalo.ultimo_vermifugo|date:"d/m"|default:"—" }}</span></div>
               <div><span>FER</span><br><span style="color:var(--text-main)">{{ cavalo.ultimo_ferrageamento|date:"d/m"|default:"—" }}</span></div>
               <div><span>CSC</span><br><span style="color:var(--text-main)">{{ cavalo.ultimo_casqueamento|date:"d/m"|default:"—" }}</span></div>
+              <div><span>TRO</span><br><span style="color:var(--text-main)">{{ cavalo.ultima_troca_cama|date:"d/m"|default:"—" }}</span></div>
             </div>
             <a href="{% url 'marcar_saudavel' cavalo.id %}"
                onclick="return confirm('Marcar {{ cavalo.nome }} como Saudável? (só funciona se tudo estiver em dia)')"
@@ -663,14 +667,6 @@
                   </span>
                 {% endif %}
               </span>
-              {% if item.fornecedor_padrao and item.fornecedor_padrao.telefone %}
-              <a href="{% url 'fornecedor_whatsapp' item.id %}"
-                target="_blank"
-                class="text-[8px] font-bold px-1.5 py-0.5 rounded transition-opacity hover:opacity-80"
-                style="background:rgba(16,185,129,0.1);color:var(--emerald-text);">
-                <i class="fa-brands fa-whatsapp mr-0.5"></i>Fornecedor
-              </a>
-              {% endif %}
             </div>
             {% if item.alerta_minimo > 0 %}
             <div class="stock-bar-wrap mt-1.5">
@@ -876,8 +872,8 @@
                 {# BOTÃO WHATSAPP - Visível tanto para alunos individuais quanto turmas #}
                 {% if not aula.concluida %}
                     {% if aula.aluno.telefone %}
-                      <a href="https://wa.me/55{{ aula.aluno.telefone_limpo }}?text=🐴%20Olá,%20*{{ aula.aluno.nome|urlencode }}*!%20Tudo%20bem%3F%0ASua%20aula%20na%20*{{ empresa.nome|urlencode }}*%20está%20chegando!%20😊%0A📅%20*Data:*%20{{ aula.data_hora|date:'d/m/Y' }}%0A⏰%20*Horário:*%20{{ aula.data_hora|date:'H:i' }}%0A🐎%20*Cavalo:*%20{{ aula.cavalo.nome|urlencode }}%0A%0APara%20deixarmos%20tudo%20preparado%20com%20tranquilidade,%20pedimos%20que%20confirme%20sua%20presença%20pelo%20link%20abaixo:%0A👉%20https://tinyurl.com/Gate4login/minhas-aulas/%0A%0A💚%20A%20confirmação%20nos%20ajuda%20a%20reservar%20o%20cavalo%20e%20organizar%20o%20encilhamento%20no%20horário%20da%20sua%20aula.%0ACaso%20não%20possa%20comparecer%20ou%20precise%20de%20alguma%20ajuda,%20é%20só%20nos%20avisar.%20😉%0A%0AEsperamos%20você!%20🐴✨" 
-                        target="_blank"
+                     <a href="https://wa.me/55{{ aula.aluno.telefone_limpo }}?text=🐴%20Olá,%20*{{ aula.aluno.nome|urlencode }}*!%20Tudo%20bem%3F%0ASua%20aula%20na%20*{{ empresa.nome|urlencode }}*%20está%20chegando!%20😊%0A📅%20*Data:*%20{{ aula.data_hora|date:'d/m/Y' }}%0A⏰%20*Horário:*%20{{ aula.data_hora|date:'H:i' }}%0A🐎%20*Cavalo:*%20{{ aula.cavalo.nome|urlencode }}%0A%0APara%20deixarmos%20tudo%20preparado%20com%20tranquilidade,%20pedimos%20que%20confirme%20sua%20presença%20pelo%20link%20abaixo:%0A👉%20https://tinyurl.com/Gate4login/minhas-aulas/%0A%0A💚%20Sua%20confirmação%20nos%20ajuda%20a%20preparar%20tudo%20para%20a%20sua%20aula,%20incluindo%20a%20reserva%20do%20cavalo%20e%20o%20possível%20encilhamento.%20Caso%20não%20possa%20comparecer,%20conseguimos%20liberar%20o%20cavalo%20para%20descanso%20e%20alimentação.%20🐎%0ACaso%20precise%20de%20alguma%20ajuda,%20é%20só%20nos%20avisar.%20😉%0A%0AEsperamos%20você!%20🐴✨"
+                        target="_blank">
                         class="flex items-center justify-center w-7 h-7 bg-green-500/10 text-green-500 border border-green-500/20 rounded-lg hover:bg-green-500 hover:text-white transition-all text-xs"
                         title="Enviar lembrete pelo WhatsApp">
                           <i class="fa-brands fa-whatsapp"></i>

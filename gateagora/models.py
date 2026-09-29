@@ -311,6 +311,7 @@ class Cavalo(models.Model):
     ultimo_vermifugo = models.DateField(null=True, blank=True)
     ultimo_ferrageamento = models.DateField(null=True, blank=True)
     ultimo_casqueamento = models.DateField(null=True, blank=True)
+    ultima_troca_cama = models.DateField(null=True, blank=True)
 
     usa_ferradura = models.CharField(
         max_length=3,
@@ -437,6 +438,12 @@ class Aula(models.Model):
         limit_choices_to={'cargo': 'Professor'}
     )
 
+    # --- PROPRIETÁRIO AGENDANDO (novo) ---
+    agendado_por_proprietario = models.BooleanField(
+        default=False,
+        help_text="True se o proprietário do cavalo agendou esta aula com seu próprio cavalo"
+    )
+
     # --- EQUIPAMENTOS UTILIZADOS ---
     sela = models.ForeignKey(
         Sela, 
@@ -503,6 +510,7 @@ class Aula(models.Model):
         Garante a integridade dos dados e do multi-tenant (Empresa):
         - Aluno, Cavalo, Instrutor, Sela e Cabeçada devem pertencer à mesma empresa da aula.
         - Instrutor precisa ter o cargo de 'Professor'.
+        - Se agendado por proprietário: cavalo.proprietario == aluno (backend check)
         """
         erros = {}
 
@@ -527,6 +535,11 @@ class Aula(models.Model):
                 cargo_professor = getattr(Perfil.Cargo, 'PROFESSOR', 'Professor')
                 if self.instrutor.cargo != cargo_professor:
                     erros['instrutor'] = "Instrutor deve ter o cargo 'Professor'."
+
+            # NOVO: Validação de proprietário
+            if self.agendado_por_proprietario and self.aluno and self.cavalo:
+                if self.cavalo.proprietario_id != self.aluno.id:
+                    erros['cavalo'] = "Você só pode agendar aulas com seus próprios cavalos."
 
         if erros:
             raise ValidationError(erros)
@@ -833,6 +846,7 @@ class ItemFatura(models.Model):
         ('VERMIFUGO',     'Vermífugo'),
         ('CASQUEIO',      'Casqueio'),
         ('FERRAGEAMENTO', 'Ferrageamento'),
+        ('TROCA_CAMA',    'Troca de Cama'),
         ('OUTROS',        'Outros'),
     ]
 
@@ -907,9 +921,13 @@ class ConfigPrazoManejo(models.Model):
     prazo_vermifugo     = models.PositiveIntegerField(default=90,  help_text="Dias entre vermifugações")
     prazo_ferrageamento = models.PositiveIntegerField(default=60,  help_text="Dias entre ferrageamentos")
     prazo_casqueamento  = models.PositiveIntegerField(default=60,  help_text="Dias entre casqueamentos")
-    prazo_confirmacao_horas = models.PositiveIntegerField(
-        default=24,
-        help_text="Horas antes da aula dentro das quais o aluno pode confirmar presença (0 = sem prazo)"
+    permitir_confirmacao_mesmo_dia = models.BooleanField(
+        default=True,
+        help_text="Se True: aluno pode confirmar no próprio dia da aula (com aviso). Se False: só antes do dia."
+    )
+    mostrar_aviso_mesmo_dia = models.BooleanField(
+        default=True,
+        help_text="Se True: mostra aviso quando operação ocorre no mesmo dia da aula"
     )
 
     class Meta:
@@ -918,6 +936,14 @@ class ConfigPrazoManejo(models.Model):
 
     def __str__(self):
         return f"Prazos de Manejo — {self.empresa.nome}"
+
+    def pode_confirmar_mesmo_dia(self):
+        """Verifica se sistema permite confirmação no próprio dia"""
+        return self.permitir_confirmacao_mesmo_dia
+    
+    def deve_mostrar_aviso_mesmo_dia(self):
+        """Verifica se sistema deve mostrar aviso de operação no mesmo dia"""
+        return self.mostrar_aviso_mesmo_dia
     
 class ConfigPrecoManejo(models.Model):
     """Preços de cobrança por procedimento de manejo — por empresa."""
@@ -1072,3 +1098,135 @@ class ChecklistPreenchido(models.Model):
     def __str__(self):
         marca = "✅" if self.concluido else "⬜"
         return f"{marca} {self.item.descricao} — Aula #{self.aula_id}"
+
+# --- 7. MANEJO: LIMPEZA DE BAIAS ---
+
+class LimpezaBaia(models.Model):
+    """Registro de limpeza de baias — operação diária simples."""
+    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name='limpezas_baia')
+    baia = models.ForeignKey(Baia, on_delete=models.CASCADE, related_name='limpezas')
+    data = models.DateField(default=timezone.localdate)
+    horario = models.TimeField(null=True, blank=True, help_text="Horário da limpeza")
+    responsavel = models.ForeignKey(
+        Perfil,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='limpezas_realizadas',
+        help_text="Quem realizou a limpeza"
+    )
+    observacao = models.TextField(blank=True, help_text="Observações adicionais")
+    criado_em = models.DateTimeField(auto_now_add=True)
+    atualizado_em = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-data', '-horario']
+        indexes = [
+            models.Index(fields=["empresa", "baia", "data"]),
+            models.Index(fields=["data"]),
+        ]
+        unique_together = ('baia', 'data')  # Uma limpeza por baia por dia
+        verbose_name = "Limpeza de Baia 🧹"
+        verbose_name_plural = "Limpezas de Baias 🧹"
+
+    def __str__(self):
+        return f"Limpeza {self.baia.numero} — {self.data.strftime('%d/%m/%Y')}"
+
+    @property
+    def status_visual(self):
+        """Retorna emoji de status visual"""
+        return "🟢 Limpa" if self.data == timezone.localdate() else "✅ Concluída"
+
+
+class TrocaTotalCama(models.Model):
+    """
+    Registro de troca total da cama — operação mais intensiva com periodicidade.
+    Diferente de limpeza simples.
+    """
+    STATUS_CHOICES = [
+        ('EM_DIA', 'Em Dia'),
+        ('PROXIMA', 'Próxima se aproximando'),
+        ('VENCIDA', 'Vencida'),
+    ]
+
+    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name='trocas_cama')
+    baia = models.ForeignKey(Baia, on_delete=models.CASCADE, related_name='trocas_cama')
+    cavalo = models.ForeignKey(
+        Cavalo,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='trocas_cama_registros',
+        help_text="Cavalo que estava na baia no momento"
+    )
+    data = models.DateField(default=timezone.localdate)
+    horario = models.TimeField(null=True, blank=True)
+    responsavel = models.ForeignKey(
+        Perfil,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='trocas_cama_realizadas'
+    )
+    periodicidade_dias = models.PositiveIntegerField(
+        default=7,
+        help_text="A cada quantos dias fazer nova troca"
+    )
+    proxima_data = models.DateField(
+        help_text="Data calculada para a próxima troca"
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='EM_DIA',
+        help_text="Status da próxima troca"
+    )
+    observacao = models.TextField(blank=True)
+    criado_em = models.DateTimeField(auto_now_add=True)
+    atualizado_em = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-data']
+        indexes = [
+            models.Index(fields=["empresa", "baia", "data"]),
+            models.Index(fields=["status", "proxima_data"]),
+        ]
+        verbose_name = "Troca Total da Cama 🛏️"
+        verbose_name_plural = "Trocas Totais da Cama 🛏️"
+
+    def __str__(self):
+        return f"Troca {self.baia.numero} — {self.data.strftime('%d/%m/%Y')}"
+
+    def save(self, *args, **kwargs):
+        """Calcula próxima data automaticamente"""
+        if not self.proxima_data:
+            self.proxima_data = self.data + timezone.timedelta(days=self.periodicidade_dias)
+        
+        # Atualizar status baseado na próxima_data
+        hoje = timezone.localdate()
+        dias_restantes = (self.proxima_data - hoje).days
+        
+        if dias_restantes > 2:
+            self.status = 'EM_DIA'
+        elif dias_restantes > 0:
+            self.status = 'PROXIMA'
+        else:
+            self.status = 'VENCIDA'
+        
+        super().save(*args, **kwargs)
+
+    @property
+    def status_visual(self):
+        """Retorna emoji de status"""
+        status_map = {
+            'EM_DIA': '🟢 Em dia',
+            'PROXIMA': '🟡 Próxima se aproximando',
+            'VENCIDA': '🔴 Vencida',
+        }
+        return status_map.get(self.status, '⚪ Desconhecido')
+
+    @property
+    def dias_para_proxima(self):
+        """Calcula dias até próxima troca"""
+        hoje = timezone.localdate()
+        return (self.proxima_data - hoje).days    

@@ -48,6 +48,7 @@ from .models import (
     Sela,
     Fornecedor,
     LocalAula,
+    TrocaTotalCama,
 )
 
 # ── ACTION: DUPLICAR REGISTRO ───────────────────────────────────────────────
@@ -1349,3 +1350,45 @@ class ChecklistItemAdmin(PermissaoPorCargoMixin, BaseEmpresaAdmin):
     list_editable = ["tipo", "ordem", "ativo"]
     list_filter = ["tipo", "ativo"]
     search_fields = ["descricao"]
+
+# --- ADMIN:  TROCA DE CAMA ---
+@admin.register(TrocaTotalCama)
+class TrocaTotalCamaAdmin(admin.ModelAdmin):
+    list_display = ('baia', 'data', 'responsavel', 'status', 'proxima_data', 'dias_para_proxima')
+    list_filter = ('empresa', 'data', 'status', 'proxima_data')
+    search_fields = ('baia__numero', 'cavalo__nome')
+    readonly_fields = ('criado_em', 'atualizado_em', 'dias_para_proxima', 'status_visual')
+    fieldsets = (
+        ('Informações Básicas', {
+            'fields': ('empresa', 'baia', 'cavalo', 'data', 'horario')
+        }),
+        ('Periodicidade', {
+            'fields': ('periodicidade_dias', 'proxima_data', 'status')
+        }),
+        ('Responsável', {
+            'fields': ('responsavel',)
+        }),
+        ('Observações', {
+            'fields': ('observacao',)
+        }),
+        ('Status Visual', {
+            'fields': ('status_visual',),
+            'classes': ('collapse',)
+        }),
+        ('Timestamps', {
+            'fields': ('criado_em', 'atualizado_em'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def get_queryset(self, request):
+        """Filtrar por empresa do usuário"""
+        qs = super().get_queryset(request)
+        if hasattr(request, 'empresa'):
+            qs = qs.filter(empresa=request.empresa)
+        return qs
+
+    def dias_para_proxima(self, obj):
+        """Mostra dias restantes até próxima troca"""
+        return obj.dias_para_proxima
+    dias_para_proxima.short_description = "Dias até próxima"

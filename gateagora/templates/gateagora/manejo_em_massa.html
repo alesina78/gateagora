@@ -95,6 +95,7 @@
             <option value="Vermifugacao">💊 Vermifugação</option>
             <option value="Ferrageamento">🧲 Ferrageamento</option>
             <option value="Casqueamento">🦶 Casqueamento</option>
+            <option value="Troca_Cama">🛏️ Troca Total da Cama</option>
           </select>
         </div>
         <div>
@@ -121,6 +122,7 @@
         <span class="legenda-item"><span class="badge-proc badge-verm">Vrm</span> Vermífugo</span>
         <span class="legenda-item"><span class="badge-proc badge-ferr">Fer</span> Ferrageamento</span>
         <span class="legenda-item"><span class="badge-proc badge-casc">Csc</span> Casqueamento</span>
+        <span class="legenda-item"><span class="badge-proc badge-tro">Tro</span> Troca Cama</span>
       </div>
 
       <div id="listaCavalos">
@@ -168,11 +170,12 @@
                 </div>
               </div>
 
-              <div class="grid grid-cols-4 gap-x-2 mt-1.5 text-[8px] font-mono" style="color:var(--text-muted)">
+              <div class="grid grid-cols-5 gap-x-2 mt-1.5 text-[8px] font-mono" style="color:var(--text-muted)">
                 <div class="flex flex-col"><span>VAC</span><span style="color:var(--text-main)">{{ cavalo.ultima_vacina|date:"d/m"|default:"—" }}</span></div>
                 <div class="flex flex-col"><span>VRM</span><span style="color:var(--text-main)">{{ cavalo.ultimo_vermifugo|date:"d/m"|default:"—" }}</span></div>
                 <div class="flex flex-col"><span>FER</span><span style="color:var(--text-main)">{{ cavalo.ultimo_ferrageamento|date:"d/m"|default:"—" }}</span></div>
                 <div class="flex flex-col"><span>CSC</span><span style="color:var(--text-main)">{{ cavalo.ultimo_casqueamento|date:"d/m"|default:"—" }}</span></div>
+                <div class="flex flex-col"><span>TRO</span><span style="color:var(--text-main)">{{ cavalo.ultima_troca_cama|date:"d/m"|default:"—" }}</span></div>
               </div>
             </div>
           </div>
