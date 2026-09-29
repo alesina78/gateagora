@@ -2,6 +2,7 @@
 from datetime import date, timedelta
 from decimal import Decimal
 import json
+from logging import config
 from urllib.parse import quote
 from urllib.parse import quote as url_quote
 
@@ -2732,8 +2733,8 @@ def minhas_aulas(request):
         })
 
     # 3. Prazos de confirmação
-    config = ConfigPrazoManejo.objects.filter(empresa=perfil.empresa).first()
-    prazo_horas = config.prazo_confirmacao_horas if config else 0
+    cconfig = ConfigPrazoManejo.objects.filter(empresa=perfil.empresa).first()
+    pode_confirmar_mesmo_dia = cconfig.permitir_confirmacao_mesmo_dia if cconfig else True
     agora = timezone.now()
     trinta_dias_atras = agora - timezone.timedelta(days=30)
 
@@ -2761,7 +2762,7 @@ def minhas_aulas(request):
 
     proximas = []
     historico = []
-    config_mesmo_dia = config.pode_confirmar_mesmo_dia() if config else True
+    config_mesmo_dia = cconfig.pode_confirmar_mesmo_dia() if cconfig else True
 
     for aula in aulas:
         confirmacao = _conf_ma.get(aula.id)
@@ -2779,7 +2780,8 @@ def minhas_aulas(request):
             and (eh_antes_do_dia or (eh_mesmo_dia and config_mesmo_dia))
         )
         
-        aviso_mesmo_dia = eh_mesmo_dia and config_mesmo_dia and config.deve_mostrar_aviso_mesmo_dia()
+        aviso_mesmo_dia = eh_mesmo_dia and config_mesmo_dia and config.mostrar_aviso_mesmo_dia
+        
         
         item = {
             "aula":         aula,
@@ -2900,7 +2902,6 @@ def minhas_aulas(request):
             "aluno":            aluno,
             "proximas":         proximas,
             "historico":        historico,
-            "prazo_horas":      prazo_horas,
             "empresa":          perfil.empresa,
             "proxima_aula":     proxima_aula,
             "proxima_aula_iso": proxima_aula_iso,
