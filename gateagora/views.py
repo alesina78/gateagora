@@ -622,11 +622,13 @@ def dashboard(request):
         prazo_vermifugo     = cfg.prazo_vermifugo
         prazo_ferrageamento = cfg.prazo_ferrageamento
         prazo_casqueamento  = cfg.prazo_casqueamento
+        prazo_troca_cama    = cfg.prazo_troca_cama
     except ConfigPrazoManejo.DoesNotExist:
         prazo_vacina        = 365
         prazo_vermifugo     = 90
         prazo_ferrageamento = 60
         prazo_casqueamento  = 60
+        prazo_troca_cama    = 45
 
     # Separa documentos por categoria
     TIPOS_SANITARIOS = {'GTA', 'Mormo', 'Anemia Infecciosa Equina', 'Anemia', 'AIE'}
@@ -2218,12 +2220,14 @@ def manejo_em_massa(request):
         prazo_vacina = cfg.prazo_vacina
         prazo_vermifugo = cfg.prazo_vermifugo
         prazo_ferrageamento = cfg.prazo_ferrageamento
-        prazo_casqueamento = cfg.prazo_casqueamento
+        prazo_casqueamento  = cfg.prazo_casqueamento
+        prazo_troca_cama    = cfg.prazo_troca_cama
     except ConfigPrazoManejo.DoesNotExist:
         prazo_vacina = 365
         prazo_vermifugo = 90
         prazo_ferrageamento = 60
         prazo_casqueamento = 60
+        prazo_troca_cama    = 45
 
     # ── POST: ATUALIZA CAVALO + DocumentoCavalo (fonte única de verdade) ────────
     if request.method == "POST":
@@ -2376,6 +2380,7 @@ def manejo_em_massa(request):
         "prazo_vermifugo":     prazo_vermifugo,
         "prazo_ferrageamento": prazo_ferrageamento,
         "prazo_casqueamento":  prazo_casqueamento,
+        "prazo_troca_cama":    prazo_troca_cama,
     })
 
 
@@ -2427,6 +2432,7 @@ def config_prazos_manejo(request):
         cfg.prazo_vermifugo     = int(request.POST.get("prazo_vermifugo",      90))
         cfg.prazo_ferrageamento = int(request.POST.get("prazo_ferrageamento",  60))
         cfg.prazo_casqueamento  = int(request.POST.get("prazo_casqueamento",   60))
+        cfg.prazo_troca_cama    = int(request.POST.get("prazo_troca_cama",     45))
         cfg.save()
         messages.success(request, "Prazos de manejo atualizados com sucesso!")
         return redirect("dashboard")
@@ -2455,11 +2461,13 @@ def marcar_saudavel(request, cavalo_id):
         prazo_vermifugo     = cfg.prazo_vermifugo
         prazo_ferrageamento = cfg.prazo_ferrageamento
         prazo_casqueamento  = cfg.prazo_casqueamento
+        prazo_troca_cama    = cfg.prazo_troca_cama
     except ConfigPrazoManejo.DoesNotExist:
         prazo_vacina        = 365
         prazo_vermifugo     = 90
         prazo_ferrageamento = 60
         prazo_casqueamento  = 60
+        prazo_troca_cama    = 45
 
     def _dias_atraso(data_campo):
         if not data_campo:
@@ -2483,6 +2491,10 @@ def marcar_saudavel(request, cavalo_id):
     else:
         if _dias_atraso(cavalo.ultimo_casqueamento) > prazo_casqueamento:
             pendencias.append("Casqueamento")
+
+    # Troca de Cama é obrigatória para todos
+    if _dias_atraso(cavalo.ultima_troca_cama) > prazo_troca_cama:
+        pendencias.append("Troca de Cama")
 
     if pendencias:
         messages.warning(

@@ -921,6 +921,7 @@ class ConfigPrazoManejo(models.Model):
     prazo_vermifugo     = models.PositiveIntegerField(default=90,  help_text="Dias entre vermifugações")
     prazo_ferrageamento = models.PositiveIntegerField(default=60,  help_text="Dias entre ferrageamentos")
     prazo_casqueamento  = models.PositiveIntegerField(default=60,  help_text="Dias entre casqueamentos")
+    prazo_troca_cama    = models.PositiveIntegerField(default=45,  help_text="Dias entre trocas de cama")
     permitir_confirmacao_mesmo_dia = models.BooleanField(
         default=True,
         help_text="Se True: aluno pode confirmar no próprio dia da aula (com aviso). Se False: só antes do dia."
