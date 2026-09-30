@@ -872,12 +872,12 @@
                 {# BOTÃO WHATSAPP - Visível tanto para alunos individuais quanto turmas #}
                 {% if not aula.concluida %}
                     {% if aula.aluno.telefone %}
-                     <a href="https://wa.me/55{{ aula.aluno.telefone_limpo }}?text=🐴%20Olá,%20*{{ aula.aluno.nome|urlencode }}*!%20Tudo%20bem%3F%0ASua%20aula%20na%20*{{ empresa.nome|urlencode }}*%20está%20chegando!%20😊%0A📅%20*Data:*%20{{ aula.data_hora|date:'d/m/Y' }}%0A⏰%20*Horário:*%20{{ aula.data_hora|date:'H:i' }}%0A🐎%20*Cavalo:*%20{{ aula.cavalo.nome|urlencode }}%0A%0APara%20deixarmos%20tudo%20preparado%20com%20tranquilidade,%20pedimos%20que%20confirme%20sua%20presença%20pelo%20link%20abaixo:%0A👉%20https://tinyurl.com/Gate4login/minhas-aulas/%0A%0A💚%20Sua%20confirmação%20nos%20ajuda%20a%20preparar%20tudo%20para%20a%20sua%20aula,%20incluindo%20a%20reserva%20do%20cavalo%20e%20o%20possível%20encilhamento.%20Caso%20não%20possa%20comparecer,%20conseguimos%20liberar%20o%20cavalo%20para%20descanso%20e%20alimentação.%20🐎%0ACaso%20precise%20de%20alguma%20ajuda,%20é%20só%20nos%20avisar.%20😉%0A%0AEsperamos%20você!%20🐴✨"
-                        target="_blank">
-                        class="flex items-center justify-center w-7 h-7 bg-green-500/10 text-green-500 border border-green-500/20 rounded-lg hover:bg-green-500 hover:text-white transition-all text-xs"
-                        title="Enviar lembrete pelo WhatsApp">
-                          <i class="fa-brands fa-whatsapp"></i>
-                      </a>
+                    <a href="https://wa.me/55{{ aula.aluno.telefone_limpo }}?text=🐴%20Olá,%20*{{ aula.aluno.nome|urlencode }}*!%20Tudo%20bem%3F%0ASua%20aula%20na%20*{{ empresa.nome|urlencode }}*%20está%20chegando!%20😊%0A📅%20*Data:*%20{{ aula.data_hora|date:'d/m/Y' }}%0A⏰%20*Horário:*%20{{ aula.data_hora|date:'H:i' }}%0A🐎%20*Cavalo:*%20{{ aula.cavalo.nome|urlencode }}%0A%0APara%20deixarmos%20tudo%20preparado%20com%20tranquilidade,%20pedimos%20que%20confirme%20sua%20presença%20pelo%20link%20abaixo:%0A👉%20https://tinyurl.com/Gate4login/minhas-aulas/%0A%0A💚%20Sua%20confirmação%20nos%20ajuda%20a%20preparar%20tudo%20para%20a%20sua%20aula,%20incluindo%20a%20reserva%20do%20cavalo%20e%20o%20possível%20encilhamento.%20Caso%20não%20possa%20comparecer,%20conseguimos%20liberar%20o%20cavalo%20para%20descanso%20e%20alimentação.%20🐎%0ACaso%20precise%20de%20alguma%20ajuda,%20é%20só%20nos%20avisar.%20😉%0A%0AEsperamos%20você!%20🐴✨"
+                      target="_blank"
+                      class="flex items-center justify-center w-7 h-7 bg-green-500/10 text-green-500 border border-green-500/20 rounded-lg hover:bg-green-500 hover:text-white transition-all text-xs"
+                      title="Enviar lembrete pelo WhatsApp">
+                        <i class="fa-brands fa-whatsapp"></i>
+                    </a>
                     {% endif %}
                 {% endif %}
 

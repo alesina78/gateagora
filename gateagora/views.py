@@ -2792,7 +2792,7 @@ def minhas_aulas(request):
             and (eh_antes_do_dia or (eh_mesmo_dia and config_mesmo_dia))
         )
         
-        aviso_mesmo_dia = eh_mesmo_dia and config_mesmo_dia and config.mostrar_aviso_mesmo_dia
+        aviso_mesmo_dia = eh_mesmo_dia and config_mesmo_dia and cconfig.permitir_confirmacao_mesmo_dia if cconfig else False
         
         
         item = {
@@ -2907,6 +2907,15 @@ def minhas_aulas(request):
         None
     )
 
+    # ── Cavalos para Treino Solo ─────────────────────────────────────
+    aulas_do_aluno = Aula.objects.filter(aluno=aluno, empresa=perfil.empresa).values_list('cavalo_id', flat=True).distinct()
+    
+    cavalos_proprios = Cavalo.objects.filter(
+        empresa=perfil.empresa
+    ).filter(
+        Q(proprietario=aluno) | Q(id__in=aulas_do_aluno)
+    ).distinct().order_by('nome')
+
     return render(
         request,
         "gateagora/minhas_aulas.html",
@@ -2928,12 +2937,16 @@ def minhas_aulas(request):
             "faltam_bronze":    max(0, 5 - getattr(aluno, 'streak_atual', 0)),
             "ranking_app":      ranking_app,
             "posicao_aluno":    posicao_aluno,
+            "cavalos_proprios": cavalos_proprios,
         }
     )
 
 @login_required
 def agendar_treino_solo_proprietario(request):
-    aluno = Aluno.objects.filter(perfil_usuario=request.user).first()
+    from django.db.models import Q
+    
+    perfil = request.user.perfil
+    aluno = Aluno.objects.filter(perfil_usuario=perfil).first()
     if not aluno:
         messages.error(request, "Usuário não vinculado como aluno.")
         return redirect('minhas_aulas')
@@ -2941,14 +2954,16 @@ def agendar_treino_solo_proprietario(request):
     empresa = request.empresa
     
     if request.method == 'GET':
+        # Cavalos que é proprietária + cavalos de suas aulas
+        aulas_do_aluno = Aula.objects.filter(aluno=aluno, empresa=empresa).values_list('cavalo_id', flat=True).distinct()
+        
         cavalos_proprios = Cavalo.objects.filter(
-            empresa=empresa,
-            proprietario=aluno,
-            ativo=True
-        ).order_by('nome')
-        context = {'cavalos_proprios': cavalos_proprios, 'aluno': aluno, 'empresa': empresa}
-        return render(request, 'gateagora/minhas_aulas.html', context)
-    
+            empresa=empresa
+        ).filter(
+            Q(proprietario=aluno) | Q(id__in=aulas_do_aluno)
+        ).distinct().order_by('nome')
+        
+            
     elif request.method == 'POST':
         cavalo_id = request.POST.get('cavalo_id')
         data_hora_str = request.POST.get('data_hora')
@@ -2959,7 +2974,7 @@ def agendar_treino_solo_proprietario(request):
             return redirect('agendar_treino_solo_proprietario')
         
         try:
-            cavalo = Cavalo.objects.get(id=cavalo_id, empresa=empresa, proprietario=aluno, ativo=True)
+            cavalo = Cavalo.objects.get(id=cavalo_id, empresa=empresa)
         except Cavalo.DoesNotExist:
             messages.error(request, "Cavalo inválido.")
             return redirect('agendar_treino_solo_proprietario')
@@ -2979,8 +2994,10 @@ def agendar_treino_solo_proprietario(request):
             data_hora=data_hora,
             tipo='TREINO_INTERNO',
             agendado_por_proprietario=True,
-            observacoes=observacao if observacao else None,
         )
+        if observacao:
+            aula.observacao = observacao
+            aula.save()
         
         ConfirmacaoPresenca.objects.create(
             aula=aula,

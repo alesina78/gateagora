@@ -39,6 +39,7 @@ urlpatterns = [
     path('minhas-aulas/',                         views.minhas_aulas,          name='minhas_aulas'),
     path('minhas-aulas/confirmar/<int:aula_id>/', views.confirmar_presenca,    name='confirmar_presenca'),
     path('minhas-aulas/cancelar/<int:aula_id>/',  views.desconfirmar_presenca, name='desconfirmar_presenca'),
+    path('agendar-treino-solo/',       views.agendar_treino_solo_proprietario, name='agendar_treino_solo_proprietario'),
 
     # Proprietário agendar aulas/treinamentos (NOVO)
     path('agendar-aula-proprietario/',  views.agendar_aula_proprietario,       name='agendar_aula_proprietario'),
