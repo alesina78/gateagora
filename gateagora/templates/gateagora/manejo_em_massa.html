@@ -129,8 +129,8 @@
       <div id="listaCavalos">
         {% for item in cavalos_status %}
           {% with cavalo=item.obj %}
-          <div class="cavalo-row {% if item.vencido %}em-alerta alerta-row{% endif %}"
-               onclick="toggleCavalo({{ cavalo.id }})">
+          <div class="cavalo-row {% if item.vencido %}em-alerta alerta-row{% else %}em-dia-row{% endif %}"
+              onclick="toggleCavalo({{ cavalo.id }})">
             
             <input type="checkbox" name="cavalos_selecionados" value="{{ cavalo.id }}" id="chk_{{ cavalo.id }}" onclick="event.stopPropagation();atualizarContador(this)">
             
@@ -184,6 +184,7 @@
                 </div>
               </div>
 
+              <!-- Grid de datas dos procedimentos -->
               <div class="grid grid-cols-5 gap-x-2 mt-1.5 text-[8px] font-mono">
                 <div class="flex flex-col p-1 rounded" style="{% if cavalo.vac_atrasada %}background: rgba(99,102,241,0.18); color: #818cf8;{% else %}color:var(--text-muted){% endif %}"><span>VAC</span><span style="color:var(--text-main)">{{ cavalo.ultima_vacina|date:"d/m"|default:"—" }}</span></div>
                 <div class="flex flex-col p-1 rounded" style="{% if cavalo.vrm_atrasada %}background: rgba(245,158,11,0.18); color: #f59e0b;{% else %}color:var(--text-muted){% endif %}"><span>VRM</span><span style="color:var(--text-main)">{{ cavalo.ultimo_vermifugo|date:"d/m"|default:"—" }}</span></div>
@@ -191,6 +192,21 @@
                 <div class="flex flex-col p-1 rounded" style="{% if cavalo.csc_atrasada %}background: rgba(16,185,129,0.18); color: #34d399;{% else %}color:var(--text-muted){% endif %}"><span>CSC</span><span style="color:var(--text-main)">{{ cavalo.ultimo_casqueamento|date:"d/m"|default:"—" }}</span></div>
                 <div class="flex flex-col p-1 rounded" style="{% if cavalo.tro_atrasada %}background: rgba(168,85,247,0.18); color: #a855f7;{% else %}color:var(--text-muted){% endif %}"><span>TRO</span><span style="color:var(--text-main)">{{ cavalo.ultima_troca_cama|date:"d/m"|default:"—" }}</span></div>
               </div>
+
+              <!-- Badges de Alerta por Procedimento -->
+              {% if cavalo.alerta_detalhes %}
+              <div class="flex items-center gap-1 mt-1.5 flex-wrap">
+                {% for d in cavalo.alerta_detalhes %}
+                  {% if "Vac" in d %}<span class="badge-proc badge-vac" title="{{ d }}">Vac</span>
+                  {% elif "Verm" in d %}<span class="badge-proc badge-verm" title="{{ d }}">Vrm</span>
+                  {% elif "Ferr" in d %}<span class="badge-proc badge-ferr" title="{{ d }}">Fer</span>
+                  {% elif "Casc" in d %}<span class="badge-proc badge-casc" title="{{ d }}">Csc</span>
+                  {% elif "Troca" in d %}<span class="badge-proc badge-tro" title="{{ d }}">Tro</span>
+                  {% endif %}
+                {% endfor %}
+              </div>
+              {% endif %}
+
             </div>
           </div>
           {% endwith %}
@@ -201,6 +217,7 @@
           </div>
         {% endfor %}
       </div>
+
     </div>
 
     <button type="submit" class="w-full py-4 rounded-xl font-bold uppercase text-sm flex items-center justify-center gap-2" style="background:#4f46e5;color:#fff;">
