@@ -307,7 +307,7 @@ RegistroOcorrencia.objects.create(
     data=timezone.make_aware(datetime.combine(HOJE - timedelta(days=3), time(10, 0))),
 )
 
-jade = cav(emp1, "Jade", camila, "HOTELARIA", "SIM", "Saudável",
+jade = cav(emp1, "Jade", camila, "HOTELARIA", "SIM", "Saudavel",
            "BAIA", baia_obj=baias1[1], mat_proprio=True, peso=520, atividade="0.025")
 
 soneto = cav(emp1, "Soneto", luciana, "HOTELARIA", "SIM", "Tratamento",
@@ -328,7 +328,7 @@ RegistroOcorrencia.objects.create(
     data=timezone.make_aware(datetime.combine(HOJE - timedelta(days=8), time(9, 30))),
 )
 
-catita = cav(emp1, "Catita", maria_h, "HOTELARIA", "SIM", "Saudável",
+catita = cav(emp1, "Catita", maria_h, "HOTELARIA", "SIM", "Saudavel",
              "BAIA", baia_obj=baias1[4], mat_proprio=True, peso=440)
 
 handover = cav(emp1, "Handover", camila, "HOTELARIA", "SIM", "Alerta",
@@ -340,10 +340,10 @@ RegistroOcorrencia.objects.create(
     data=timezone.make_aware(datetime.combine(HOJE - timedelta(days=12), time(14, 0))),
 )
 
-charlote = cav(emp1, "Charlote", julia, "HOTELARIA", "NAO", "Saudável",
+charlote = cav(emp1, "Charlote", julia, "HOTELARIA", "NAO", "Saudavel",
                "BAIA", baia_obj=baias1[6], mat_proprio=True, peso=460, atividade="0.025")
 
-pegaus = cav(emp1, "Pegaus", marcelo, "HOTELARIA", "SIM", "Saudável",
+pegaus = cav(emp1, "Pegaus", marcelo, "HOTELARIA", "SIM", "Saudavel",
              "BAIA", baia_obj=baias1[7], mat_proprio=True, peso=500)
 
 pe_de_pano = cav(emp1, "Pé de Pano HPRD", haras1, "HOTELARIA", "NAO", "Alerta",
@@ -355,7 +355,7 @@ RegistroOcorrencia.objects.create(
     data=timezone.make_aware(datetime.combine(HOJE - timedelta(days=30), time(11, 0))),
 )
 
-bailarina = cav(emp1, "Bailarina", julia, "HOTELARIA", "SIM", "Saudável",
+bailarina = cav(emp1, "Bailarina", julia, "HOTELARIA", "SIM", "Saudavel",
                 "BAIA", baia_obj=baias1[9], mat_proprio=True, peso=470, atividade="0.025")
 
 havaiano = cav(emp1, "Havaiano", cecilia, "HOTELARIA", "SIM", "Alerta",
@@ -367,10 +367,10 @@ RegistroOcorrencia.objects.create(
     data=timezone.make_aware(datetime.combine(HOJE - timedelta(days=7), time(9, 0))),
 )
 
-gringa = cav(emp1, "Gringa", marcela, "HOTELARIA", "NAO", "Saudável",
+gringa = cav(emp1, "Gringa", marcela, "HOTELARIA", "NAO", "Saudavel",
              "BAIA", baia_obj=baias1[11], atividade="0.025")
 
-zeus = cav(emp1, "Zeus", luisa_g, "HOTELARIA", "NAO", "Saudável",
+zeus = cav(emp1, "Zeus", luisa_g, "HOTELARIA", "NAO", "Saudavel",
            "BAIA", baia_obj=baias1[12], atividade="0.025")
 
 gatiada = cav(emp1, "Gatiada HPRD", haras1, "HOTELARIA", "NAO", "Alerta",
@@ -384,9 +384,9 @@ RegistroOcorrencia.objects.create(
 
 # ── PRÓPRIO — cavalos da escola (17) ─────────────────────────────────────────
 
-fina_flor = cav(emp1, "Fina Flor HPRD", haras1, "PROPRIO", "NAO", "Saudável",
+fina_flor = cav(emp1, "Fina Flor HPRD", haras1, "PROPRIO", "NAO", "Saudavel",
                 "BAIA", baia_obj=baias1[14], atividade="0.025")
-braina    = cav(emp1, "Braína HPRD",    haras1, "PROPRIO", "NAO", "Saudável",
+braina    = cav(emp1, "Braína HPRD",    haras1, "PROPRIO", "NAO", "Saudavel",
                 "BAIA", baia_obj=baias1[15], atividade="0.025")
 
 danuza = cav(emp1, "Danuza HPRD", haras1, "PROPRIO", "NAO", "Alerta",
@@ -414,25 +414,25 @@ RegistroOcorrencia.objects.create(
     data=timezone.make_aware(datetime.combine(HOJE - timedelta(days=4), time(10, 30))),
 )
 
-bordada  = cav(emp1, "Bordada HPRD",  haras1, "PROPRIO", "NAO", "Saudável",
+bordada  = cav(emp1, "Bordada HPRD",  haras1, "PROPRIO", "NAO", "Saudavel",
                "BAIA", baia_obj=baias1[18], atividade="0.025")
-aromah   = cav(emp1, "Aromah HPRD",   haras1, "PROPRIO", "NAO", "Saudável",
+aromah   = cav(emp1, "Aromah HPRD",   haras1, "PROPRIO", "NAO", "Saudavel",
                "BAIA", baia_obj=baias1[19], atividade="0.025")
-fenix    = cav(emp1, "Fênix HPRD",    haras1, "PROPRIO", "NAO", "Saudável",
+fenix    = cav(emp1, "Fênix HPRD",    haras1, "PROPRIO", "NAO", "Saudavel",
                "BAIA", baia_obj=baias1[20])
-badalada = cav(emp1, "Badalada HPRD", haras1, "PROPRIO", "NAO", "Saudável",
+badalada = cav(emp1, "Badalada HPRD", haras1, "PROPRIO", "NAO", "Saudavel",
                "BAIA", baia_obj=baias1[21], atividade="0.025")
-jobin    = cav(emp1, "Jobin HPRD",    haras1, "PROPRIO", "NAO", "Saudável",
+jobin    = cav(emp1, "Jobin HPRD",    haras1, "PROPRIO", "NAO", "Saudavel",
                "BAIA", baia_obj=baias1[22], atividade="0.025")
-asterix  = cav(emp1, "Asterix HPRD",  haras1, "PROPRIO", "NAO", "Saudável",
+asterix  = cav(emp1, "Asterix HPRD",  haras1, "PROPRIO", "NAO", "Saudavel",
                "BAIA", baia_obj=baias1[23], atividade="0.025")
-duque    = cav(emp1, "Duque HPRD",    haras1, "PROPRIO", "NAO", "Saudável",
+duque    = cav(emp1, "Duque HPRD",    haras1, "PROPRIO", "NAO", "Saudavel",
                "BAIA", baia_obj=baias1[24], atividade="0.025")
-orion    = cav(emp1, "Órion HPRD",    haras1, "PROPRIO", "NAO", "Saudável",
+orion    = cav(emp1, "Órion HPRD",    haras1, "PROPRIO", "NAO", "Saudavel",
                "BAIA", baia_obj=baias1[25], atividade="0.025")
-trovao   = cav(emp1, "Trovão HPRD",   haras1, "PROPRIO", "NAO", "Saudável",
+trovao   = cav(emp1, "Trovão HPRD",   haras1, "PROPRIO", "NAO", "Saudavel",
                "BAIA", baia_obj=baias1[26], atividade="0.025")
-raio     = cav(emp1, "Raio HPRD",     haras1, "PROPRIO", "SIM", "Saudável",
+raio     = cav(emp1, "Raio HPRD",     haras1, "PROPRIO", "SIM", "Saudavel",
                "BAIA", baia_obj=baias1[27], atividade="0.025")
 
 # ── Manejo dos cavalos — datas ───────────────────────────────────────────────
@@ -676,21 +676,21 @@ alunos_aula2 = alunos2_lista
 # HOTELARIA (15)
 c2_h = []
 dados_hot2 = [
-    ("Sultan",    ana_p,   "SIM", "Saudável",  480, baias2[0],  True),
-    ("Esmeralda", cintia,  "NAO", "Saudável",  450, baias2[1],  True),
+    ("Sultan",    ana_p,   "SIM", "Saudavel",  480, baias2[0],  True),
+    ("Esmeralda", cintia,  "NAO", "Saudavel",  450, baias2[1],  True),
     ("Vendaval",  roberto, "SIM", "Alerta",    500, baias2[2],  True),
-    ("Mística",   fabio,   "NAO", "Saudável",  430, baias2[3],  True),
-    ("Tempestade",marina,  "SIM", "Saudável",  520, baias2[4],  True),
-    ("Palomino",  ana_p,   "SIM", "Saudável",  490, baias2[5],  True),
-    ("Serena",    cintia,  "NAO", "Saudável",  440, baias2[6],  False),
+    ("Mística",   fabio,   "NAO", "Saudavel",  430, baias2[3],  True),
+    ("Tempestade",marina,  "SIM", "Saudavel",  520, baias2[4],  True),
+    ("Palomino",  ana_p,   "SIM", "Saudavel",  490, baias2[5],  True),
+    ("Serena",    cintia,  "NAO", "Saudavel",  440, baias2[6],  False),
     ("Trovador",  roberto, "SIM", "Tratamento",470, baias2[7],  True),
-    ("Nobleza",   fabio,   "NAO", "Saudável",  460, baias2[8],  True),
+    ("Nobleza",   fabio,   "NAO", "Saudavel",  460, baias2[8],  True),
     ("Farrapo",   marina,  "SIM", "Alerta",    510, baias2[9],  True),
-    ("Cigarra",   ana_p,   "NAO", "Saudável",  420, baias2[10], False),
-    ("Titan",     cintia,  "SIM", "Saudável",  530, baias2[11], True),
-    ("Primavera", roberto, "NAO", "Saudável",  450, baias2[12], True),
-    ("Relâmpago", fabio,   "SIM", "Saudável",  500, baias2[13], True),
-    ("Docinho",   marina,  "NAO", "Saudável",  410, baias2[14], False),
+    ("Cigarra",   ana_p,   "NAO", "Saudavel",  420, baias2[10], False),
+    ("Titan",     cintia,  "SIM", "Saudavel",  530, baias2[11], True),
+    ("Primavera", roberto, "NAO", "Saudavel",  450, baias2[12], True),
+    ("Relâmpago", fabio,   "SIM", "Saudavel",  500, baias2[13], True),
+    ("Docinho",   marina,  "NAO", "Saudavel",  410, baias2[14], False),
 ]
 for nome, prop, ferr, status, peso, baia_obj, mat in dados_hot2:
     c = cav(emp2, nome, prop, "HOTELARIA", ferr, status, "BAIA",
@@ -731,7 +731,7 @@ nomes_prop2 = [
 ]
 c2_p = []
 for i, (nome, ferr) in enumerate(nomes_prop2):
-    c = cav(emp2, nome, hipica2, "PROPRIO", ferr, "Saudável", "BAIA",
+    c = cav(emp2, nome, hipica2, "PROPRIO", ferr, "Saudavel", "BAIA",
             baia_obj=baias2[15 + i], atividade="0.025")
     c2_p.append(c)
 
@@ -804,7 +804,7 @@ estoque2 = [
 
 # ── Aulas emp2 ────────────────────────────────────────────────────────────────
 cavalos_aula2 = [c for c in c2_h + c2_p
-                 if c.status_saude in ("Saudável",) and c.nome not in ("Trovador",)]
+                 if c.status_saude in ("Saudavel",) and c.nome not in ("Trovador",)]
 
 print("📅 Gerando aulas Hípica Cavalos do Sul...")
 d = INICIO

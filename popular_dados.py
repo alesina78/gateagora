@@ -82,7 +82,7 @@ def gerar_operacao_completa():
             nome=nomes_cavalos[i],
             categoria=tipo_cat,
             # Se passou de 40 dias, status vira 'Alerta'
-            status_saude='Saudável' if dias_ultimo_ferrageamento <= 40 else 'Alerta',
+            status_saude='Saudavel' if dias_ultimo_ferrageamento <= 40 else 'Alerta',
             onde_dorme=onde_dorme,
             baia=baia_atual,
             piquete=piquete_atual,

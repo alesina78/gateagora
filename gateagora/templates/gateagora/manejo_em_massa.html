@@ -143,30 +143,43 @@
 
                 <div class="flex items-center gap-1.5">
                   {% if item.vencido %}
-                    {% if item.por_status and item.atraso_maximo == 0 %}
+                    {% if cavalo.status_saude == 'Alerta' %}
                       <span class="text-[8px] font-black px-1.5 py-0.5 rounded uppercase"
-                            style="background:rgba(245,158,11,0.2);color:#f59e0b;">
+                            style="background:rgba(245,158,11,0.18); color:#f59e0b; border:1px solid rgba(245,158,11,0.3);">
                         {{ cavalo.status_saude|upper }}
                       </span>
-                    {% elif item.atraso_maximo >= 9000 %}
-                      <span class="text-[8px] font-black bg-red-500 text-white px-1.5 py-0.5 rounded uppercase">
-                        PENDENTE
+                    {% elif cavalo.status_saude == 'Em Tratamento' %}
+                      <span class="text-[8px] font-black px-1.5 py-0.5 rounded uppercase"
+                            style="background:rgba(249,115,22,0.18); color:#f97316; border:1px solid rgba(249,115,22,0.3);">
+                        {{ cavalo.status_saude|upper }}
+                      </span>
+                    {% elif cavalo.status_saude == 'Doente' %}
+                      <span class="text-[8px] font-black px-1.5 py-0.5 rounded uppercase"
+                            style="background:rgba(239,68,68,0.18); color:#f87171; border:1px solid rgba(239,68,68,0.3);">
+                        {{ cavalo.status_saude|upper }}
+                      </span>
+                    {% elif cavalo.status_saude != 'Saudavel' %}
+                      <span class="text-[8px] font-black px-1.5 py-0.5 rounded uppercase bg-red-500/20 text-red-400 border border-red-500/30">
+                        {{ cavalo.status_saude|upper }}
                       </span>
                     {% else %}
-                      <span class="text-[8px] font-black bg-red-500 text-white px-1.5 py-0.5 rounded uppercase">
-                        ATRASADO {{ item.atraso_maximo }}D
+                      <span class="text-[8px] font-black bg-red-600 text-white px-1.5 py-0.5 rounded uppercase shadow-sm">
+                        PENDENTE
                       </span>
                     {% endif %}
+
                     <a href="/admin/gateagora/cavalo/{{ cavalo.id }}/change/"
-                       onclick="event.stopPropagation()"
-                       target="_blank"
-                       title="Abrir cadastro do cavalo"
-                       class="text-[8px] font-bold px-1.5 py-0.5 rounded"
-                       style="background:rgba(99,102,241,0.12);color:var(--indigo-text);border:1px solid rgba(99,102,241,0.2);">
+                      onclick="event.stopPropagation()"
+                      target="_blank"
+                      title="Abrir cadastro do cavalo"
+                      class="text-[8px] font-bold px-1.5 py-0.5 rounded transition-all hover:opacity-80"
+                      style="background:rgba(99,102,241,0.12);color:var(--indigo-text);border:1px solid rgba(99,102,241,0.2);">
                       <i class="fa-solid fa-pen-to-square"></i>
                     </a>
                   {% else %}
-                    <span class="text-[8px] font-bold text-emerald-500 uppercase">✓ em dia</span>
+                    <span class="text-[8px] font-bold uppercase opacity-60" style="color:var(--text-muted)">
+                      ✓ em dia
+                    </span>
                   {% endif %}
                 </div>
               </div>

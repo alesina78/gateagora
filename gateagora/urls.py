@@ -63,7 +63,7 @@ urlpatterns = [
     # Configuração de prazos
     path('config-prazos-manejo/', views.config_prazos_manejo, name='config_prazos_manejo'),
 
-    # Saúde — marcar saudável
+    # Saúde — marcar Saudavel
     path('cavalo/<int:cavalo_id>/marcar-saudavel/', views.marcar_saudavel, name='marcar_saudavel'),
 
     # Baixa de faturas

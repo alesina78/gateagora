@@ -149,7 +149,7 @@ def run():
                 'onde_dorme':       dorme,
                 'baia':             baia_vinc,
                 'piquete':          piquete_principal if local == "PIQUETE" else None,
-                'status_saude':     'Saudável',
+                'status_saude':     'Saudavel',
                 'ultima_vacina':    hoje - timedelta(days=random.randint(20, 180)),
                 'ultimo_vermifugo': hoje - timedelta(days=random.randint(10, 60)),
             }

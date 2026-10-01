@@ -779,7 +779,7 @@ class CavaloAdmin(PermissaoPorCargoMixin, BaseEmpresaAdmin):
             return "-"
 
         colors = {
-            "Saudável": "success",
+            "Saudavel": "success",
             "Alerta": "warning",
             "Doente": "danger",
             "Tratamento": "info",

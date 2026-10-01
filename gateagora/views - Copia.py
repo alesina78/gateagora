@@ -642,7 +642,7 @@ def dashboard(request):
         return (hoje - data_campo).days
 
     def _cavalo_em_alerta(c):
-        if c.status_saude != 'Saudável':
+        if c.status_saude != 'Saudavel':
             return True
         if _dias_atraso(c.ultima_vacina)    > prazo_vacina:    return True
         if _dias_atraso(c.ultimo_vermifugo) > prazo_vermifugo: return True
@@ -663,7 +663,7 @@ def dashboard(request):
             max(0, _dias_atraso(c.ultimo_vermifugo) - prazo_vermifugo),
             atraso_casco,
         ]
-        bonus_status = 10000 if c.status_saude != 'Saudável' else 0
+        bonus_status = 10000 if c.status_saude != 'Saudavel' else 0
         return sum(atrasos) + bonus_status
 
     todos_cavalos = (
@@ -678,7 +678,7 @@ def dashboard(request):
         c.alerta_detalhes = []
         c.atraso_maximo = 0  # ← ADICIONE ISTO
         
-        if c.status_saude != 'Saudável':
+        if c.status_saude != 'Saudavel':
             c.alerta_detalhes.append(f"Status: {c.status_saude}")
         
         if _dias_atraso(c.ultima_vacina) > prazo_vacina:
@@ -2380,7 +2380,7 @@ def manejo_em_massa(request):
             atrasos.append(max(0, _dias_atraso(c.ultimo_ferrageamento) - prazo_ferrageamento))
         else:
             atrasos.append(max(0, _dias_atraso(c.ultimo_casqueamento)  - prazo_casqueamento))
-        bonus = 100000 if c.status_saude != "Saudável" else 0
+        bonus = 100000 if c.status_saude != "Saudavel" else 0
         return sum(atrasos) + bonus
 
     cavalos_qs = (
@@ -2439,7 +2439,7 @@ def manejo_em_massa(request):
             cavalo.atrasos.append(dias)
         
         # Status de saúde (também força alerta)
-        if cavalo.status_saude != 'Saudável':
+        if cavalo.status_saude != 'Saudavel':
             cavalo.atrasos.append(9999)  # Força a aparecer no topo
 
     # **ORDENAR AQUI:**
@@ -2528,7 +2528,7 @@ def config_prazos_manejo(request):
     return render(request, "gateagora/config_prazos_manejo.html", context)
 
 
-# ── Marcar cavalo como saudável ───────────────────────────────────────────────
+# ── Marcar cavalo como Saudavel ───────────────────────────────────────────────
 
 @login_required
 def marcar_saudavel(request, cavalo_id):
@@ -2583,15 +2583,15 @@ def marcar_saudavel(request, cavalo_id):
         messages.warning(
             request,
             f"{cavalo.nome} ainda tem pendências: {', '.join(pendencias)}. "
-            f"Registre os procedimentos em 'Manejo em Massa' antes de marcar como Saudável."
+            f"Registre os procedimentos em 'Manejo em Massa' antes de marcar como Saudavel."
         )
     else:
-        # Só marca como Saudável se realmente não houver pendências
-        cavalo.status_saude = 'Saudável'
+        # Só marca como Saudavel se realmente não houver pendências
+        cavalo.status_saude = 'Saudavel'
         cavalo.save(update_fields=['status_saude'])
         messages.success(
             request, 
-            f"✅ {cavalo.nome} marcado como Saudável! Todos os procedimentos estão em dia."
+            f"✅ {cavalo.nome} marcado como Saudavel! Todos os procedimentos estão em dia."
         )
 
     return redirect("dashboard")

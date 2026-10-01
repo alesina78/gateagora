@@ -642,7 +642,7 @@ def dashboard(request):
         return (hoje - data_campo).days
 
     def _cavalo_em_alerta(c):
-        if c.status_saude != 'Saudável':
+        if c.status_saude != 'Saudavel':
             return True
         if _dias_atraso(c.ultima_vacina)    > prazo_vacina:    return True
         if _dias_atraso(c.ultimo_vermifugo) > prazo_vermifugo: return True
@@ -663,7 +663,7 @@ def dashboard(request):
             max(0, _dias_atraso(c.ultimo_vermifugo) - prazo_vermifugo),
             atraso_casco,
         ]
-        bonus_status = 10000 if c.status_saude != 'Saudável' else 0
+        bonus_status = 10000 if c.status_saude != 'Saudavel' else 0
         return sum(atrasos) + bonus_status
 
     todos_cavalos = (
@@ -678,7 +678,7 @@ def dashboard(request):
         c.alerta_detalhes = []
         c.atraso_maximo = 0  # ← ADICIONE ISTO
         
-        if c.status_saude != 'Saudável':
+        if c.status_saude != 'Saudavel':
             c.alerta_detalhes.append(f"Status: {c.status_saude}")
         
         if _dias_atraso(c.ultima_vacina) > prazo_vacina:
@@ -2363,25 +2363,14 @@ def manejo_em_massa(request):
 
         return redirect("manejo_em_massa")
 
-    # ── GET: lê dos campos diretos do Cavalo (mesma fonte que o dashboard) ───────
+    # ── GET: lê dos campos diretos do Cavalo ───────────────────────────────────
 
     def _dias_atraso(data_campo):
         if not data_campo:
-            return 9999
+            # NVL / Coalesce: Se a data for None (nunca fez o procedimento),
+            # considera 720 dias de atraso para ir direto para o topo da lista.
+            return 720
         return (hoje - data_campo).days
-
-    def _atraso_excedido(c):
-        """Retorna o maior excedente de dias (0 = em dia)."""
-        atrasos = [
-            max(0, _dias_atraso(c.ultima_vacina)    - prazo_vacina),
-            max(0, _dias_atraso(c.ultimo_vermifugo) - prazo_vermifugo),
-        ]
-        if c.usa_ferradura == "SIM":
-            atrasos.append(max(0, _dias_atraso(c.ultimo_ferrageamento) - prazo_ferrageamento))
-        else:
-            atrasos.append(max(0, _dias_atraso(c.ultimo_casqueamento)  - prazo_casqueamento))
-        bonus = 100000 if c.status_saude != "Saudável" else 0
-        return sum(atrasos) + bonus
 
     cavalos_qs = (
         Cavalo.objects
@@ -2391,74 +2380,70 @@ def manejo_em_massa(request):
     )
 
     cavalos_status = []
+    
+    # Calcular atrasos para cada cavalo tratando datas NULL
     for cavalo in cavalos_qs:
-        score = _atraso_excedido(cavalo)
+        cavalo.atrasos = []  # Lista de atrasos do cavalo
+        
+        # 1. Vacinação
+        dias_vac = _dias_atraso(cavalo.ultima_vacina)
+        if dias_vac > prazo_vacina:
+            cavalo.atrasos.append(dias_vac - prazo_vacina)
+        
+        # 2. Vermífugo
+        dias_vrm = _dias_atraso(cavalo.ultimo_vermifugo)
+        if dias_vrm > prazo_vermifugo:
+            cavalo.atrasos.append(dias_vrm - prazo_vermifugo)
+        
+        # 3. Ferrageamento ou Casqueamento
+        if cavalo.usa_ferradura == 'SIM':
+            dias_fer = _dias_atraso(cavalo.ultimo_ferrageamento)
+            if dias_fer > prazo_ferrageamento:
+                cavalo.atrasos.append(dias_fer - prazo_ferrageamento)
+        else:
+            dias_csc = _dias_atraso(cavalo.ultimo_casqueamento)
+            if dias_csc > prazo_casqueamento:
+                cavalo.atrasos.append(dias_csc - prazo_casqueamento)
+        
+        # 4. Troca de Cama
+        dias_tro = _dias_atraso(cavalo.ultima_troca_cama)
+        if dias_tro > prazo_troca_cama:
+            cavalo.atrasos.append(dias_tro - prazo_troca_cama)
+        
+        # 5. Status de Saúde (força prioridade)
+        if cavalo.status_saude != 'Saudavel':
+            cavalo.atrasos.append(9999)
+
+        # Maior atraso individual do cavalo (ou 0 se estiver em dia)
+        atraso_maximo = max(cavalo.atrasos) if cavalo.atrasos else 0
+
         cavalos_status.append({
             "obj":           cavalo,
-            "vencido":       score > 0,
-            "atraso_maximo": score,
+            "vencido":       len(cavalo.atrasos) > 0,
+            "atraso_maximo": atraso_maximo,
         })
 
-    # Mais crítico primeiro
-    cavalos_status.sort(key=lambda x: x["atraso_maximo"], reverse=True)
-
-    # NO GET, ANTES DO return render():
-
-    # Calcular atrasos para cada cavalo
-    cfg = ConfigPrazoManejo.objects.filter(empresa=empresa).first()
-    hoje = timezone.localdate()
-
-    # Calcular atrasos para cada cavalo
-    for item in cavalos_status:
-        cavalo = item['obj']
-        cavalo.atrasos = []  # Lista de atrasos
-        
-        # Vacinação
-        if cavalo.ultima_vacina and (hoje - cavalo.ultima_vacina).days > prazo_vacina:
-            dias = (hoje - cavalo.ultima_vacina).days - prazo_vacina
-            cavalo.atrasos.append(dias)
-        
-        # Vermífugo
-        if cavalo.ultimo_vermifugo and (hoje - cavalo.ultimo_vermifugo).days > prazo_vermifugo:
-            dias = (hoje - cavalo.ultimo_vermifugo).days - prazo_vermifugo
-            cavalo.atrasos.append(dias)
-        
-        # Ferrageamento ou Casqueamento
-        if cavalo.usa_ferradura == 'SIM':
-            if cavalo.ultimo_ferrageamento and (hoje - cavalo.ultimo_ferrageamento).days > prazo_ferrageamento:
-                dias = (hoje - cavalo.ultimo_ferrageamento).days - prazo_ferrageamento
-                cavalo.atrasos.append(dias)
-        else:
-            if cavalo.ultimo_casqueamento and (hoje - cavalo.ultimo_casqueamento).days > prazo_casqueamento:
-                dias = (hoje - cavalo.ultimo_casqueamento).days - prazo_casqueamento
-                cavalo.atrasos.append(dias)
-        
-        # Troca de Cama
-        if cavalo.ultima_troca_cama and (hoje - cavalo.ultima_troca_cama).days > prazo_troca_cama:
-            dias = (hoje - cavalo.ultima_troca_cama).days - prazo_troca_cama
-            cavalo.atrasos.append(dias)
-        
-        # Status de saúde (também força alerta)
-        if cavalo.status_saude != 'Saudável':
-            cavalo.atrasos.append(9999)  # Força a aparecer no topo
-
-    # **ORDENAR AQUI:**
+    # **ORDENAÇÃO ÚNICA E DEFINITIVA:**
+    # 1º: Quantidade de pendências (DESC)
+    # 2º: Maior atraso em dias, incluindo os 720d para datas NULL (DESC)
+    # 3º: Nome do cavalo para desempate (ASC)
     cavalos_status = sorted(
         cavalos_status,
         key=lambda x: (
-            -len(x['obj'].atrasos),  # Mais atrasos primeiro
-            -max(x['obj'].atrasos) if x['obj'].atrasos else 0  # Depois dias máximos
+            -len(x['obj'].atrasos),
+            -x['atraso_maximo'],
+            x['obj'].nome
         )
     )
     
-    # Verificar cores para template
+    # Flags visuais para o template indicar quais badges ficam coloridas
     for item in cavalos_status:
         cavalo = item['obj']
-        cavalo.vac_atrasada = cavalo.ultima_vacina and (hoje - cavalo.ultima_vacina).days > prazo_vacina
-        cavalo.vrm_atrasada = cavalo.ultimo_vermifugo and (hoje - cavalo.ultimo_vermifugo).days > prazo_vermifugo
-        cavalo.fer_atrasada = cavalo.usa_ferradura == 'SIM' and cavalo.ultimo_ferrageamento and (hoje - cavalo.ultimo_ferrageamento).days > prazo_ferrageamento
-        cavalo.csc_atrasada = cavalo.usa_ferradura != 'SIM' and cavalo.ultimo_casqueamento and (hoje - cavalo.ultimo_casqueamento).days > prazo_casqueamento
-        cavalo.tro_atrasada = cavalo.ultima_troca_cama and (hoje - cavalo.ultima_troca_cama).days > prazo_troca_cama
+        cavalo.vac_atrasada = _dias_atraso(cavalo.ultima_vacina) > prazo_vacina
+        cavalo.vrm_atrasada = _dias_atraso(cavalo.ultimo_vermifugo) > prazo_vermifugo
+        cavalo.fer_atrasada = cavalo.usa_ferradura == 'SIM' and _dias_atraso(cavalo.ultimo_ferrageamento) > prazo_ferrageamento
+        cavalo.csc_atrasada = cavalo.usa_ferradura != 'SIM' and _dias_atraso(cavalo.ultimo_casqueamento) > prazo_casqueamento
+        cavalo.tro_atrasada = _dias_atraso(cavalo.ultima_troca_cama) > prazo_troca_cama
     
     return render(request, "gateagora/manejo_em_massa.html", {
         "empresa":             empresa,
@@ -2528,7 +2513,7 @@ def config_prazos_manejo(request):
     return render(request, "gateagora/config_prazos_manejo.html", context)
 
 
-# ── Marcar cavalo como saudável ───────────────────────────────────────────────
+# ── Marcar cavalo como Saudavel ───────────────────────────────────────────────
 
 @login_required
 def marcar_saudavel(request, cavalo_id):
@@ -2583,15 +2568,15 @@ def marcar_saudavel(request, cavalo_id):
         messages.warning(
             request,
             f"{cavalo.nome} ainda tem pendências: {', '.join(pendencias)}. "
-            f"Registre os procedimentos em 'Manejo em Massa' antes de marcar como Saudável."
+            f"Registre os procedimentos em 'Manejo em Massa' antes de marcar como Saudavel."
         )
     else:
-        # Só marca como Saudável se realmente não houver pendências
-        cavalo.status_saude = 'Saudável'
+        # Só marca como Saudavel se realmente não houver pendências
+        cavalo.status_saude = 'Saudavel'
         cavalo.save(update_fields=['status_saude'])
         messages.success(
             request, 
-            f"✅ {cavalo.nome} marcado como Saudável! Todos os procedimentos estão em dia."
+            f"✅ {cavalo.nome} marcado como Saudavel! Todos os procedimentos estão em dia."
         )
 
     return redirect("dashboard")

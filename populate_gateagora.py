@@ -158,7 +158,7 @@ for idx, nome in enumerate(nomes_cavalos):
         empresa=empresa,
         nome=nome,
         categoria=categoria,
-        status_saude=random.choice(['Saudável']*6 + ['Alerta']*2 + ['Doente']),
+        status_saude=random.choice(['Saudavel']*6 + ['Alerta']*2 + ['Doente']),
         onde_dorme=onde_dorme,
 
         # IA/Raça/Atividade

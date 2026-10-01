@@ -59,7 +59,7 @@ class Migration(migrations.Migration):
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('nome', models.CharField(max_length=100)),
                 ('categoria', models.CharField(choices=[('PROPRIO', 'Próprio (Escola)'), ('HOTELARIA', 'Hotelaria (Particular)')], default='PROPRIO', max_length=20)),
-                ('status_saude', models.CharField(choices=[('Saudável', 'Saudável'), ('Alerta', 'Alerta'), ('Doente', 'Doente'), ('Tratamento', 'Em Tratamento')], default='Saudável', max_length=20)),
+                ('status_saude', models.CharField(choices=[('Saudavel', 'Saudavel'), ('Alerta', 'Alerta'), ('Doente', 'Doente'), ('Tratamento', 'Em Tratamento')], default='Saudavel', max_length=20)),
                 ('onde_dorme', models.CharField(choices=[('BAIA', 'Dorme na Baia'), ('PIQUETE', 'Dorme no Piquete')], default='BAIA', max_length=10)),
                 ('foto', models.ImageField(blank=True, null=True, upload_to='cavalos/')),
                 ('raca', models.CharField(choices=[('mang_marchador', 'Mangalarga Marchador'), ('quarto_milha', 'Quarto de Milha'), ('psl', 'Puro Sangue Lusitano'), ('crioulo', 'Crioulo'), ('hipismo', 'Cavalo de Hipismo (BH)'), ('srd', 'Sem Raça Definida')], default='srd', max_length=25)),

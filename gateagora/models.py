@@ -218,7 +218,7 @@ class Cavalo(models.Model):
         ('HOTELARIA', 'Hotelaria (Particular)'),
     ]
     STATUS_SAUDE_CHOICES = [
-        ('Saudável', 'Saudável'),
+        ('Saudavel', 'Saudavel'),
         ('Alerta', 'Alerta'),
         ('Doente', 'Doente'),
         ('Tratamento', 'Em Tratamento'),
@@ -249,7 +249,7 @@ class Cavalo(models.Model):
     empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE)
     nome = models.CharField(max_length=100)
     categoria = models.CharField(max_length=20, choices=CATEGORIA_CHOICES, default='PROPRIO')
-    status_saude = models.CharField(max_length=20, choices=STATUS_SAUDE_CHOICES, default='Saudável')
+    status_saude = models.CharField(max_length=20, choices=STATUS_SAUDE_CHOICES, default='Saudavel')
     onde_dorme = models.CharField(max_length=10, choices=LOCAL_DORMIDA, default='BAIA')
     foto = models.ImageField(
         upload_to='cavalos/',
