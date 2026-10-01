@@ -21,6 +21,7 @@
     .badge-verm { background: rgba(245,158,11,0.18); color: #f59e0b; }
     .badge-ferr { background: rgba(239,68,68,0.18);  color: #f87171; }
     .badge-casc { background: rgba(16,185,129,0.18); color: #34d399; }
+    .badge-tro  { background: rgba(168,85,247,0.18); color: #a855f7; }
 
     .cavalo-row { display: flex; align-items: center; gap: 0.9rem; padding: 0.75rem 1.25rem; border-bottom: 1px solid var(--border); cursor: pointer; transition: all 0.12s; }
     .cavalo-row:last-child { border-bottom: none; }
@@ -128,7 +129,7 @@
       <div id="listaCavalos">
         {% for item in cavalos_status %}
           {% with cavalo=item.obj %}
-          <div class="cavalo-row {% if item.vencido %}em-alerta alerta-row{% else %}em-dia-row{% endif %}" 
+          <div class="cavalo-row {% if item.vencido %}em-alerta alerta-row{% endif %}"
                onclick="toggleCavalo({{ cavalo.id }})">
             
             <input type="checkbox" name="cavalos_selecionados" value="{{ cavalo.id }}" id="chk_{{ cavalo.id }}" onclick="event.stopPropagation();atualizarContador(this)">
@@ -170,12 +171,12 @@
                 </div>
               </div>
 
-              <div class="grid grid-cols-5 gap-x-2 mt-1.5 text-[8px] font-mono" style="color:var(--text-muted)">
-                <div class="flex flex-col"><span>VAC</span><span style="color:var(--text-main)">{{ cavalo.ultima_vacina|date:"d/m"|default:"—" }}</span></div>
-                <div class="flex flex-col"><span>VRM</span><span style="color:var(--text-main)">{{ cavalo.ultimo_vermifugo|date:"d/m"|default:"—" }}</span></div>
-                <div class="flex flex-col"><span>FER</span><span style="color:var(--text-main)">{{ cavalo.ultimo_ferrageamento|date:"d/m"|default:"—" }}</span></div>
-                <div class="flex flex-col"><span>CSC</span><span style="color:var(--text-main)">{{ cavalo.ultimo_casqueamento|date:"d/m"|default:"—" }}</span></div>
-                <div class="flex flex-col"><span>TRO</span><span style="color:var(--text-main)">{{ cavalo.ultima_troca_cama|date:"d/m"|default:"—" }}</span></div>
+              <div class="grid grid-cols-5 gap-x-2 mt-1.5 text-[8px] font-mono">
+                <div class="flex flex-col p-1 rounded" style="{% if cavalo.vac_atrasada %}background: rgba(99,102,241,0.18); color: #818cf8;{% else %}color:var(--text-muted){% endif %}"><span>VAC</span><span style="color:var(--text-main)">{{ cavalo.ultima_vacina|date:"d/m"|default:"—" }}</span></div>
+                <div class="flex flex-col p-1 rounded" style="{% if cavalo.vrm_atrasada %}background: rgba(245,158,11,0.18); color: #f59e0b;{% else %}color:var(--text-muted){% endif %}"><span>VRM</span><span style="color:var(--text-main)">{{ cavalo.ultimo_vermifugo|date:"d/m"|default:"—" }}</span></div>
+                <div class="flex flex-col p-1 rounded" style="{% if cavalo.fer_atrasada %}background: rgba(239,68,68,0.18); color: #f87171;{% else %}color:var(--text-muted){% endif %}"><span>FER</span><span style="color:var(--text-main)">{{ cavalo.ultimo_ferrageamento|date:"d/m"|default:"—" }}</span></div>
+                <div class="flex flex-col p-1 rounded" style="{% if cavalo.csc_atrasada %}background: rgba(16,185,129,0.18); color: #34d399;{% else %}color:var(--text-muted){% endif %}"><span>CSC</span><span style="color:var(--text-main)">{{ cavalo.ultimo_casqueamento|date:"d/m"|default:"—" }}</span></div>
+                <div class="flex flex-col p-1 rounded" style="{% if cavalo.tro_atrasada %}background: rgba(168,85,247,0.18); color: #a855f7;{% else %}color:var(--text-muted){% endif %}"><span>TRO</span><span style="color:var(--text-main)">{{ cavalo.ultima_troca_cama|date:"d/m"|default:"—" }}</span></div>
               </div>
             </div>
           </div>

@@ -672,32 +672,52 @@ def dashboard(request):
         .select_related('proprietario')
     )
 
-    cavalos_alerta_lista = sorted(
-        [c for c in todos_cavalos if _cavalo_em_alerta(c)],
-        key=_score_criticidade,
-        reverse=True
-    )
-
-    for c in cavalos_alerta_lista:
+    # Criar lista de cavalos COM alerta
+    cavalos_alerta_lista = []
+    for c in todos_cavalos:
         c.alerta_detalhes = []
+        c.atraso_maximo = 0  # ← ADICIONE ISTO
+        
         if c.status_saude != 'Saudável':
             c.alerta_detalhes.append(f"Status: {c.status_saude}")
+        
         if _dias_atraso(c.ultima_vacina) > prazo_vacina:
             d = _dias_atraso(c.ultima_vacina) - prazo_vacina
             c.alerta_detalhes.append(f"Vacina {d}d atrasada")
+            c.atraso_maximo = max(c.atraso_maximo, d)  # ← ADICIONE ISTO
+        
         if _dias_atraso(c.ultimo_vermifugo) > prazo_vermifugo:
             d = _dias_atraso(c.ultimo_vermifugo) - prazo_vermifugo
             c.alerta_detalhes.append(f"Vermifugo {d}d atrasado")
+            c.atraso_maximo = max(c.atraso_maximo, d)  # ← ADICIONE ISTO
+        
         if c.usa_ferradura == 'SIM':
             if _dias_atraso(c.ultimo_ferrageamento) > prazo_ferrageamento:
                 d = _dias_atraso(c.ultimo_ferrageamento) - prazo_ferrageamento
                 c.alerta_detalhes.append(f"Ferrageamento {d}d atrasado")
+                c.atraso_maximo = max(c.atraso_maximo, d)  # ← ADICIONE ISTO
         else:
             if _dias_atraso(c.ultimo_casqueamento) > prazo_casqueamento:
                 d = _dias_atraso(c.ultimo_casqueamento) - prazo_casqueamento
                 c.alerta_detalhes.append(f"Casqueamento {d}d atrasado")
+                c.atraso_maximo = max(c.atraso_maximo, d)
+        
+        # Troca de Cama — obrigatória para todos
+        if _dias_atraso(c.ultima_troca_cama) > prazo_troca_cama:
+            d = _dias_atraso(c.ultima_troca_cama) - prazo_troca_cama
+            c.alerta_detalhes.append(f"Troca de Cama {d}d atrasada")
+            c.atraso_maximo = max(c.atraso_maximo, d)
+        
+        if c.alerta_detalhes:
+            cavalos_alerta_lista.append(c)
+    
+    # Ordenar por quantidade de atrasos (DESC) + dias de atraso máximo (DESC)
+    cavalos_alerta_lista = sorted(
+        cavalos_alerta_lista,
+        key=lambda c: (-len(c.alerta_detalhes), -c.atraso_maximo),
+    )
 
-    # ── 3) KPIs ───────────────────────────────────────────────────────────────
+    # ── 3) KPIs ──────────────────────────────────────────────────────────────
     total_baias = Baia.objects.filter(empresa=empresa).count()
     baias_ocupadas = Baia.objects.filter(empresa=empresa, status='Ocupada').count()
     porcentagem_ocupacao = int((baias_ocupadas / total_baias * 100)) if total_baias else 0
@@ -2372,6 +2392,20 @@ def manejo_em_massa(request):
     # Mais crítico primeiro
     cavalos_status.sort(key=lambda x: x["atraso_maximo"], reverse=True)
 
+    # Verificar atrasos de cada cavalo
+    cfg = ConfigPrazoManejo.objects.filter(empresa=empresa).first()
+    hoje = timezone.localdate()
+    
+    for item in cavalos_status:
+        cavalo = item['obj']
+        
+        # Verificar se cada procedimento está atrasado
+        cavalo.vac_atrasada = cavalo.ultima_vacina and (hoje - cavalo.ultima_vacina).days > cfg.prazo_vacina if cfg else False
+        cavalo.vrm_atrasada = cavalo.ultimo_vermifugo and (hoje - cavalo.ultimo_vermifugo).days > cfg.prazo_vermifugo if cfg else False
+        cavalo.fer_atrasada = cavalo.usa_ferradura == 'SIM' and cavalo.ultimo_ferrageamento and (hoje - cavalo.ultimo_ferrageamento).days > cfg.prazo_ferrageamento if cfg else False
+        cavalo.csc_atrasada = cavalo.usa_ferradura != 'SIM' and cavalo.ultimo_casqueamento and (hoje - cavalo.ultimo_casqueamento).days > cfg.prazo_casqueamento if cfg else False
+        cavalo.tro_atrasada = cavalo.ultima_troca_cama and (hoje - cavalo.ultima_troca_cama).days > cfg.prazo_troca_cama if cfg else False
+    
     return render(request, "gateagora/manejo_em_massa.html", {
         "empresa":             empresa,
         "hoje":                hoje,
