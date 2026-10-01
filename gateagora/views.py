@@ -2452,6 +2452,44 @@ def manejo_em_massa(request):
         cavalo.fer_atrasada = cavalo.usa_ferradura == 'SIM' and _dias_atraso(cavalo.ultimo_ferrageamento) > prazo_ferrageamento
         cavalo.csc_atrasada = cavalo.usa_ferradura != 'SIM' and _dias_atraso(cavalo.ultimo_casqueamento) > prazo_casqueamento
         cavalo.tro_atrasada = _dias_atraso(cavalo.ultima_troca_cama) > prazo_troca_cama
+
+        # Dias específicos para tooltip
+        dias_vac = _dias_atraso(cavalo.ultima_vacina)
+        cavalo.vac_dias_atraso = dias_vac - prazo_vacina if dias_vac > prazo_vacina else 0
+        
+        dias_vrm = _dias_atraso(cavalo.ultimo_vermifugo)
+        cavalo.vrm_dias_atraso = dias_vrm - prazo_vermifugo if dias_vrm > prazo_vermifugo else 0
+        
+        if cavalo.usa_ferradura == 'SIM':
+            dias_fer = _dias_atraso(cavalo.ultimo_ferrageamento)
+            cavalo.fer_dias_atraso = dias_fer - prazo_ferrageamento if dias_fer > prazo_ferrageamento else 0
+            cavalo.csc_dias_atraso = 0
+        else:
+            dias_csc = _dias_atraso(cavalo.ultimo_casqueamento)
+            cavalo.csc_dias_atraso = dias_csc - prazo_casqueamento if dias_csc > prazo_casqueamento else 0
+            cavalo.fer_dias_atraso = 0
+        
+        dias_tro = _dias_atraso(cavalo.ultima_troca_cama)
+        cavalo.tro_dias_atraso = dias_tro - prazo_troca_cama if dias_tro > prazo_troca_cama else 0
+
+        # Dias de atraso para cada procedimento (para tooltip no template)
+        dias_vac = _dias_atraso(cavalo.ultima_vacina)
+        cavalo.vac_dias_atraso = dias_vac - prazo_vacina if dias_vac > prazo_vacina else 0
+        
+        dias_vrm = _dias_atraso(cavalo.ultimo_vermifugo)
+        cavalo.vrm_dias_atraso = dias_vrm - prazo_vermifugo if dias_vrm > prazo_vermifugo else 0
+        
+        if cavalo.usa_ferradura == 'SIM':
+            dias_fer = _dias_atraso(cavalo.ultimo_ferrageamento)
+            cavalo.fer_dias_atraso = dias_fer - prazo_ferrageamento if dias_fer > prazo_ferrageamento else 0
+            cavalo.csc_dias_atraso = 0
+        else:
+            dias_csc = _dias_atraso(cavalo.ultimo_casqueamento)
+            cavalo.csc_dias_atraso = dias_csc - prazo_casqueamento if dias_csc > prazo_casqueamento else 0
+            cavalo.fer_dias_atraso = 0
+        
+        dias_tro = _dias_atraso(cavalo.ultima_troca_cama)
+        cavalo.tro_dias_atraso = dias_tro - prazo_troca_cama if dias_tro > prazo_troca_cama else 0
     
     return render(request, "gateagora/manejo_em_massa.html", {
         "empresa":             empresa,
