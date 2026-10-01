@@ -679,7 +679,7 @@ def dashboard(request):
         c.atraso_maximo = 0  # ← ADICIONE ISTO
         
         if c.status_saude != 'Saudavel':
-            c.alerta_detalhes.append(f"Status: {c.status_saude}")
+            c.alerta_detalhes.append(f"{c.status_saude}")
         
         if _dias_atraso(c.ultima_vacina) > prazo_vacina:
             d = _dias_atraso(c.ultima_vacina) - prazo_vacina
@@ -717,15 +717,23 @@ def dashboard(request):
         key=lambda c: (-len(c.alerta_detalhes), -c.atraso_maximo),
     )
 
-    # ← ADICIONE AQUI ↓
-    # Calcular cores de atraso para o dashboard (Saúde & VET)
+    # Calcular cores e flags de atraso para o dashboard (Saúde & VET)
     for cavalo in cavalos_alerta_lista:
         cavalo.vac_atrasada = cavalo.ultima_vacina and (hoje - cavalo.ultima_vacina).days > prazo_vacina
         cavalo.vrm_atrasada = cavalo.ultimo_vermifugo and (hoje - cavalo.ultimo_vermifugo).days > prazo_vermifugo
         cavalo.fer_atrasada = cavalo.usa_ferradura == 'SIM' and cavalo.ultimo_ferrageamento and (hoje - cavalo.ultimo_ferrageamento).days > prazo_ferrageamento
         cavalo.csc_atrasada = cavalo.usa_ferradura != 'SIM' and cavalo.ultimo_casqueamento and (hoje - cavalo.ultimo_casqueamento).days > prazo_casqueamento
         cavalo.tro_atrasada = cavalo.ultima_troca_cama and (hoje - cavalo.ultima_troca_cama).days > prazo_troca_cama
-    # ← FIM DA ADIÇÃO ↑
+
+        # Atribuição da cor conforme o status de saúde
+        if cavalo.status_saude == 'Doente':
+            cavalo.status_saude_color = 'bg-rose-500/15 text-rose-400 border-rose-500/30'
+        elif cavalo.status_saude in ['Tratamento', 'Em Tratamento']:
+            cavalo.status_saude_color = 'bg-amber-500/15 text-amber-400 border-amber-500/30'
+        elif cavalo.status_saude == 'Saudavel':
+            cavalo.status_saude_color = 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+        else:
+            cavalo.status_saude_color = 'bg-slate-500/15 text-slate-400 border-slate-500/30'
 
     # ── 3) KPIs ──────────────────────────────────────────────────────────────
     total_baias = Baia.objects.filter(empresa=empresa).count()

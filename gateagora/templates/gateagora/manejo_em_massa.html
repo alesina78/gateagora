@@ -146,21 +146,21 @@
                     {% if cavalo.status_saude == 'Alerta' %}
                       <span class="text-[8px] font-black px-1.5 py-0.5 rounded uppercase"
                             style="background:rgba(245,158,11,0.18); color:#f59e0b; border:1px solid rgba(245,158,11,0.3);">
-                        {{ cavalo.status_saude|upper }}
+                        ALERTA
                       </span>
                     {% elif cavalo.status_saude == 'Em Tratamento' %}
                       <span class="text-[8px] font-black px-1.5 py-0.5 rounded uppercase"
                             style="background:rgba(249,115,22,0.18); color:#f97316; border:1px solid rgba(249,115,22,0.3);">
-                        {{ cavalo.status_saude|upper }}
+                        EM TRATAMENTO
                       </span>
                     {% elif cavalo.status_saude == 'Doente' %}
                       <span class="text-[8px] font-black px-1.5 py-0.5 rounded uppercase"
                             style="background:rgba(239,68,68,0.18); color:#f87171; border:1px solid rgba(239,68,68,0.3);">
-                        {{ cavalo.status_saude|upper }}
+                        DOENTE
                       </span>
-                    {% elif cavalo.status_saude != 'Saudavel' %}
-                      <span class="text-[8px] font-black px-1.5 py-0.5 rounded uppercase bg-red-500/20 text-red-400 border border-red-500/30">
-                        {{ cavalo.status_saude|upper }}
+                    {% elif cavalo.status_saude == 'Saudavel' or cavalo.status_saude == 'Saudável' %}
+                      <span class="text-[8px] font-black px-1.5 py-0.5 rounded uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                        SAUDAVEL
                       </span>
                     {% else %}
                       <span class="text-[8px] font-black bg-red-600 text-white px-1.5 py-0.5 rounded uppercase shadow-sm">
