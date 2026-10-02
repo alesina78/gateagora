@@ -1271,6 +1271,9 @@ class CustomUserAdmin(BaseUserAdmin, UnfoldModelAdmin):
         return request.user.is_superuser
 
     def get_fieldsets(self, request, obj=None):
+        # Na criação (obj=None) usa a tela própria de criação (usuário + senha)
+        if obj is None:
+            return self.add_fieldsets
         if request.user.is_superuser:
             return self.fieldsets
         # Gestor não pode ver nem alterar is_superuser, groups ou user_permissions

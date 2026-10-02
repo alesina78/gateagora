@@ -1,0 +1,133 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/png" href="{% static 'images/apple-icon-180x180.png' %}">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gate 4 - Novo Usuário</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'css/themes.css' %}">
+
+    <style>
+        body { background-color: var(--bg-main); color: var(--text-main); }
+        .glass-card { background-color: var(--card-bg); border: 1px solid var(--border); }
+
+        .campo input, .campo select {
+            width: 100%;
+            margin-top: 0.25rem;
+            padding: 0.875rem 1rem;
+            border-radius: 1rem;
+            background-color: var(--card-alt);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            transition: border-color .15s;
+        }
+        .campo input:focus, .campo select:focus {
+            outline: none;
+            border-color: #10b981;
+            box-shadow: 0 0 0 2px rgba(16,185,129,.35);
+        }
+        .campo label {
+            font-size: 10px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: .1em; margin-left: .5rem; color: #737373;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <button onclick="toggleHorseTheme()"
+        class="fixed top-4 right-4 z-50 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase flex items-center gap-1.5"
+        style="background:var(--card-bg);border:1px solid var(--border);color:var(--text-main);">
+        <span id="theme-icon">🌙</span>
+        <span id="theme-name">Zaino</span>
+    </button>
+
+    <div class="max-w-xl w-full py-8">
+
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-black tracking-tight" style="color:var(--text-strong);">
+                Novo <span class="text-emerald-500 font-medium italic">Usuário</span>
+            </h1>
+            {% if empresa %}
+            <p class="text-neutral-500 text-[10px] font-bold uppercase tracking-[0.3em] mt-2">
+                {{ empresa }}
+            </p>
+            {% endif %}
+        </div>
+
+        <div class="glass-card p-8 rounded-[2.5rem] shadow-2xl">
+
+            {% if messages %}
+                {% for m in messages %}
+                <div class="mb-4 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-400 text-xs font-medium">
+                    {{ m }}
+                </div>
+                {% endfor %}
+            {% endif %}
+
+            <form method="post" novalidate>
+                {% csrf_token %}
+
+                {% if form.non_field_errors %}
+                <div class="mb-4 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-400 text-xs font-medium">
+                    {{ form.non_field_errors }}
+                </div>
+                {% endif %}
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    {% for field in form %}
+                    <div class="campo {% if field.name == 'email' or field.name == 'empresa' %}md:col-span-2{% endif %}">
+                        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                        {{ field }}
+                        {% for err in field.errors %}
+                        <p class="text-red-400 text-xs mt-1 ml-2">{{ err }}</p>
+                        {% endfor %}
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <div class="flex gap-3 mt-8">
+                    <a href="{% url 'dashboard' %}"
+                       class="flex-1 text-center py-4 rounded-2xl font-bold text-sm transition"
+                       style="background:var(--card-alt);border:1px solid var(--border);color:var(--text-main);">
+                        CANCELAR
+                    </a>
+                    <button type="submit"
+                        class="flex-[2] bg-emerald-600 hover:bg-emerald-500 text-white font-black py-4 rounded-2xl shadow-lg transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-user-plus"></i>
+                        CRIAR USUÁRIO
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+    function toggleHorseTheme() {
+        const html = document.documentElement;
+        const current = html.getAttribute("data-theme");
+        const next = current === "tordilho" ? "zaino" : "tordilho";
+        if (next === "tordilho") html.setAttribute("data-theme", "tordilho");
+        else html.removeAttribute("data-theme");
+        localStorage.setItem("gate-theme", next);
+        updateThemeButton(next);
+    }
+    function updateThemeButton(theme) {
+        const icon = document.getElementById("theme-icon");
+        const name = document.getElementById("theme-name");
+        if (!icon) return;
+        icon.innerText = theme === "tordilho" ? "☀️" : "🌙";
+        if (name) name.innerText = theme === "tordilho" ? "Tordilho" : "Zaino";
+    }
+    (function () {
+        const saved = localStorage.getItem("gate-theme") || "zaino";
+        if (saved === "tordilho") document.documentElement.setAttribute("data-theme", "tordilho");
+        updateThemeButton(saved);
+    })();
+    </script>
+</body>
+</html>
