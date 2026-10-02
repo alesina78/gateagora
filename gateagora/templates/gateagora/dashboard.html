@@ -1179,7 +1179,7 @@
             
             <div>
               <h2 class="text-[11px] font-bold uppercase tracking-wide" style="color:var(--text-strong); margin-bottom: 0;">Faturamento do Mês</h2>
-              <p class="text-[10px] font-bold font-mono" style="color:var(--emerald-text); margin-top: -2px;">R$ {{ receita_total_prevista|floatformat:2 }}</p>
+              <p class="text-[10px] font-bold font-mono" style="color:var(--emerald-text); margin-top: -2px;">R$ {{ faturamento_aberto_total|floatformat:2 }} em aberto</p>
             </div>
           </div>
           
@@ -1187,10 +1187,10 @@
         </div>
 
         <div class="custom-scrollbar" style="max-height: 250px; overflow-y: auto;">
-          {% if relatorio %}
+          {% if faturas_abertas_mes %}
             <table class="w-full text-left border-collapse">
               <tbody class="divide-y divide-[var(--border)]">
-                {% for item in relatorio %}
+                {% for item in faturas_abertas_mes %}
                 <tr class="hover:bg-[var(--card-alt)] transition">
                   <td class="px-4 py-3">
                     <!-- Nome do Aluno + Total Previsto -->
@@ -1199,13 +1199,13 @@
                         {{ item.aluno.nome }}
                       </p>
                       <p class="text-[10px] font-bold font-mono" style="color:var(--emerald-text)">
-                        R$ {{ item.valor_total|floatformat:2|default:"0,00" }}
+                        R$ {{ item.valor|floatformat:2 }}
                       </p>
                     </div>
 
                     <!-- Resumo de Aulas e Serviços -->
                     <div class="mt-1 flex items-center gap-2 text-[9px]" style="color:var(--text-muted)">
-                      <span><i class="fa-solid fa-calendar-check text-[8px]"></i> {{ item.total_aulas|default:0 }} aula(s)</span>
+                      <span><i class="fa-regular fa-calendar text-[8px]"></i> vence {{ item.vencimento|date:"d/m" }}</span>
                       {% if item.aluno.plano %}
                         <span>· Plano: {{ item.aluno.plano }}</span>
                       {% endif %}
@@ -1213,8 +1213,8 @@
                   </td>
                   <td class="px-4 py-3 text-right">
                     <div class="flex justify-end gap-1.5">
-                      {% if item.aluno.telefone %}
-                      <a href="{{ item.whatsapp }}" target="_blank"
+                      {% if item.tem_whatsapp %}
+                      <a href="{{ item.whatsapp }}" target="_blank" class="w-7 h-7 flex items-center justify-center rounded-lg" style="background:rgba(16,185,129,0.10); color:#10b981;" title="Enviar cobrança pelo WhatsApp">
                         <i class="fa-brands fa-whatsapp text-xs"></i>
                       </a>
                       {% endif %}
@@ -1228,7 +1228,7 @@
               </tbody>
             </table>
           {% else %}
-            <p class="text-[10px] text-center py-6 font-bold uppercase opacity-40">Nenhum faturamento registrado</p>
+            <p class="text-[10px] text-center py-6 font-bold uppercase opacity-40">Nenhuma fatura em aberto a vencer</p>
           {% endif %}
         </div>
       </div>
@@ -1304,7 +1304,7 @@
               {% endif %}
             </div>
             <!-- NOVO BOTÃO PADRONIZADO E LIMPO -->
-            {% if al.telefone %}
+            {% if al.telefone_limpo %}
             <a href="{% url 'aluno_whatsapp' al.id %}"
               target="_blank"
               class="flex items-center justify-center w-7 h-7 rounded-lg hover:opacity-80 transition-all"
@@ -1348,7 +1348,7 @@
               <span class="text-[9px] ml-1 font-bold" style="color:#ef4444">{{ al.dias_inativo }}d</span>
               {% endif %}
             </div>
-            {% if al.telefone %}
+            {% if al.telefone_limpo %}
             <a href="{% url 'aluno_whatsapp' al.id %}"
               target="_blank"
               style="font-size:9px;padding:2px 7px;border-radius:5px;background:rgba(239,68,68,0.1);color:#ef4444;"

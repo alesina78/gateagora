@@ -125,7 +125,7 @@ def aluno_whatsapp(request, aluno_id):
     """
     aluno = get_object_or_404(Aluno, id=aluno_id)
 
-    if not (getattr(aluno, 'telefone_limpo', None) or aluno.telefone):
+    if not aluno.telefone:
         messages.error(request, "Este aluno não possui telefone cadastrado.")
         return redirect("dashboard")
 
@@ -837,29 +837,6 @@ def dashboard(request):
     # IMPORTANTE: Note que NÃO existe mais a linha "receita_total_prevista += v_fatura" aqui.
     # Isso impede que o valor seja somado duas vezes ou que use valores "inventados".
 
-    # Card "Faturamento do Mês": só em aberto e ainda não vencido
-    # (as vencidas já aparecem em "Contas a Receber")
-    faturas_abertas_mes = []
-    faturamento_aberto_total = Decimal('0.00')
-    for fatura in faturas_mes.filter(
-        status__in=['PENDENTE', 'ATRASADO'], data_vencimento__gt=hoje
-    ).order_by('data_vencimento'):
-        v = fatura.total or Decimal(str(fatura.valor or 0))
-        if v <= 0:
-            continue
-        tel = fatura.aluno.telefone_limpo if fatura.aluno else ""
-        if tel and not tel.startswith("55"):
-            tel = f"55{tel}"
-        msg = _montar_msg_fatura_whatsapp(fatura, empresa)
-        faturas_abertas_mes.append({
-            "aluno": fatura.aluno,
-            "valor": v,
-            "vencimento": fatura.data_vencimento,
-            "whatsapp": f"https://wa.me/{tel}?text={quote(msg)}" if tel else "#",
-            "tem_whatsapp": bool(tel),
-        })
-        faturamento_aberto_total += v
-
     # ── 4c) Receita por Cavalo — centro de custo ────────────────────────────────
     receita_por_cavalo = list(
         ItemFatura.objects
@@ -1229,8 +1206,6 @@ def dashboard(request):
         "cavalos_alerta_lista":     cavalos_alerta_lista,
         "stats":                    stats,
         "relatorio":                relatorio,
-        "faturas_abertas_mes":      faturas_abertas_mes,
-        "faturamento_aberto_total": float(faturamento_aberto_total),
         "receita_total_prevista":   float(receita_total_prevista),
         "labels_meses":             json.dumps(labels_meses),
         "dados_receita":            json.dumps(dados_receita),
