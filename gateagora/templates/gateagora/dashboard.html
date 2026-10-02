@@ -1257,21 +1257,23 @@
               <span class="text-[13px] font-bold" style="color:var(--text-strong)">{{ indice_inadimplencia }}%</span>
             </div>
           </div>
-          <div class="flex justify-between text-[10px]">
-            <span style="color:var(--text-muted)"><span class="w-2 h-2 rounded-full bg-emerald-500 inline-block mr-1"></span>Recebido</span>
-            <strong style="color:var(--emerald-text)">R$ {{ v_pago_mes|floatformat:2 }}</strong>
-          </div>
-          <div class="flex justify-between text-[10px]">
-            <span style="color:var(--text-muted)"><span class="w-2 h-2 rounded-full inline-block mr-1" style="background:#f59e0b"></span>A vencer</span>
-            <strong style="color:#f59e0b">R$ {{ v_a_vencer_mes|floatformat:2 }}</strong>
-          </div>
-          <div class="flex justify-between text-[10px]">
-            <span style="color:var(--text-muted)"><span class="w-2 h-2 rounded-full bg-red-500 inline-block mr-1"></span>Vencido</span>
-            <strong style="color:#ef4444">R$ {{ v_vencido_mes|floatformat:2 }}</strong>
-          </div>
-          <div class="flex justify-between text-[10px] pt-1" style="border-top:1px solid var(--border)">
-            <span style="color:var(--text-muted)">Total do mês</span>
-            <strong style="color:var(--text-main)">R$ {{ v_total_mes|floatformat:2 }}</strong>
+          <div class="flex-1 min-w-0 space-y-1.5">
+            <div class="flex items-center justify-between gap-2 text-[10px]">
+              <span class="flex items-center gap-1 whitespace-nowrap" style="color:var(--text-muted)"><span class="w-2 h-2 rounded-full bg-emerald-500 inline-block flex-shrink-0"></span>Recebido</span>
+              <strong class="whitespace-nowrap" style="color:var(--emerald-text)">R$ {{ v_pago_mes|floatformat:2 }}</strong>
+            </div>
+            <div class="flex items-center justify-between gap-2 text-[10px]">
+              <span class="flex items-center gap-1 whitespace-nowrap" style="color:var(--text-muted)"><span class="w-2 h-2 rounded-full inline-block flex-shrink-0" style="background:#f59e0b"></span>A vencer</span>
+              <strong class="whitespace-nowrap" style="color:#f59e0b">R$ {{ v_a_vencer_mes|floatformat:2 }}</strong>
+            </div>
+            <div class="flex items-center justify-between gap-2 text-[10px]">
+              <span class="flex items-center gap-1 whitespace-nowrap" style="color:var(--text-muted)"><span class="w-2 h-2 rounded-full bg-red-500 inline-block flex-shrink-0"></span>Vencido</span>
+              <strong class="whitespace-nowrap" style="color:#ef4444">R$ {{ v_vencido_mes|floatformat:2 }}</strong>
+            </div>
+            <div class="flex items-center justify-between gap-2 text-[10px] pt-1" style="border-top:1px solid var(--border)">
+              <span class="whitespace-nowrap" style="color:var(--text-muted)">Total do mês</span>
+              <strong class="whitespace-nowrap" style="color:var(--text-main)">R$ {{ v_total_mes|floatformat:2 }}</strong>
+            </div>
           </div>
         </div>
       </div>
@@ -1613,8 +1615,8 @@
       elInad._c = new Chart(elInad, {
         type: 'doughnut',
         data: {
-          labels: ['Pagas', 'Vencidas'],
-          datasets: [{ data: [{{ faturas_pagas|default:0 }}, {{ faturas_vencidas|default:0 }}], backgroundColor: ['#10b981','#ef4444'], borderWidth: 0 }]
+          labels: ['Recebido', 'A vencer', 'Vencido'],
+          datasets: [{ data: [{{ v_pago_mes|stringformat:".2f" }}, {{ v_a_vencer_mes|stringformat:".2f" }}, {{ v_vencido_mes|stringformat:".2f" }}], backgroundColor: ['#10b981','#f59e0b','#ef4444'], borderWidth: 0 }]
         },
         options: { responsive:false, maintainAspectRatio:false, cutout:'74%',
                    plugins:{ legend:{display:false}, tooltip:{enabled:false} }, animation:{duration:600} }
