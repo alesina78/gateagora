@@ -32,7 +32,6 @@ from reportlab.lib import colors
 
 from django.views.decorators.http import require_POST
 
-from .forms import NovoUsuarioForm
 from .models import (
     Empresa, Perfil, Aluno, Cavalo, Baia, Piquete, Aula,
     ItemEstoque, MovimentacaoFinanceira, MovimentacaoEstoque, DocumentoCavalo,
@@ -161,47 +160,6 @@ class CustomLoginView(LoginView):
         if hasattr(user, 'perfil') and user.perfil.cargo == 'Aluno':
             return '/minhas-aulas/'
         return '/'
-
-
-# ── Cadastro de usuários (apenas Gestor / superuser) ──────────────────────────
-
-@login_required
-def criar_usuario(request):
-    perfil = getattr(request.user, 'perfil', None)
-    pode = request.user.is_superuser or (perfil and perfil.cargo == Perfil.Cargo.GESTOR)
-    if not pode:
-        messages.error(request, "Apenas o Gestor pode cadastrar usuários.")
-        return redirect('dashboard')
-
-    empresa_atual = getattr(request, 'empresa', None)
-    form = NovoUsuarioForm(
-        request.POST or None,
-        request_user=request.user,
-        empresa_atual=empresa_atual,
-    )
-    if request.method == 'POST' and form.is_valid():
-        cd = form.cleaned_data
-        empresa = cd.get('empresa') or empresa_atual
-        if not empresa:
-            messages.error(request, "Nenhuma empresa disponível para vincular o usuário.")
-        else:
-            with transaction.atomic():
-                novo = User.objects.create_user(
-                    username=cd['username'], email=cd['email'],
-                    password=cd['password1'],
-                    first_name=cd['first_name'], last_name=cd['last_name'],
-                )
-                Perfil.objects.create(
-                    user=novo, empresa=empresa,
-                    cargo=cd['cargo'], telefone=cd['telefone'] or None,
-                )
-            messages.success(request, f"✅ Usuário '{novo.username}' criado com sucesso.")
-            return redirect('dashboard')
-
-    return render(request, 'gateagora/criar_usuario.html', {
-        'form': form, 'empresa': empresa_atual, 'brand_name': BRAND_NAME,
-    })
-
 
 def get_pdf_colors(request):
     # SEMPRE LIGHT PARA ECONOMIZAR TINTA

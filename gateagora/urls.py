@@ -20,9 +20,6 @@ urlpatterns = [
     # Tema
     path('set-theme/', views.set_theme, name='set_theme'),
 
-    # Cadastro de usuários (apenas Gestor/superuser)
-    path('usuarios/novo/', views.criar_usuario, name='criar_usuario'),
-
     # Dashboard
     path('', views.dashboard, name='dashboard'),
 
