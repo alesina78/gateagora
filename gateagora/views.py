@@ -784,9 +784,23 @@ def dashboard(request):
         faturas_mes.filter(status__in=['PENDENTE', 'ATRASADO'], data_vencimento__lt=hoje)
         .aggregate(t=Sum('valor'))['t'] or Decimal('0.00')
     )
-    base_inad_mes = float(valor_recebido_mes) + float(valor_inadimplente_mes)
+    
+    # Valores do mês por situação (R$). Usa o valor da fatura ou, se zerado, o total dos itens.
+    v_pago_mes = v_vencido_mes = v_a_vencer_mes = Decimal('0.00')
+    for f in faturas_mes:
+        v = Decimal(str(f.valor or 0)) or f.total
+        if f.status == 'PAGO':
+            v_pago_mes += v
+        elif f.data_vencimento < hoje:
+            v_vencido_mes += v
+        else:
+            v_a_vencer_mes += v
+    v_total_mes = v_pago_mes + v_vencido_mes + v_a_vencer_mes
+
+    base_inad_mes = float(v_pago_mes) + float(v_vencido_mes)
+    
     indice_inadimplencia = (
-        round(float(valor_inadimplente_mes) / base_inad_mes * 100, 1)
+        round(float(v_vencido_mes) / base_inad_mes * 100, 1)
         if base_inad_mes > 0 else 0
     )
 
@@ -1250,6 +1264,10 @@ def dashboard(request):
         "estoque_alerta":           [i for i in estoque_todos if i.prioridade <= 1],
         # Inadimplência
         "total_faturas":            total_faturas_mes,
+        "v_pago_mes":               float(v_pago_mes),
+        "v_a_vencer_mes":           float(v_a_vencer_mes),
+        "v_vencido_mes":            float(v_vencido_mes),
+        "v_total_mes":              float(v_total_mes),        
         "faturas_pagas":            faturas_pagas_mes,
         "faturas_vencidas":         faturas_vencidas_mes,
         "indice_inadimplencia":     indice_inadimplencia,

@@ -1242,12 +1242,12 @@
             </div>
             <div>
               <p class="text-[11px] font-bold uppercase tracking-wide" style="color:var(--text-strong)">Inadimplência</p>
-              <p class="text-[9px]" style="color:var(--text-muted)">Acumulado em aberto</p>
+              <p class="text-[9px]" style="color:var(--text-muted)">Mês selecionado</p>
             </div>
           </div>
           <span class="text-[11px] font-bold px-2 py-0.5 rounded-full"
                 style="background:rgba(239,68,68,0.1);color:#ef4444;">
-            {{ indice_inadimplencia }}%
+            {{ total_faturas }} fatura(s)
           </span>
         </div>
         <div class="flex items-center gap-4">
@@ -1257,19 +1257,21 @@
               <span class="text-[13px] font-bold" style="color:var(--text-strong)">{{ indice_inadimplencia }}%</span>
             </div>
           </div>
-          <div class="flex-1 space-y-1.5">
-            <div class="flex justify-between text-[10px]">
-              <span style="color:var(--text-muted)"><span class="w-2 h-2 rounded-full bg-emerald-500 inline-block mr-1"></span>Recebido mês</span>
-              <strong style="color:var(--emerald-text)">{{ faturas_pagas }}</strong>
-            </div>
-            <div class="flex justify-between text-[10px]">
-              <span style="color:var(--text-muted)"><span class="w-2 h-2 rounded-full bg-red-500 inline-block mr-1"></span>Vencidas</span>
-              <strong style="color:#ef4444">{{ faturas_vencidas }}</strong>
-            </div>
-            <div class="flex justify-between text-[10px]">
-              <span style="color:var(--text-muted)"><span class="w-2 h-2 rounded-full inline-block mr-1" style="background:var(--border)"></span>Total mês</span>
-              <strong style="color:var(--text-main)">{{ total_faturas }}</strong>
-            </div>
+          <div class="flex justify-between text-[10px]">
+            <span style="color:var(--text-muted)"><span class="w-2 h-2 rounded-full bg-emerald-500 inline-block mr-1"></span>Recebido</span>
+            <strong style="color:var(--emerald-text)">R$ {{ v_pago_mes|floatformat:2 }}</strong>
+          </div>
+          <div class="flex justify-between text-[10px]">
+            <span style="color:var(--text-muted)"><span class="w-2 h-2 rounded-full inline-block mr-1" style="background:#f59e0b"></span>A vencer</span>
+            <strong style="color:#f59e0b">R$ {{ v_a_vencer_mes|floatformat:2 }}</strong>
+          </div>
+          <div class="flex justify-between text-[10px]">
+            <span style="color:var(--text-muted)"><span class="w-2 h-2 rounded-full bg-red-500 inline-block mr-1"></span>Vencido</span>
+            <strong style="color:#ef4444">R$ {{ v_vencido_mes|floatformat:2 }}</strong>
+          </div>
+          <div class="flex justify-between text-[10px] pt-1" style="border-top:1px solid var(--border)">
+            <span style="color:var(--text-muted)">Total do mês</span>
+            <strong style="color:var(--text-main)">R$ {{ v_total_mes|floatformat:2 }}</strong>
           </div>
         </div>
       </div>
