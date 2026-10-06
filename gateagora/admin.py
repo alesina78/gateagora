@@ -773,6 +773,13 @@ class CavaloAdmin(PermissaoPorCargoMixin, BaseEmpresaAdmin):
         ("Financeiro", {"fields": ("mensalidade_baia",)}),
     )
 
+    def get_fieldsets(self, request, obj=None):
+        fieldsets = super().get_fieldsets(request, obj)
+        if request.user.is_superuser or self._cargo_do_usuario(request) == 'Gestor':
+            return fieldsets
+        # Veterinário e Tratador não veem o bloco "Financeiro"
+        return tuple(fs for fs in fieldsets if fs[0] != "Financeiro")
+
     @display(description="Status Saúde", label=True)
     def status_saude_colorido(self, obj):
         if not obj or not obj.status_saude:

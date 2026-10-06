@@ -43,6 +43,29 @@ class EmpresaMiddleware(MiddlewareMixin):
             request.empresa = None
             _thread_locals.empresa = None
 
+
+    # Rotas que o cargo "Aluno" pode acessar. Qualquer outra vai para Minhas Aulas.
+    ROTAS_ALUNO = {
+        'minhas_aulas', 'confirmar_presenca', 'desconfirmar_presenca',
+        'agendar_treino_solo', 'agendar_treino_solo_proprietario',
+        'agendar_aula_proprietario',
+        'login', 'logout', 'password_change', 'password_change_done', 'set_theme',
+    }
+
+    def process_view(self, request, view_func, view_args, view_kwargs):
+        user = getattr(request, 'user', None)
+        if not user or not user.is_authenticated or user.is_superuser:
+            return None
+        perfil = getattr(user, 'perfil', None)
+        if perfil is None or perfil.cargo != 'Aluno':
+            return None
+        match = getattr(request, 'resolver_match', None)
+        if match is None or match.url_name in self.ROTAS_ALUNO:
+            return None
+        from django.shortcuts import redirect
+        return redirect('minhas_aulas')
+
+
     def process_response(self, request, response):
         if hasattr(_thread_locals, 'empresa'):
             del_emp = getattr(_thread_locals, 'empresa', None)

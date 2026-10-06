@@ -1179,7 +1179,7 @@
             
             <div>
               <h2 class="text-[11px] font-bold uppercase tracking-wide" style="color:var(--text-strong); margin-bottom: 0;">Faturamento do Mês</h2>
-              <p class="text-[10px] font-bold font-mono" style="color:var(--emerald-text); margin-top: -2px;">R$ {{ receita_total_prevista|floatformat:2 }}</p>
+              <p class="text-[10px] font-bold font-mono" style="color:var(--emerald-text); margin-top: -2px;">R$ {{ faturamento_aberto_total|floatformat:2 }} em aberto</p>
             </div>
           </div>
           
@@ -1187,10 +1187,10 @@
         </div>
 
         <div class="custom-scrollbar" style="max-height: 250px; overflow-y: auto;">
-          {% if relatorio %}
+          {% if faturas_abertas_mes %}
             <table class="w-full text-left border-collapse">
               <tbody class="divide-y divide-[var(--border)]">
-                {% for item in relatorio %}
+                {% for item in faturas_abertas_mes %}
                 <tr class="hover:bg-[var(--card-alt)] transition">
                   <td class="px-4 py-3">
                     <!-- Nome do Aluno + Total Previsto -->
@@ -1199,13 +1199,13 @@
                         {{ item.aluno.nome }}
                       </p>
                       <p class="text-[10px] font-bold font-mono" style="color:var(--emerald-text)">
-                        R$ {{ item.valor_total|floatformat:2|default:"0,00" }}
+                        R$ {{ item.valor|floatformat:2 }}
                       </p>
                     </div>
 
                     <!-- Resumo de Aulas e Serviços -->
                     <div class="mt-1 flex items-center gap-2 text-[9px]" style="color:var(--text-muted)">
-                      <span><i class="fa-solid fa-calendar-check text-[8px]"></i> {{ item.total_aulas|default:0 }} aula(s)</span>
+                      <span><i class="fa-regular fa-calendar text-[8px]"></i> vence {{ item.vencimento|date:"d/m" }}</span>
                       {% if item.aluno.plano %}
                         <span>· Plano: {{ item.aluno.plano }}</span>
                       {% endif %}
@@ -1213,8 +1213,8 @@
                   </td>
                   <td class="px-4 py-3 text-right">
                     <div class="flex justify-end gap-1.5">
-                      {% if item.aluno.telefone %}
-                      <a href="{{ item.whatsapp }}" target="_blank"
+                      {% if item.tem_whatsapp %}
+                      <a href="{{ item.whatsapp }}" target="_blank" class="w-7 h-7 flex items-center justify-center rounded-lg" style="background:rgba(16,185,129,0.10); color:#10b981;" title="Enviar cobrança pelo WhatsApp">
                         <i class="fa-brands fa-whatsapp text-xs"></i>
                       </a>
                       {% endif %}
@@ -1228,7 +1228,7 @@
               </tbody>
             </table>
           {% else %}
-            <p class="text-[10px] text-center py-6 font-bold uppercase opacity-40">Nenhum faturamento registrado</p>
+            <p class="text-[10px] text-center py-6 font-bold uppercase opacity-40">Nenhuma fatura em aberto a vencer</p>
           {% endif %}
         </div>
       </div>
@@ -1242,12 +1242,12 @@
             </div>
             <div>
               <p class="text-[11px] font-bold uppercase tracking-wide" style="color:var(--text-strong)">Inadimplência</p>
-              <p class="text-[9px]" style="color:var(--text-muted)">Acumulado em aberto</p>
+              <p class="text-[9px]" style="color:var(--text-muted)">Mês selecionado</p>
             </div>
           </div>
           <span class="text-[11px] font-bold px-2 py-0.5 rounded-full"
                 style="background:rgba(239,68,68,0.1);color:#ef4444;">
-            {{ indice_inadimplencia }}%
+            {{ total_faturas }} fatura(s)
           </span>
         </div>
         <div class="flex items-center gap-4">
@@ -1257,18 +1257,22 @@
               <span class="text-[13px] font-bold" style="color:var(--text-strong)">{{ indice_inadimplencia }}%</span>
             </div>
           </div>
-          <div class="flex-1 space-y-1.5">
-            <div class="flex justify-between text-[10px]">
-              <span style="color:var(--text-muted)"><span class="w-2 h-2 rounded-full bg-emerald-500 inline-block mr-1"></span>Recebido mês</span>
-              <strong style="color:var(--emerald-text)">{{ faturas_pagas }}</strong>
+          <div class="flex-1 min-w-0 space-y-1.5">
+            <div class="flex items-center justify-between gap-2 text-[10px]">
+              <span class="flex items-center gap-1 whitespace-nowrap" style="color:var(--text-muted)"><span class="w-2 h-2 rounded-full bg-emerald-500 inline-block flex-shrink-0"></span>Recebido</span>
+              <strong class="whitespace-nowrap" style="color:var(--emerald-text)">R$ {{ v_pago_mes|floatformat:2 }}</strong>
             </div>
-            <div class="flex justify-between text-[10px]">
-              <span style="color:var(--text-muted)"><span class="w-2 h-2 rounded-full bg-red-500 inline-block mr-1"></span>Vencidas</span>
-              <strong style="color:#ef4444">{{ faturas_vencidas }}</strong>
+            <div class="flex items-center justify-between gap-2 text-[10px]">
+              <span class="flex items-center gap-1 whitespace-nowrap" style="color:var(--text-muted)"><span class="w-2 h-2 rounded-full inline-block flex-shrink-0" style="background:#f59e0b"></span>A vencer</span>
+              <strong class="whitespace-nowrap" style="color:#f59e0b">R$ {{ v_a_vencer_mes|floatformat:2 }}</strong>
             </div>
-            <div class="flex justify-between text-[10px]">
-              <span style="color:var(--text-muted)"><span class="w-2 h-2 rounded-full inline-block mr-1" style="background:var(--border)"></span>Total mês</span>
-              <strong style="color:var(--text-main)">{{ total_faturas }}</strong>
+            <div class="flex items-center justify-between gap-2 text-[10px]">
+              <span class="flex items-center gap-1 whitespace-nowrap" style="color:var(--text-muted)"><span class="w-2 h-2 rounded-full bg-red-500 inline-block flex-shrink-0"></span>Vencido</span>
+              <strong class="whitespace-nowrap" style="color:#ef4444">R$ {{ v_vencido_mes|floatformat:2 }}</strong>
+            </div>
+            <div class="flex items-center justify-between gap-2 text-[10px] pt-1" style="border-top:1px solid var(--border)">
+              <span class="whitespace-nowrap" style="color:var(--text-muted)">Total do mês</span>
+              <strong class="whitespace-nowrap" style="color:var(--text-main)">R$ {{ v_total_mes|floatformat:2 }}</strong>
             </div>
           </div>
         </div>
@@ -1304,7 +1308,7 @@
               {% endif %}
             </div>
             <!-- NOVO BOTÃO PADRONIZADO E LIMPO -->
-            {% if al.telefone %}
+            {% if al.telefone_limpo %}
             <a href="{% url 'aluno_whatsapp' al.id %}"
               target="_blank"
               class="flex items-center justify-center w-7 h-7 rounded-lg hover:opacity-80 transition-all"
@@ -1348,7 +1352,7 @@
               <span class="text-[9px] ml-1 font-bold" style="color:#ef4444">{{ al.dias_inativo }}d</span>
               {% endif %}
             </div>
-            {% if al.telefone %}
+            {% if al.telefone_limpo %}
             <a href="{% url 'aluno_whatsapp' al.id %}"
               target="_blank"
               style="font-size:9px;padding:2px 7px;border-radius:5px;background:rgba(239,68,68,0.1);color:#ef4444;"
@@ -1403,12 +1407,13 @@
                         <i class="fa-brands fa-whatsapp text-[10px]"></i>
                       </a>
                       {% endif %}
-                      <a href="{% url 'dar_baixa_fatura' item.fatura_id %}" 
-                        onclick="return confirm('Dar baixa na fatura?')" 
-                        class="flex items-center gap-1 px-2 py-1 rounded bg-indigo-50 text-indigo-600 border border-indigo-200 text-[9px] font-bold">
-                        <i class="fa-solid fa-hand-holding-dollar"></i>
-                        Baixar
-                      </a>
+                      <form action="{% url 'dar_baixa_fatura' item.fatura_id %}" method="post" class="inline" onsubmit="return confirm('Dar baixa na fatura?')">
+                        {% csrf_token %}
+                        <button type="submit" class="flex items-center gap-1 px-2 py-1 rounded bg-indigo-50 text-indigo-600 border border-indigo-200 text-[9px] font-bold">
+                          <i class="fa-solid fa-hand-holding-dollar"></i>
+                          Baixar
+                        </button>
+                      </form>
                     </div>
                   </td>
                 </tr>
@@ -1611,8 +1616,8 @@
       elInad._c = new Chart(elInad, {
         type: 'doughnut',
         data: {
-          labels: ['Pagas', 'Vencidas'],
-          datasets: [{ data: [{{ faturas_pagas|default:0 }}, {{ faturas_vencidas|default:0 }}], backgroundColor: ['#10b981','#ef4444'], borderWidth: 0 }]
+          labels: ['Recebido', 'A vencer', 'Vencido'],
+          datasets: [{ data: [{{ v_pago_mes|stringformat:".2f" }}, {{ v_a_vencer_mes|stringformat:".2f" }}, {{ v_vencido_mes|stringformat:".2f" }}], backgroundColor: ['#10b981','#f59e0b','#ef4444'], borderWidth: 0 }]
         },
         options: { responsive:false, maintainAspectRatio:false, cutout:'74%',
                    plugins:{ legend:{display:false}, tooltip:{enabled:false} }, animation:{duration:600} }

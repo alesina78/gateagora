@@ -29,6 +29,14 @@ CSRF_TRUSTED_ORIGINS = (
     else []
 )
 
+# Trava de segurança: em produção (com DATABASE_URL) não sobe com padrões inseguros
+if os.getenv('DATABASE_URL'):
+    from django.core.exceptions import ImproperlyConfigured
+    if DEBUG or 'django-insecure' in SECRET_KEY or ALLOWED_HOSTS == ['*']:
+        raise ImproperlyConfigured(
+            "Produção com DEBUG=True, SECRET_KEY padrão ou ALLOWED_HOSTS='*'. "
+            "Defina DJANGO_DEBUG=False, DJANGO_SECRET_KEY e DJANGO_ALLOWED_HOSTS."
+        )
 
 # ------------------------------------------------------------------------------
 # APLICAÇÕES
@@ -43,7 +51,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-
+    'axes',
     'cloudinary',
     'cloudinary_storage',
 ]
@@ -71,8 +79,10 @@ MIDDLEWARE = [
     # Outros
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-]
 
+    # Limite de tentativas de login (deve ficar por último)
+    'axes.middleware.AxesMiddleware',
+]
 
 # ------------------------------------------------------------------------------
 # URLs e Templates
@@ -128,7 +138,16 @@ else:
 # SENHAS
 # ------------------------------------------------------------------------------
 
-AUTH_PASSWORD_VALIDATORS = []
+
+# Limite de tentativas de login (django-axes)
+AUTHENTICATION_BACKENDS = [
+    'axes.backends.AxesStandaloneBackend',      # precisa ser o primeiro
+    'django.contrib.auth.backends.ModelBackend',
+]
+AXES_FAILURE_LIMIT = 5                # tentativas erradas antes de bloquear
+AXES_COOLOFF_TIME = 0.25              # tempo de bloqueio, em horas (15 min)
+AXES_RESET_ON_SUCCESS = True          # login certo zera o contador
+AXES_LOCKOUT_PARAMETERS = ['username']  # bloqueia por usuário, não por IP
 # Sem validadores por decisão de produto: senhas o mais simples possível
 # pro público-alvo. Django continua rejeitando senha totalmente vazia.
 

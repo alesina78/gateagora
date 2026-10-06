@@ -118,12 +118,13 @@ def montar_msg_risco_perda(aluno, empresa):
     return "\n".join(linhas)
 
 
+@login_required
 def aluno_whatsapp(request, aluno_id):
     """
     View que centraliza a decisão do tipo de mensagem com base nos dias de inatividade
     e redireciona diretamente para o WhatsApp do aluno.
     """
-    aluno = get_object_or_404(Aluno, id=aluno_id)
+    aluno = get_object_or_404(Aluno, id=aluno_id, empresa=getattr(request, "empresa", None))
 
     if not (getattr(aluno, 'telefone_limpo', None) or aluno.telefone):
         messages.error(request, "Este aluno não possui telefone cadastrado.")
@@ -1298,6 +1299,38 @@ def dashboard(request):
         "pode_ver_dashboard_completo": pode_ver_dashboard_completo,
     }
 
+        # Blindagem: quem não é Gestor não recebe nenhum valor financeiro
+    if not pode_ver_financeiro:
+        context.update({
+            "relatorio":                [],
+            "relatorio_financeiro":     [],
+            "listagem_cobranca":        [],
+            "faturas_abertas_mes":      [],
+            "faturamento_aberto_total": 0,
+            "receita_total_prevista":   0,
+            "labels_meses":             "[]",
+            "dados_receita":            "[]",
+            "dados_despesa":            "[]",
+            "dados_lucro":              "[]",
+            "ranking_receita":          "[]",
+            "receita_por_tipo_labels":  "[]",
+            "receita_por_tipo_valores": "[]",
+            "total_faturas":            0,
+            "v_pago_mes":               0,
+            "v_a_vencer_mes":           0,
+            "v_vencido_mes":            0,
+            "v_total_mes":              0,
+            "indice_inadimplencia":     0,
+            "valor_inadimplente_mes":   0,
+            "valor_recebido_mes":       0,
+            "divida_ativa_total":       0,
+            "divida_mes_atual":         0,
+            "divida_historica":         0,
+            "valor_inadimplente":       0,
+            "valor_recebido_ano":       0,
+            "receita_por_cavalo":       [],
+        })
+
     return render(request, "gateagora/dashboard.html", context)
 
 # ── Streak / Gamificação ─────────────────────────────────────────────────────
@@ -1623,7 +1656,12 @@ def confirmar_presenca_turma(request, aula_id):
 # ── Concluir Aula ─────────────────────────────────────────────────────────────
 
 @login_required
+@require_POST
 def concluir_aula(request, aula_id):
+    perfil = getattr(request.user, 'perfil', None)
+    if not (request.user.is_superuser or (perfil and perfil.cargo in {'Gestor', 'Professor'})):
+        messages.error(request, "Você não tem permissão para concluir aulas.")
+        return redirect('dashboard')
     empresa = getattr(request, "empresa", request.user.perfil.empresa)
     aula = get_object_or_404(Aula, id=aula_id, empresa=empresa)
 
@@ -1669,6 +1707,9 @@ def concluir_aula(request, aula_id):
 
 @login_required
 def gerar_relatorio_pdf(request, aluno_id):
+    if not _eh_gestor(request):
+        messages.error(request, "Apenas o Gestor pode gerar a fatura em PDF.")
+        return redirect('dashboard')
     empresa = getattr(request, "empresa", request.user.perfil.empresa)
     aluno   = get_object_or_404(Aluno, id=aluno_id, empresa=empresa)
 
@@ -2547,10 +2588,18 @@ def manejo_em_massa(request):
         "prazo_troca_cama":    prazo_troca_cama,
     })
 
+def _eh_gestor(request):
+    perfil = getattr(request.user, 'perfil', None)
+    return request.user.is_superuser or (perfil is not None and perfil.cargo == 'Gestor')
+
 # ── Baixa de Fatura ───────────────────────────────────────────────────────────
 
 @login_required
+@require_POST
 def dar_baixa_fatura(request, fatura_id):
+    if not _eh_gestor(request):
+        messages.error(request, "Apenas o Gestor pode dar baixa em faturas.")
+        return redirect('dashboard')
     empresa = request.user.perfil.empresa
     fatura = get_object_or_404(Fatura, id=fatura_id, empresa=empresa)
 
@@ -3279,6 +3328,9 @@ def desconfirmar_presenca(request, aula_id):
 @login_required
 def relatorios(request):
     """Página principal de relatórios financeiros."""
+    if not _eh_gestor(request):
+        messages.error(request, "Apenas o Gestor pode ver os relatórios financeiros.")
+        return redirect('dashboard')
     empresa = request.empresa
     if not empresa:
         return redirect('dashboard')
@@ -3589,6 +3641,9 @@ def manejo_limpeza_baias(request):
 @login_required
 def relatorio_pdf(request):
     """Gera PDF do relatório financeiro do mês."""
+    if not _eh_gestor(request):
+        messages.error(request, "Apenas o Gestor pode gerar relatórios financeiros.")
+        return redirect('dashboard')
     from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
     from reportlab.lib.units import cm
