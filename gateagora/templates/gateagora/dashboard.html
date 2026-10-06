@@ -306,7 +306,7 @@
         </h2>
       </div>
       <div class="flex items-center gap-2">
-        {% if pode_ver_dashboard_completo %}
+        {% if pode_ver_financeiro %}
         <a href="{% url 'relatorios' %}"
           class="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-xs uppercase tracking-wide"
           style="background:var(--card-alt);color:var(--indigo-text);border:1px solid rgba(99,102,241,.25);
@@ -343,9 +343,10 @@
 
   <!-- ── 2. KPIs ── -->
   {% if pode_ver_dashboard_completo %}
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-{% if capacity_utilization is not None %}4{% else %}3{% endif %} gap-4">
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-{% if pode_ver_financeiro %}{% if capacity_utilization is not None %}4{% else %}3{% endif %}{% else %}{% if capacity_utilization is not None %}3{% else %}2{% endif %}{% endif %} gap-4">
 
     <!-- Faturamento -->
+    {% if pode_ver_financeiro %}     
     <div class="kpi-card" style="display:flex;flex-direction:column;justify-content:space-between;min-height:100px;">
       <div>
         <p class="sec-title mb-2">Faturamento do Mês</p>
@@ -356,6 +357,7 @@
         {{ relatorio|length }} fatura(s) no mês
       </p>
     </div>
+    {% endif %}
 
     <!-- Confirmações -->
     <div class="kpi-card" style="display:flex;flex-direction:column;justify-content:space-between;min-height:100px;">
@@ -917,6 +919,7 @@
         na função dar_baixa_fatura — registrado para corrigir na próxima etapa.
       -->
       {% if pode_ver_dashboard_completo %}
+      {% if pode_ver_financeiro %}
       <div class="card p-5">
         <div class="flex items-center justify-between mb-4">
           <h3 class="text-sm font-bold" style="color:var(--text-strong)">
@@ -929,9 +932,10 @@
         </div>
         <div class="h-[260px]"><canvas id="chartFinanceiro6Meses"></canvas></div>
       </div>
+      {% endif %}
 
       <!-- 5c. Receita por Categoria — só quando há ItemFatura -->
-      {% if receita_por_tipo_labels %}
+      {% if pode_ver_financeiro and receita_por_tipo_labels %}
       <div class="card p-5">
         <div class="flex items-center justify-between mb-4">
           <h3 class="text-sm font-bold" style="color:var(--text-strong)">
@@ -1138,6 +1142,7 @@
           </p>
           <div class="grid grid-cols-2 gap-2">
 
+          {% if pode_ver_financeiro %}
           <!-- Receita / Despesa -->
           <a href="/admin/gateagora/movimentacaofinanceira/add/" class="atalho"
             style="background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.25);">
@@ -1151,6 +1156,7 @@
             <span>Nova Fatura</span>
             <i class="fa-solid fa-file-invoice-dollar ml-2"></i>
           </a>
+          {% endif %}
 
           <!-- Ocorrência Saúde -->
           <a href="/admin/gateagora/registroocorrencia/add/" class="atalho"
@@ -1170,6 +1176,7 @@
         </div>
       </div>
 
+      {% if pode_ver_financeiro %}
       <div class="card-static overflow-hidden" style="border-left: 3px solid var(--indigo-text);">
         <div class="px-4 py-3 flex items-center justify-between bg-[var(--card-bg)]" style="border-bottom: 1px solid var(--border);">
           <div class="flex items-center gap-3">
@@ -1277,6 +1284,7 @@
           </div>
         </div>
       </div>
+      {% endif %}
 
       <!-- ── 🟡 Alunos Inativos 14-29 dias ── -->
       {% if alunos_inativos %}
@@ -1368,6 +1376,7 @@
       {% endif %}
 
       <!-- ── Contas a Receber ── -->
+      {% if pode_ver_financeiro %}
       <div class="card-static overflow-hidden" style="border-left: 3px solid #ef4444;">
         <div class="px-4 py-3 flex items-center justify-between bg-[var(--card-bg)]" style="border-bottom: 1px solid var(--border);">
           <div class="flex items-center gap-3">
@@ -1407,12 +1416,13 @@
                         <i class="fa-brands fa-whatsapp text-[10px]"></i>
                       </a>
                       {% endif %}
-                      <a href="{% url 'dar_baixa_fatura' item.fatura_id %}" 
-                        onclick="return confirm('Dar baixa na fatura?')" 
-                        class="flex items-center gap-1 px-2 py-1 rounded bg-indigo-50 text-indigo-600 border border-indigo-200 text-[9px] font-bold">
-                        <i class="fa-solid fa-hand-holding-dollar"></i>
-                        Baixar
-                      </a>
+                      <form action="{% url 'dar_baixa_fatura' item.fatura_id %}" method="post" class="inline" onsubmit="return confirm('Dar baixa na fatura?')">
+                        {% csrf_token %}
+                        <button type="submit" class="flex items-center gap-1 px-2 py-1 rounded bg-indigo-50 text-indigo-600 border border-indigo-200 text-[9px] font-bold">
+                          <i class="fa-solid fa-hand-holding-dollar"></i>
+                          Baixar
+                        </button>
+                      </form>
                     </div>
                   </td>
                 </tr>
@@ -1427,6 +1437,7 @@
           {% endif %}
         </div>
       </div>
+      {% endif %}
       </div>
     </div><!-- /col-span-4 -->
     {% endif %}
@@ -1492,6 +1503,7 @@
     Chart.defaults.color       = muted;
     Chart.defaults.font.family = "'DM Sans', sans-serif";
 
+    {% if pode_ver_financeiro %}
     /* Fluxo Financeiro 6 Meses */
     const elFin = document.getElementById('chartFinanceiro6Meses');
     if (elFin) {
@@ -1518,6 +1530,7 @@
         }
       });
     }
+    {% endif %}
 
     /* Ocupação Baias — mini donut no KPI */
     const elOc = document.getElementById('chartOcupacao');
@@ -1539,7 +1552,7 @@
     const lim  = {{ limite_treinos_mes|default:20 }};
     const lblT = {{ ranking_cavalos_labels|safe|default:"[]" }};
     const dadT = {{ ranking_cavalos_dados|safe|default:"[]" }};
-    const dadR = {{ ranking_receita|safe|default:"[]" }};
+    const dadR = {% if pode_ver_financeiro %}{{ ranking_receita|safe|default:"[]" }}{% else %}[]{% endif %};
 
     const elTr = document.getElementById('chartTreinosCavalos');
     const cont = document.getElementById('containerGraficoCavalos');
@@ -1567,7 +1580,7 @@
           plugins:{
             legend:{ display:true, position:'top', align:'end', labels:{boxWidth:8,font:{size:9},color:muted} },
             tooltip:{ callbacks:{ label:ctx => ctx.dataset.type==='line'
-              ? ` Limite: ${lim}` : ` ${ctx.raw} aula(s)  |  R$ ${dadR[ctx.dataIndex].toFixed(2).replace('.',',')}` }}
+              ? ` Limite: ${lim}` : (dadR[ctx.dataIndex] !== undefined ? ` ${ctx.raw} aula(s)  |  R$ ${dadR[ctx.dataIndex].toFixed(2).replace('.',',')}` : ` ${ctx.raw} aula(s)`) }}
           },
           scales:{
             y:{ grid:{display:false}, offset:true, ticks:{color:strong,font:{size:11,weight:'600'}} },
@@ -1616,7 +1629,7 @@
         type: 'doughnut',
         data: {
           labels: ['Recebido', 'A vencer', 'Vencido'],
-          datasets: [{ data: [{{ v_pago_mes|stringformat:".2f" }}, {{ v_a_vencer_mes|stringformat:".2f" }}, {{ v_vencido_mes|stringformat:".2f" }}], backgroundColor: ['#10b981','#f59e0b','#ef4444'], borderWidth: 0 }]
+          datasets: [{ data: [0.00, 7777.77, 0.00], backgroundColor: ['#10b981','#f59e0b','#ef4444'], borderWidth: 0 }]
         },
         options: { responsive:false, maintainAspectRatio:false, cutout:'74%',
                    plugins:{ legend:{display:false}, tooltip:{enabled:false} }, animation:{duration:600} }
