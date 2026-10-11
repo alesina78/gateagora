@@ -43,7 +43,6 @@ urlpatterns = [
 
     # Proprietário agendar aulas/treinamentos (NOVO)
     path('agendar-aula-proprietario/',  views.agendar_aula_proprietario,       name='agendar_aula_proprietario'),
-    path('agendar-treino-solo/',        views.agendar_treino_solo_proprietario, name='agendar_treino_solo'),
 
     # Confirmação manual pelo gestor (dashboard)
     path('aula/confirmar/<int:aula_id>/', views.confirmar_presenca_dashboard, name='confirmar_presenca_dashboard'),
@@ -58,7 +57,6 @@ urlpatterns = [
     # Manejo: Troca Total da Cama (NOVO)
     path('manejo/troca-cama/',               views.manejo_troca_cama,      name='manejo_troca_cama'),
     path('manejo/troca-cama/historico/<int:baia_id>/', views.historico_troca_cama, name='historico_troca_cama'),
-    path('agendar-treino-solo/', views.agendar_treino_solo_proprietario, name='agendar_treino_solo_proprietario'),
 
     # Configuração de prazos
     path('config-prazos-manejo/', views.config_prazos_manejo, name='config_prazos_manejo'),
@@ -68,10 +66,6 @@ urlpatterns = [
 
     # Baixa de faturas
     path('fatura/baixar/<int:fatura_id>/', views.dar_baixa_fatura, name='dar_baixa_fatura'),
-
-    # Relatórios
-    path('relatorios/', views.relatorios, name='relatorios'),
-    path('relatorios/pdf/', views.relatorio_pdf, name='relatorio_pdf'),
 
     # Relatórios
     path('relatorios/', views.relatorios, name='relatorios'),

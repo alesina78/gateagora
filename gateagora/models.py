@@ -7,6 +7,7 @@ from django.db.models.signals import pre_save, post_save
 from django.db.models import Sum, Q
 from django.dispatch import receiver
 from django.core.validators import MinValueValidator, RegexValidator
+from django.core.exceptions import ValidationError
 
 
 # --- 1. ESTRUTURA MULTI-EMPRESA ---

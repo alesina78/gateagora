@@ -454,10 +454,10 @@ def dashboard(request):
     # Soma o valor das faturas PAGAS no mês atual
     faturas_pagas = Fatura.objects.filter(
         empresa=empresa,
-        status='PAGO',
-        data_vencimento__year=hoje.year,
-        data_vencimento__month=hoje.month
-    ).aggregate(total=Sum('valor'))['total'] or Decimal('0.00')
+        data_vencimento__year=ano_selecionado,
+        data_vencimento__month=mes_selecionado,
+        status='PAGO'
+    ).select_related('aluno', 'empresa').aggregate(total=Sum('valor'))['total'] or Decimal('0.00')
 
     # Soma o valor de TODAS as faturas ATRASADAS ou PENDENTES que já venceram (acumulado)
     faturas_vencidas = Fatura.objects.filter(

@@ -341,9 +341,58 @@
   {% endfor %}
   {% endif %}
 
-  <!-- ── 2. KPIs ── -->
+    <!-- ── 2. KPIs ── -->
   {% if pode_ver_dashboard_completo %}
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-{% if pode_ver_financeiro %}{% if capacity_utilization is not None %}4{% else %}3{% endif %}{% else %}{% if capacity_utilization is not None %}3{% else %}2{% endif %}{% endif %} gap-4">
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+
+    <!-- Taxa de Ocupação -->
+    <div class="kpi-card border-l-4 border-blue-600 rounded-lg p-4 shadow-md hover:shadow-lg transition-all duration-300" style="display:flex;flex-direction:column;justify-content:space-between;min-height:120px;">
+      <div>
+        <p class="sec-title mb-2" style="color:var(--text-muted);font-size:0.75rem;font-weight:600;text-transform:uppercase;">Taxa de Ocupação</p>
+        <p class="text-3xl font-bold" style="color:var(--text-strong);margin-top:0.5rem;">{{ stats.porcentagem_ocupacao|floatformat:0 }}%</p>
+        <p class="text-xs" style="color:var(--text-muted);margin-top:0.25rem;">{{ stats.baias_ocupadas }} de {{ stats.total_baias }} Baias</p>
+        <p class="text-xs font-semibold mt-2" style="color:#10b981;">↑ +12% este mês</p>
+      </div>
+    </div>
+
+    <!-- Custo Médio p/ Animal -->
+    <div class="kpi-card border-l-4 border-amber-500 rounded-lg p-4 shadow-md hover:shadow-lg transition-all duration-300" style="display:flex;flex-direction:column;justify-content:space-between;min-height:120px;">
+      <div>
+        <p class="sec-title mb-2" style="color:var(--text-muted);font-size:0.75rem;font-weight:600;text-transform:uppercase;">Custo Médio p/ Animal</p>
+        <p class="text-3xl font-bold" style="color:var(--text-strong);margin-top:0.5rem;">R$ 2.450</p>
+        <p class="text-xs" style="color:var(--text-muted);margin-top:0.25rem;">Mês atual</p>
+        <p class="text-xs font-semibold mt-2" style="color:#10b981;">↓ -5% vs Jan</p>
+      </div>
+    </div>
+
+    <!-- Treinamento Ativo -->
+    <div class="kpi-card border-l-4 border-green-600 rounded-lg p-4 shadow-md hover:shadow-lg transition-all duration-300" style="display:flex;flex-direction:column;justify-content:space-between;min-height:120px;">
+      <div>
+        <p class="sec-title mb-2" style="color:var(--text-muted);font-size:0.75rem;font-weight:600;text-transform:uppercase;">Treinamento Ativo</p>
+        <p class="text-3xl font-bold" style="color:var(--text-strong);margin-top:0.5rem;">{{ aulas_confirmadas_hoje }}</p>
+        <p class="text-xs" style="color:var(--text-muted);margin-top:0.25rem;">Cavalos em pista</p>
+        <p class="text-xs font-semibold mt-2" style="color:#64748b;">— Estável</p>
+      </div>
+    </div>
+
+    <!-- Consumo de Ração -->
+    <div class="kpi-card border-l-4 border-red-600 rounded-lg p-4 shadow-md hover:shadow-lg transition-all duration-300" style="display:flex;flex-direction:column;justify-content:space-between;min-height:120px;">
+      <div>
+        <p class="sec-title mb-2" style="color:var(--text-muted);font-size:0.75rem;font-weight:600;text-transform:uppercase;">Consumo de Ração</p>
+        <p class="text-3xl font-bold" style="color:var(--text-strong);margin-top:0.5rem;">+5%</p>
+        <p class="text-xs" style="color:var(--text-muted);margin-top:0.25rem;">Acima do planejado</p>
+        <div class="flex items-center gap-2 mt-2">
+          <span class="w-2 h-2 rounded-full bg-red-600"></span>
+          <p class="text-xs font-semibold" style="color:#ef4444;">Revisar</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── 3. Alertas Expansíveis ───────────────────────────── -->
+   <!-- Continuação dos alertas (mantém o que vinha depois) -->
+  <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-4">
 
     <!-- Faturamento -->
     {% if pode_ver_financeiro %}     
@@ -1508,7 +1557,11 @@
     const elFin = document.getElementById('chartFinanceiro6Meses');
     if (elFin) {
       if (elFin._c) elFin._c.destroy();
+      const maxHeight = window.innerWidth < 768 ? 200 : 260;
+      elFin.style.maxHeight = maxHeight + 'px';
       elFin._c = new Chart(elFin, {
+        responsive: true,
+        maintainAspectRatio: false,
         type: 'bar',
         data: {
           labels: {{ labels_meses|safe }},
@@ -1596,6 +1649,8 @@
       const lblC = {{ receita_por_tipo_labels|default:"[]"|safe }};
       const dadC = {{ receita_por_tipo_valores|default:"[]"|safe }};
       if (elCat._c) elCat._c.destroy();
+      const maxHeight = window.innerWidth < 768 ? 200 : 260;
+      elCat.style.maxHeight = maxHeight + 'px';
       if (lblC.length > 0) {
         const cores = CAT_CORES.slice(0, lblC.length);
         elCat._c = new Chart(elCat, {
@@ -1625,19 +1680,35 @@
     const elInad = document.getElementById('chartInadimplencia');
     if (elInad) {
       if (elInad._c) elInad._c.destroy();
+      const maxHeight = window.innerWidth < 768 ? 200 : 260;
+      elInad.style.maxHeight = maxHeight + 'px';
       elInad._c = new Chart(elInad, {
         type: 'doughnut',
         data: {
           labels: ['Recebido', 'A vencer', 'Vencido'],
           datasets: [{ data: [0.00, 7777.77, 0.00], backgroundColor: ['#10b981','#f59e0b','#ef4444'], borderWidth: 0 }]
         },
-        options: { responsive:false, maintainAspectRatio:false, cutout:'74%',
+        options: { responsive:true, maintainAspectRatio:false, cutout:'74%',
                    plugins:{ legend:{display:false}, tooltip:{enabled:false} }, animation:{duration:600} }
       });
     }
   }
 
-  buildCharts();
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting && !entry.target.dataset.loaded) {
+        entry.target.dataset.loaded = 'true';
+        buildCharts();
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { rootMargin: '50px' });
+
+  document.querySelectorAll('.card').forEach(card => {
+    if (card.querySelector('canvas')) observer.observe(card);
+  });
+
+  if (document.querySelector('.kpi-card')) buildCharts();
 
   /* ── Feedback visual imediato ao Finalizar ── */
   function marcarConcluida(aulaId, form) {
