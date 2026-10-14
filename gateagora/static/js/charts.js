@@ -2,15 +2,15 @@
 // Espera que as variáveis existam em window (declaradas no dashboard.html)
 
 function buildCharts() {
-  // Cores para gráficos
-  const emerald  = '#10b981';
+  // Cores vindas do tema (claro/escuro) definido no dashboard.html
+  const emerald  = cv('--emerald-text') || '#10b981';
   const red      = '#ef4444';
   const amber    = '#f59e0b';
   const blue     = '#3b82f6';
   const indigo   = '#6366f1';
-  const grid     = '#e5e7eb';
-  const strong   = '#374151';
-  const muted    = '#9ca3af';
+  const grid     = cv('--border')       || '#30363d';
+  const strong   = cv('--text-strong')  || '#ffffff';
+  const muted    = cv('--text-muted')   || '#8b949e';
   const CAT_CORES = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
 
   /* Fluxo Financeiro 6 Meses */
