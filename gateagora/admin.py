@@ -886,6 +886,14 @@ class MovimentacaoFinanceiraAdmin(PermissaoPorCargoMixin, BaseEmpresaAdmin):
     list_display = ["data", "descricao", "tipo_formatado", "valor"]
     list_filter = ["tipo", "data"]
     search_fields = ["descricao"]
+    
+    def get_queryset(self, request):
+        """Restringe a queryset ao usuário/empresa"""
+        qs = super().get_queryset(request)
+        if request.user.is_superuser:
+            return qs
+        # Filtra só pela empresa do usuário
+        return qs.filter(empresa=request.user.profile.empresa)
 
     @display(description="Tipo", label=True)
     def tipo_formatado(self, obj):

@@ -32,6 +32,8 @@ from reportlab.lib import colors
 
 from django.views.decorators.http import require_POST
 
+from django.core.cache import cache
+
 from .models import (
     Empresa, Perfil, Aluno, Cavalo, Baia, Piquete, Aula,
     ItemEstoque, MovimentacaoFinanceira, MovimentacaoEstoque, DocumentoCavalo,
@@ -763,7 +765,7 @@ def dashboard(request):
     }
     mes_atual_str = f"{meses_pt[hoje.month]}/{hoje.year}"
 
-    # FATURAMENTO DO MÊS
+    # FATURAMENTO DO MÊS (gráfico + KPIs principais)
     faturas_mes = Fatura.objects.filter(
         empresa=empresa,
         data_vencimento__year=ano_selecionado,

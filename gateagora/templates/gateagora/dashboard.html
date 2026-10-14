@@ -23,6 +23,7 @@
     <!-- Scripts e estilos -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="{% static 'js/charts.js' %}"></script>
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
     <link rel="stylesheet" href="{% static 'css/themes.css' %}">
@@ -1541,159 +1542,27 @@
   /* ── Paleta de cores por categoria ─────── */
   const CAT_CORES = ['#6366f1','#10b981','#f59e0b','#8b5cf6','#06b6d4','#f87171','#94a3b8'];
 
-  /* ── buildCharts ────────────────────────── */
-  function buildCharts() {
-    const grid    = cv('--border')       || '#30363d';
-    const muted   = cv('--text-muted')  || '#8b949e';
-    const strong  = cv('--text-strong') || '#ffffff';
-    const emerald = cv('--emerald-text')|| '#10b981';
-    const red     = cv('--red-text')    || '#ef4444';
+  // buildCharts() agora está em gateagora/static/js/charts.js
+  // Declara variáveis globais para buildCharts()
+  window.pode_ver_financeiro = {% if pode_ver_financeiro %}true{% else %}false{% endif %};
+  window.labels_meses = {{ labels_meses|safe }};
+  window.dados_receita = {{ dados_receita|safe }};
+  window.dados_despesa = {{ dados_despesa|safe }};
+  window.dados_lucro = {{ dados_lucro|safe }};
+  window.baias_ocupadas = {{ stats.baias_ocupadas }};
+  window.baias_livres = {{ stats.baias_livres }};
+  window.limite_treinos_mes = {{ limite_treinos_mes|default:20 }};
+  window.ranking_cavalos_labels = {{ ranking_cavalos_labels|safe|default:"[]" }};
+  window.ranking_cavalos_dados = {{ ranking_cavalos_dados|safe|default:"[]" }};
+  window.ranking_receita = {% if pode_ver_financeiro %}{{ ranking_receita|safe|default:"[]" }}{% else %}[]{% endif %};
+  window.receita_por_tipo_labels = {{ receita_por_tipo_labels|default:"[]"|safe }};
+  window.receita_por_tipo_valores = {{ receita_por_tipo_valores|default:"[]"|safe }};
+  window.inadimplencia_labels = {{ inadimplencia_labels|default:"[]"|safe }};
+  window.inadimplencia_valores = {{ inadimplencia_valores|default:"[]"|safe }};
+  window.inadimplencia_cores = ['#10b981', '#ef4444', '#f59e0b'];
+  window.CAT_CORES = {{ CAT_CORES|default:"['#6366f1','#10b981','#f59e0b','#8b5cf6','#06b6d4','#f87171','#94a3b8']"|safe }};
 
-    Chart.defaults.color       = muted;
-    Chart.defaults.font.family = "'DM Sans', sans-serif";
-
-    {% if pode_ver_financeiro %}
-    /* Fluxo Financeiro 6 Meses */
-    const elFin = document.getElementById('chartFinanceiro6Meses');
-    if (elFin) {
-      if (elFin._c) elFin._c.destroy();
-      const maxHeight = window.innerWidth < 768 ? 200 : 260;
-      elFin.style.maxHeight = maxHeight + 'px';
-      elFin._c = new Chart(elFin, {
-        responsive: true,
-        maintainAspectRatio: false,
-        type: 'bar',
-        data: {
-          labels: {{ labels_meses|safe }},
-          datasets: [
-            { label:'Receitas',      data:{{ dados_receita }}, backgroundColor:'#6366f1', borderRadius:6, barThickness:14 },
-            { label:'Despesas',      data:{{ dados_despesa }}, backgroundColor:grid,      borderRadius:6, barThickness:14 },
-            { label:'Saldo Líquido', type:'line', data:{{ dados_lucro }},
-              borderColor:emerald, borderWidth:2.5, pointBackgroundColor:emerald,
-              tension:0.4, fill:false, pointRadius:3 }
-          ]
-        },
-        options: {
-          responsive:true, maintainAspectRatio:false,
-          plugins:{ legend:{ position:'top', align:'end', labels:{ boxWidth:8, font:{size:9}, color:muted } } },
-          scales:{
-            y:{ grid:{color:grid+'40'}, ticks:{color:strong, font:{size:10,weight:'600'}} },
-            x:{ grid:{display:false},  ticks:{color:muted} }
-          }
-        }
-      });
-    }
-    {% endif %}
-
-    /* Ocupação Baias — mini donut no KPI */
-    const elOc = document.getElementById('chartOcupacao');
-    if (elOc) {
-      if (elOc._c) elOc._c.destroy();
-      elOc._c = new Chart(elOc, {
-        type:'doughnut',
-        data:{ labels:['Ocupadas','Livres'],
-               datasets:[{ data:[{{ stats.baias_ocupadas }},{{ stats.baias_livres }}],
-                           backgroundColor:['#6366f1', grid], borderWidth:0 }] },
-        options:{ responsive:false, maintainAspectRatio:false, cutout:'78%',
-                  plugins:{ legend:{display:false}, tooltip:{enabled:false} },
-                  animation:{ duration:600 } }
-      });
-    }
-
-    /* Treinos por Cavalo — tamanho dinâmico total, container com scroll */
-    /* Treinos por Cavalo — tamanho dinâmico total, container com scroll */
-    const lim  = {{ limite_treinos_mes|default:20 }};
-    const lblT = {{ ranking_cavalos_labels|safe|default:"[]" }};
-    const dadT = {{ ranking_cavalos_dados|safe|default:"[]" }};
-    const dadR = {% if pode_ver_financeiro %}{{ ranking_receita|safe|default:"[]" }}{% else %}[]{% endif %};
-
-    const elTr = document.getElementById('chartTreinosCavalos');
-    const cont = document.getElementById('containerGraficoCavalos');
-    if (elTr && cont) {
-      /* Altura total do canvas = todos os cavalos, mas o container tem max-height fixo */
-      const alturaTotal = Math.max(130, lblT.length * 26);
-      elTr.style.height  = alturaTotal + 'px';
-      elTr.style.width   = '100%';
-      elTr.height        = alturaTotal;
-
-      if (elTr._c) elTr._c.destroy();
-      elTr._c = new Chart(elTr, {
-        type:'bar',
-        data:{
-          labels:lblT.map((nome, i) => dadR[i] > 0 ? `${nome}  · R$ ${dadR[i].toFixed(0)}` : nome),
-          datasets:[
-            { label:'Aulas', data:dadT, backgroundColor:dadT.map(v=>v>=lim?red:'#6366f1'),
-              borderRadius:5, barPercentage:0.5, categoryPercentage:1.8 },
-            { label:`Limite (${lim})`, type:'line', data:Array(lblT.length).fill(lim),
-              borderColor:red+'70', borderWidth:1.5, borderDash:[5,4], pointRadius:0, fill:false }
-          ]
-        },
-        options:{
-          indexAxis:'y', responsive:false, maintainAspectRatio:false,
-          plugins:{
-            legend:{ display:true, position:'top', align:'end', labels:{boxWidth:8,font:{size:9},color:muted} },
-            tooltip:{ callbacks:{ label:ctx => ctx.dataset.type==='line'
-              ? ` Limite: ${lim}` : (dadR[ctx.dataIndex] !== undefined ? ` ${ctx.raw} aula(s)  |  R$ ${dadR[ctx.dataIndex].toFixed(2).replace('.',',')}` : ` ${ctx.raw} aula(s)`) }}
-          },
-          scales:{
-            y:{ grid:{display:false}, offset:true, ticks:{color:strong,font:{size:11,weight:'600'}} },
-            x:{ grid:{color:grid+'40'}, ticks:{color:muted} }
-          }
-        }
-      });
-    }
-
-    /* Receita por Categoria */
-    const elCat = document.getElementById('chartReceitaTipo');
-    if (elCat) {
-      const lblC = {{ receita_por_tipo_labels|default:"[]"|safe }};
-      const dadC = {{ receita_por_tipo_valores|default:"[]"|safe }};
-      if (elCat._c) elCat._c.destroy();
-      const maxHeight = window.innerWidth < 768 ? 200 : 260;
-      elCat.style.maxHeight = maxHeight + 'px';
-      if (lblC.length > 0) {
-        const cores = CAT_CORES.slice(0, lblC.length);
-        elCat._c = new Chart(elCat, {
-          type:'doughnut',
-          data:{ labels:lblC, datasets:[{ data:dadC, backgroundColor:cores, borderWidth:0, hoverOffset:8 }] },
-          options:{ responsive:true, maintainAspectRatio:false, cutout:'70%',
-                    plugins:{ legend:{display:false},
-                              tooltip:{callbacks:{label:ctx=>` R$ ${ctx.raw.toFixed(2).replace('.',',')}`}} } }
-        });
-        const leg = document.getElementById('legendaReceita');
-        if (leg) {
-          leg.innerHTML = lblC.map((l,i)=>`
-            <div style="display:flex;justify-content:space-between;align-items:center;font-size:10px;margin-bottom:4px;">
-              <div style="display:flex;align-items:center;gap:6px;">
-                <span style="width:10px;height:10px;border-radius:50%;background:${cores[i]};display:inline-block;flex-shrink:0"></span>
-                <span style="color:var(--text-main)">${l}</span>
-              </div>
-              <span style="font-family:var(--font-mono);font-weight:700;color:var(--text-main)">
-                R$ ${dadC[i].toFixed(2).replace('.',',')}
-              </span>
-            </div>`).join('');
-        }
-      }
-    }
-
-    /* Inadimplência */
-    const elInad = document.getElementById('chartInadimplencia');
-    if (elInad) {
-      if (elInad._c) elInad._c.destroy();
-      const maxHeight = window.innerWidth < 768 ? 200 : 260;
-      elInad.style.maxHeight = maxHeight + 'px';
-      elInad._c = new Chart(elInad, {
-        type: 'doughnut',
-        data: {
-          labels: ['Recebido', 'A vencer', 'Vencido'],
-          datasets: [{ data: [0.00, 7777.77, 0.00], backgroundColor: ['#10b981','#f59e0b','#ef4444'], borderWidth: 0 }]
-        },
-        options: { responsive:true, maintainAspectRatio:false, cutout:'74%',
-                   plugins:{ legend:{display:false}, tooltip:{enabled:false} }, animation:{duration:600} }
-      });
-    }
-  }
-
+  const observer = new IntersectionObserver((entries) => {
   const observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       if (entry.isIntersecting && !entry.target.dataset.loaded) {

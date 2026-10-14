@@ -148,6 +148,7 @@ AXES_FAILURE_LIMIT = 5                # tentativas erradas antes de bloquear
 AXES_COOLOFF_TIME = 0.25              # tempo de bloqueio, em horas (15 min)
 AXES_RESET_ON_SUCCESS = True          # login certo zera o contador
 AXES_LOCKOUT_PARAMETERS = ['username']  # bloqueia por usuário, não por IP
+AXES_VERBOSE = False                     # silencia W006 warning
 # Sem validadores por decisão de produto: senhas o mais simples possível
 # pro público-alvo. Django continua rejeitando senha totalmente vazia.
 
