@@ -1554,8 +1554,8 @@
   window.ranking_receita = {% if pode_ver_financeiro %}{{ ranking_receita|safe|default:"[]" }}{% else %}[]{% endif %};
   window.receita_por_tipo_labels = {{ receita_por_tipo_labels|default:"[]"|safe }};
   window.receita_por_tipo_valores = {{ receita_por_tipo_valores|default:"[]"|safe }};
-  window.inadimplencia_labels = {{ inadimplencia_labels|default:"[]"|safe }};
-  window.inadimplencia_valores = {{ inadimplencia_valores|default:"[]"|safe }};
+  window.inadimplencia_labels = ['Recebido', 'A vencer', 'Vencido'];
+  window.inadimplencia_valores = [{{ v_pago_mes }}, {{ v_a_vencer_mes }}, {{ v_vencido_mes }}];
   window.inadimplencia_cores = ['#10b981', '#ef4444', '#f59e0b'];
   window.CAT_CORES = {{ CAT_CORES|default:"['#6366f1','#10b981','#f59e0b','#8b5cf6','#06b6d4','#f87171','#94a3b8']"|safe }};
 
