@@ -199,6 +199,8 @@ function buildCharts() {
   if (elTr && cont) {
     const alturaTotal = Math.max(130, lblT.length * 26);
     cont.style.height = alturaTotal + 'px';
+    cont.style.position = 'relative';
+    elTr.style.display = 'block';
 
     if (elTr._c) elTr._c.destroy();
     elTr._c = new Chart(elTr, {
