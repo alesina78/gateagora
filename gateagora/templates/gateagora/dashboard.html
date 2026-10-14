@@ -1539,9 +1539,6 @@
   /* ── CSS var helper ─────────────────────── */
   function cv(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
 
-  /* ── Paleta de cores por categoria ─────── */
-  const CAT_CORES = ['#6366f1','#10b981','#f59e0b','#8b5cf6','#06b6d4','#f87171','#94a3b8'];
-
   // buildCharts() agora está em gateagora/static/js/charts.js
   // Declara variáveis globais para buildCharts()
   window.pode_ver_financeiro = {% if pode_ver_financeiro %}true{% else %}false{% endif %};
@@ -1562,7 +1559,6 @@
   window.inadimplencia_cores = ['#10b981', '#ef4444', '#f59e0b'];
   window.CAT_CORES = {{ CAT_CORES|default:"['#6366f1','#10b981','#f59e0b','#8b5cf6','#06b6d4','#f87171','#94a3b8']"|safe }};
 
-  const observer = new IntersectionObserver((entries) => {
   const observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       if (entry.isIntersecting && !entry.target.dataset.loaded) {
