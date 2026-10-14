@@ -13,6 +13,36 @@ function buildCharts() {
   const muted    = '#9ca3af';
   const CAT_CORES = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
 
+  /* Fluxo Financeiro 6 Meses */
+  if (window.pode_ver_financeiro) {
+    const elFin6 = document.getElementById('chartFinanceiro6Meses');
+    if (elFin6) {
+      if (elFin6._c) elFin6._c.destroy();
+      elFin6.style.maxHeight = (window.innerWidth < 768 ? 200 : 260) + 'px';
+      elFin6._c = new Chart(elFin6, {
+        type: 'bar',
+        data: {
+          labels: window.labels_meses || [],
+          datasets: [
+            { label: 'Receitas', data: window.dados_receita || [], backgroundColor: '#6366f1', borderRadius: 6, barThickness: 14 },
+            { label: 'Despesas', data: window.dados_despesa || [], backgroundColor: grid, borderRadius: 6, barThickness: 14 },
+            { label: 'Saldo Líquido', type: 'line', data: window.dados_lucro || [],
+              borderColor: emerald, borderWidth: 2.5, pointBackgroundColor: emerald, tension: 0.4, fill: false, pointRadius: 3 }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'top', align: 'end', labels: { boxWidth: 8, font: { size: 9 }, color: muted } } },
+          scales: {
+            y: { grid: { color: grid + '40' }, ticks: { color: strong, font: { size: 10, weight: '600' } } },
+            x: { grid: { display: false }, ticks: { color: muted } }
+          }
+        }
+      });
+    }
+  }
+
   /* Faturamento — linha + barra */
   const elFin = document.getElementById('chartFaturamento');
   if (elFin) {
