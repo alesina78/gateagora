@@ -198,9 +198,7 @@ function buildCharts() {
   const cont = document.getElementById('containerGraficoCavalos');
   if (elTr && cont) {
     const alturaTotal = Math.max(130, lblT.length * 26);
-    elTr.style.height = alturaTotal + 'px';
-    elTr.style.width = '100%';
-    elTr.height = alturaTotal;
+    cont.style.height = alturaTotal + 'px';
 
     if (elTr._c) elTr._c.destroy();
     elTr._c = new Chart(elTr, {
@@ -230,7 +228,7 @@ function buildCharts() {
       },
       options: {
         indexAxis: 'y',
-        responsive: false,
+        responsive: true,
         maintainAspectRatio: false,
         plugins: {
           legend: {
