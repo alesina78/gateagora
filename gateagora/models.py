@@ -960,6 +960,8 @@ class ConfigPrecoManejo(models.Model):
     valor_ferrageamento  = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
     cobrar_casqueamento  = models.BooleanField(default=False)
     valor_casqueamento   = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
+    cobrar_troca_cama    = models.BooleanField(default=False, verbose_name="Cobrar troca de cama")
+    valor_troca_cama     = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), verbose_name="Valor troca de cama")
 
     class Meta:
         verbose_name        = "Configuração de Preços de Manejo 👨‍🌾 💲"

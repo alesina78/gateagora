@@ -317,14 +317,14 @@ class PermissaoPorCargoMixin:
         return self._cargo_do_usuario(request) in self.cargos_acesso_total
 
 @admin.register(Sela)
-class SelaAdmin(PermissaoPorCargoMixin, BaseEmpresaAdmin):
+class SelaAdmin(PermissaoPorCargoMixin, ModelAdmin):
     cargos_acesso_total = {'Gestor'}
     list_display = ["nome"]
     search_fields = ["nome"]
 
 
 @admin.register(Cabecada)
-class CabecadaAdmin(PermissaoPorCargoMixin, BaseEmpresaAdmin):
+class CabecadaAdmin(PermissaoPorCargoMixin, ModelAdmin):
     cargos_acesso_total = {'Gestor'}
     list_display = ["nome"]
     search_fields = ["nome"]
@@ -768,7 +768,7 @@ class CavaloAdmin(PermissaoPorCargoMixin, BaseEmpresaAdmin):
                 "outro equipamento na própria Aula (bloco 'Equipamentos Utilizados')."
             ),
         }),
-        ("Saúde", {"fields": ("status_saude", "usa_ferradura", "ultima_vacina", "ultimo_vermifugo", "ultimo_ferrageamento", "ultimo_casqueamento")}),
+        ("Saúde", {"fields": ("status_saude", "usa_ferradura", "ultima_vacina", "ultimo_vermifugo", "ultimo_ferrageamento", "ultimo_casqueamento", "ultima_troca_cama")}),
         ("Plano Alimentar", {"fields": ("racao_tipo", "racao_qtd_manha", "racao_qtd_noite", "feno_tipo", "feno_qtd", "complemento_nutricional")}),
         ("Financeiro", {"fields": ("mensalidade_baia",)}),
     )
@@ -886,14 +886,6 @@ class MovimentacaoFinanceiraAdmin(PermissaoPorCargoMixin, BaseEmpresaAdmin):
     list_display = ["data", "descricao", "tipo_formatado", "valor"]
     list_filter = ["tipo", "data"]
     search_fields = ["descricao"]
-    
-    def get_queryset(self, request):
-        """Restringe a queryset ao usuário/empresa"""
-        qs = super().get_queryset(request)
-        if request.user.is_superuser:
-            return qs
-        # Filtra só pela empresa do usuário
-        return qs.filter(empresa=request.user.profile.empresa)
 
     @display(description="Tipo", label=True)
     def tipo_formatado(self, obj):
@@ -1088,6 +1080,7 @@ class ConfigPrecoManejoAdmin(PermissaoPorCargoMixin, BaseEmpresaAdmin):
         ("Vermifugação",  {"fields": ("cobrar_vermifugo",     "valor_vermifugo")}),
         ("Ferrageamento", {"fields": ("cobrar_ferrageamento", "valor_ferrageamento")}),
         ("Casqueamento",  {"fields": ("cobrar_casqueamento",  "valor_casqueamento")}),
+        ("Troca de Cama", {"fields": ("cobrar_troca_cama",    "valor_troca_cama")}),
     )
 
 
