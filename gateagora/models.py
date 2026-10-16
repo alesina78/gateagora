@@ -3,7 +3,7 @@ from decimal import Decimal
 from django.db import models
 from django.utils import timezone
 from django.contrib.auth.models import User
-from django.db.models.signals import pre_save, post_save
+from django.db.models.signals import pre_save, post_save, post_delete
 from django.db.models import Sum, Q
 from django.dispatch import receiver
 from django.core.validators import MinValueValidator, RegexValidator
@@ -1234,3 +1234,9 @@ class TrocaTotalCama(models.Model):
         """Calcula dias até próxima troca"""
         hoje = timezone.localdate()
         return (self.proxima_data - hoje).days    
+
+@receiver([post_save, post_delete], sender=ItemFatura)
+def atualizar_valor_fatura(sender, instance, **kwargs):
+    from django.db.models import Sum
+    total = ItemFatura.objects.filter(fatura_id=instance.fatura_id).aggregate(s=Sum('valor'))['s'] or 0
+    Fatura.objects.filter(pk=instance.fatura_id).update(valor=total)    
