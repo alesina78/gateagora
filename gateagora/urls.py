@@ -50,7 +50,7 @@ urlpatterns = [
 
         # Manejo em massa
     path('manejo-em-massa/', views.manejo_em_massa, name='manejo_em_massa'),
-
+    
     # Manejo: Limpeza de Baias (NOVO)
     path('manejo/limpeza-baias/', views.manejo_limpeza_baias, name='manejo_limpeza_baias'),
 

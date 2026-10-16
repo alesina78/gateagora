@@ -1,0 +1,5 @@
+h2.rounded-default {
+  background-color: rgba(99,102,241,0.12) !important;
+  border-left: 4px solid #818cf8 !important;
+  padding-left: 0.75rem !important;
+}

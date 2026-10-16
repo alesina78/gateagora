@@ -131,7 +131,7 @@
       <div id="listaCavalos" data-sortable="true" class="sortable-list">
         {% for item in cavalos_status %}
           {% with cavalo=item.obj %}
-          <div class="cavalo-row {% if item.vencido %}em-alerta alerta-row{% else %}em-dia-row{% endif %}" onclick="toggleCavalo({{ cavalo.id }})">
+          <div class="cavalo-row {% if item.vencido %}em-alerta alerta-row{% else %}em-dia-row{% endif %}" data-id="{{ cavalo.id }}" onclick="toggleCavalo({{ cavalo.id }})">
             
             <input type="checkbox" name="cavalos_selecionados" value="{{ cavalo.id }}" id="chk_{{ cavalo.id }}" onclick="event.stopPropagation();atualizarContador(this)">
             

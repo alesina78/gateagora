@@ -4077,3 +4077,18 @@ def checklist_whatsapp(request, aula_id, tipo):
     texto = _checklist_whatsapp_texto(aula, checklist, titulo)
     url = f"https://wa.me/{telefone}?text={quote(texto)}" if telefone else f"https://wa.me/?text={quote(texto)}"
     return redirect(url)
+
+@login_required
+@require_POST
+def reordenar_cavalos_manejo(request):
+    import json
+    empresa = getattr(request, "empresa", None) or request.user.perfil.empresa
+    try:
+        ids = json.loads(request.body).get("ids", [])
+    except (ValueError, AttributeError):
+        return JsonResponse({"ok": False, "erro": "JSON inválido"}, status=400)
+
+    for posicao, cavalo_id in enumerate(ids, start=1):
+        Cavalo.objects.filter(empresa=empresa, id=cavalo_id).update(ordem=posicao)
+
+    return JsonResponse({"ok": True})    

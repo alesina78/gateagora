@@ -200,6 +200,9 @@ UNFOLD = {
     "SITE_LOGO":        lambda r: "/static/images/favicon-32x32.png",
     "THEME": lambda request: request.session.get("admin_theme", "light"),
     "THEME_SWITCHER": True,
+    "STYLES": [
+        lambda request: "/static/css/admin_secoes.css",
+    ],
     "SITE_DROPDOWN": [
         {
             "icon": "dark_mode",

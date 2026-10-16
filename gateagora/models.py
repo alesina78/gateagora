@@ -330,7 +330,7 @@ class Cavalo(models.Model):
     complemento_nutricional = models.TextField(blank=True)
 
     mensalidade_baia = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('1000.00'))
-
+   
     class Meta:
         ordering = ['nome']
         indexes = [
