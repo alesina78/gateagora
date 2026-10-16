@@ -197,7 +197,7 @@ function buildCharts() {
   const elTr = document.getElementById('chartTreinosCavalos');
   const cont = document.getElementById('containerGraficoCavalos');
   if (elTr && cont) {
-    const alturaTotal = Math.max(130, lblT.length * 26);
+    const alturaTotal = Math.max(160, lblT.length * 32);
     cont.style.height = alturaTotal + 'px';
     cont.style.position = 'relative';
     elTr.style.display = 'block';
@@ -208,16 +208,18 @@ function buildCharts() {
       data: {
         labels: lblT.map((nome, i) => {
           const n = ((window.ranking_cavalos_pend || [])[i] || []).length;
-          const alerta = n ? `  ⚠ ${n}` : '';
-          return (dadR[i] > 0 ? `${nome}  · R$ ${dadR[i].toFixed(0)}` : nome) + alerta;
+          return n ? `${nome}  ⚠ ${n}` : nome;
         }),
         datasets: [
           {
             label: 'Período anterior',
             data: window.ranking_cavalos_anterior || [],
-            backgroundColor: 'rgba(148,163,184,0.25)',
+            backgroundColor: 'transparent',
+            borderColor: 'rgba(148,163,184,0.7)',
+            borderWidth: 1.5,
+            borderDash: [4, 3],
             borderRadius: 5,
-            barPercentage: 0.9,
+            barPercentage: 0.5,
             categoryPercentage: 1.8
           },
           {
@@ -288,6 +290,7 @@ function buildCharts() {
             ticks: { color: strong, font: { size: 11, weight: '600' } }
           },
           x: {
+            max: Math.max(...dadT, ...(window.ranking_cavalos_anterior || []), 1) * 1.15,
             grid: { color: grid + '40' },
             ticks: { color: muted }
           }
