@@ -347,7 +347,6 @@ class OcorrenciaInline(TabularInline):
 class ItemFaturaInline(TabularInline):
     model = ItemFatura
     extra = 0
-    tab = True
     fields = ['tipo', 'cavalo', 'descricao', 'valor', 'data']
 
     def get_changeform_initial_data(self, request):
