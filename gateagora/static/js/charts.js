@@ -206,8 +206,20 @@ function buildCharts() {
     elTr._c = new Chart(elTr, {
       type: 'bar',
       data: {
-        labels: lblT.map((nome, i) => dadR[i] > 0 ? `${nome}  · R$ ${dadR[i].toFixed(0)}` : nome),
+        labels: lblT.map((nome, i) => {
+          const n = ((window.ranking_cavalos_pend || [])[i] || []).length;
+          const alerta = n ? `  ⚠ ${n}` : '';
+          return (dadR[i] > 0 ? `${nome}  · R$ ${dadR[i].toFixed(0)}` : nome) + alerta;
+        }),
         datasets: [
+          {
+            label: 'Período anterior',
+            data: window.ranking_cavalos_anterior || [],
+            backgroundColor: 'rgba(148,163,184,0.25)',
+            borderRadius: 5,
+            barPercentage: 0.9,
+            categoryPercentage: 1.8
+          },
           {
             label: 'Aulas',
             data: dadT,
@@ -237,6 +249,11 @@ function buildCharts() {
       },
       options: {
         indexAxis: 'y',
+        onClick: (evt, els) => {
+          if (!els.length) return;
+          const id = (window.ranking_cavalos_ids || [])[els[0].index];
+          if (id) window.open(`/admin/gateagora/cavalo/${id}/change/`, '_blank');
+        },
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
@@ -248,7 +265,14 @@ function buildCharts() {
           },
           tooltip: {
             callbacks: {
-              label: ctx => ctx.dataset.type === 'line'
+              afterLabel: ctx => {
+                if (ctx.dataset.type === 'line' || ctx.dataset.label === 'Período anterior') return '';
+                const pend = (window.ranking_cavalos_pend || [])[ctx.dataIndex] || [];
+                return pend.length ? `⚠ ${pend.join(', ')}` : '';
+              },
+              label: ctx => ctx.dataset.label === 'Período anterior'
+                ? ` ${ctx.raw} aula(s) no período anterior`
+                : ctx.dataset.type === 'line'
                 ? ` Limite: ${lim}`
                 : (dadR[ctx.dataIndex] !== undefined
                   ? ` ${ctx.raw} aula(s)  |  R$ ${dadR[ctx.dataIndex].toFixed(2).replace('.', ',')}`
@@ -260,6 +284,7 @@ function buildCharts() {
           y: {
             grid: { display: false },
             offset: true,
+            grouped: false,
             ticks: { color: strong, font: { size: 11, weight: '600' } }
           },
           x: {

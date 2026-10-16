@@ -1552,6 +1552,9 @@
   window.ranking_cavalos_labels = {{ ranking_cavalos_labels|safe|default:"[]" }};
   window.ranking_cavalos_dados = {{ ranking_cavalos_dados|safe|default:"[]" }};
   window.ranking_cavalos_status = {{ ranking_cavalos_status|safe|default:"[]" }};
+  window.ranking_cavalos_ids = {{ ranking_cavalos_ids|safe|default:"[]" }};
+  window.ranking_cavalos_pend = {{ ranking_cavalos_pend|safe|default:"[]" }};
+  window.ranking_cavalos_anterior = {{ ranking_cavalos_anterior|safe|default:"[]" }};
   window.ranking_receita = {% if pode_ver_financeiro %}{{ ranking_receita|safe|default:"[]" }}{% else %}[]{% endif %};
   window.receita_por_tipo_labels = {{ receita_por_tipo_labels|default:"[]"|safe }};
   window.receita_por_tipo_valores = {{ receita_por_tipo_valores|default:"[]"|safe }};

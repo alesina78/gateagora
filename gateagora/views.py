@@ -980,6 +980,56 @@ def dashboard(request):
     ranking_dados = [c.treinos_periodo for c in com_treino]
     ranking_receita = [float(c.receita_periodo) for c in com_treino]
     ranking_status = [c.status_saude for c in com_treino]
+    ranking_ids = [c.id for c in com_treino]
+
+    # Comparação com o período anterior (mesmo tamanho; no mês, o mês anterior)
+    if periodo == 'mes':
+        _prev_fim = data_inicio - timedelta(days=1)
+        _prev_ini = _prev_fim.replace(day=1)
+    else:
+        _dias = (hoje - data_inicio).days + 1
+        _prev_fim = data_inicio - timedelta(days=1)
+        _prev_ini = data_inicio - timedelta(days=_dias)
+    _anteriores = dict(
+        Cavalo.objects.filter(empresa=empresa, id__in=ranking_ids)
+        .annotate(n=Count('aulas', filter=Q(
+            aulas__concluida=True,
+            aulas__data_hora__date__gte=_prev_ini,
+            aulas__data_hora__date__lte=_prev_fim,
+        )))
+        .values_list('id', 'n')
+    )
+    ranking_anterior = [_anteriores.get(cid, 0) for cid in ranking_ids]
+
+    # Pendências de manejo por cavalo (mesma regra da tela de Manejo em Massa)
+    try:
+        _cfg = ConfigPrazoManejo.objects.get(empresa=empresa)
+        _pv, _pr, _pf, _pc, _pt = (_cfg.prazo_vacina, _cfg.prazo_vermifugo,
+                                   _cfg.prazo_ferrageamento, _cfg.prazo_casqueamento,
+                                   _cfg.prazo_troca_cama)
+    except ConfigPrazoManejo.DoesNotExist:
+        _pv, _pr, _pf, _pc, _pt = 365, 90, 60, 60, 45
+
+    def _atraso(data):
+        return 9999 if not data else (hoje - data).days
+
+    ranking_pend = []
+    for c in com_treino:
+        p = []
+        if _atraso(c.ultima_vacina) > _pv:
+            p.append('Vacina')
+        if _atraso(c.ultimo_vermifugo) > _pr:
+            p.append('Vermífugo')
+        if c.usa_ferradura == 'SIM':
+            if _atraso(c.ultimo_ferrageamento) > _pf:
+                p.append('Ferrageamento')
+        elif _atraso(c.ultimo_casqueamento) > _pc:
+            p.append('Casqueamento')
+        if _atraso(c.ultima_troca_cama) > _pt:
+            p.append('Troca de cama')
+        if c.status_saude != 'Saudavel':
+            p.append('Saúde')
+        ranking_pend.append(p)
 
     LIMITE_TREINOS_MES = 20
     limite = LIMITE_TREINOS_MES if periodo in ('mes', '30') else LIMITE_TREINOS_MES * 3
@@ -1261,6 +1311,9 @@ def dashboard(request):
         "ranking_alunos":           ranking_alunos,
         "ranking_cavalos_dados":    json.dumps(ranking_dados),
         "ranking_cavalos_status":   json.dumps(ranking_status),
+        "ranking_cavalos_ids":      json.dumps(ranking_ids),
+        "ranking_cavalos_pend":     json.dumps(ranking_pend, ensure_ascii=False),
+        "ranking_cavalos_anterior": json.dumps(ranking_anterior),
         "ranking_receita":          json.dumps(ranking_receita),
         "cavalos_sem_treino":       sem_treino,
         "limite_treinos_mes":       limite,
