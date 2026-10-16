@@ -211,7 +211,14 @@ function buildCharts() {
           {
             label: 'Aulas',
             data: dadT,
-            backgroundColor: dadT.map(v => v >= lim ? red : '#6366f1'),
+            backgroundColor: dadT.map((v, i) => ({
+              'Saudavel':   '#6366f1',
+              'Alerta':     '#facc15',
+              'Tratamento': '#f97316',
+              'Doente':     '#ef4444'
+            })[(window.ranking_cavalos_status || [])[i]] || '#6366f1'),
+            borderColor: dadT.map(v => v >= lim ? '#ffffff' : 'transparent'),
+            borderWidth: 2,
             borderRadius: 5,
             barPercentage: 0.5,
             categoryPercentage: 1.8

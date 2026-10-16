@@ -972,10 +972,11 @@ def dashboard(request):
 )
 
     com_treino = [c for c in ranking_cavalos if c.treinos_periodo > 0]
-    sem_treino = [c.nome for c in ranking_cavalos if c.treinos_periodo == 0]
+    sem_treino = [(c.nome, c.status_saude) for c in ranking_cavalos if c.treinos_periodo == 0]
     ranking_labels = [c.nome for c in com_treino]
     ranking_dados = [c.treinos_periodo for c in com_treino]
     ranking_receita = [float(c.receita_periodo) for c in com_treino]
+    ranking_status = [c.status_saude for c in com_treino]
 
     LIMITE_TREINOS_MES = 20
     limite = LIMITE_TREINOS_MES if periodo in ('mes', '30') else LIMITE_TREINOS_MES * 3
@@ -1256,6 +1257,7 @@ def dashboard(request):
         "ranking_cavalos_labels":   json.dumps(ranking_labels, ensure_ascii=False),
         "ranking_alunos":           ranking_alunos,
         "ranking_cavalos_dados":    json.dumps(ranking_dados),
+        "ranking_cavalos_status":   json.dumps(ranking_status),
         "ranking_receita":          json.dumps(ranking_receita),
         "cavalos_sem_treino":       sem_treino,
         "limite_treinos_mes":       limite,

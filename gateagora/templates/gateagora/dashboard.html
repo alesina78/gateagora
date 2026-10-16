@@ -1062,9 +1062,9 @@
         <div class="mt-3 pt-3" style="border-top:1px solid var(--border)">
           <p class="text-[8px] font-bold uppercase mb-2" style="color:var(--text-muted)">Sem treinos no período:</p>
           <div class="flex flex-wrap gap-1.5">
-            {% for nome in cavalos_sem_treino %}
+            {% for nome, status in cavalos_sem_treino %}
             <span class="text-[8px] px-2 py-0.5 rounded-full font-bold"
-                  style="background:var(--card-alt);color:var(--text-muted);border:1px solid var(--border)">{{ nome }}</span>
+                  style="background:var(--card-alt);color:var(--text-muted);border:1px solid {% if status == 'Doente' %}#ef4444{% elif status == 'Tratamento' %}#f97316{% elif status == 'Alerta' %}#facc15{% else %}var(--border){% endif %}">{{ nome }}</span>
             {% endfor %}
           </div>
         </div>
@@ -1551,6 +1551,7 @@
   window.limite_treinos_mes = {{ limite_treinos_mes|default:20 }};
   window.ranking_cavalos_labels = {{ ranking_cavalos_labels|safe|default:"[]" }};
   window.ranking_cavalos_dados = {{ ranking_cavalos_dados|safe|default:"[]" }};
+  window.ranking_cavalos_status = {{ ranking_cavalos_status|safe|default:"[]" }};
   window.ranking_receita = {% if pode_ver_financeiro %}{{ ranking_receita|safe|default:"[]" }}{% else %}[]{% endif %};
   window.receita_por_tipo_labels = {{ receita_por_tipo_labels|default:"[]"|safe }};
   window.receita_por_tipo_valores = {{ receita_por_tipo_valores|default:"[]"|safe }};
