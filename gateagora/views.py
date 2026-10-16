@@ -484,7 +484,10 @@ def dashboard(request):
         if v_total == Decimal("0.00"):
             v_total = fatura.total
             if v_total == Decimal("0.00"):
-                cavalos_aluno = Cavalo.objects.filter(proprietario=fatura.aluno, empresa=empresa)
+                cavalos_aluno = Cavalo.objects.filter(
+                    Q(data_saida__isnull=True) | Q(data_saida__gte=fatura.data_vencimento.replace(day=1)),
+                    proprietario=fatura.aluno, empresa=empresa,
+                )
                 v_hotel = sum(Decimal(str(c.mensalidade_baia or 0)) for c in cavalos_aluno)
                 n_aulas = Aula.objects.filter(
                     aluno=fatura.aluno, empresa=empresa, concluida=True,
@@ -751,7 +754,7 @@ def dashboard(request):
         "total_baias":          total_baias,
         "porcentagem_ocupacao": porcentagem_ocupacao,
         "cavalos_alerta":       len(cavalos_alerta_lista),
-        "total_cavalos":        Cavalo.objects.filter(empresa=request.empresa).count(),
+        "total_cavalos":        Cavalo.objects.filter(empresa=request.empresa, data_saida__isnull=True).count(),
         "vacinados":            Cavalo.objects.filter(
             empresa=empresa,
             ultima_vacina__gte=hoje - timedelta(days=365)
@@ -941,7 +944,7 @@ def dashboard(request):
 
     ranking_cavalos = (
     Cavalo.objects
-    .filter(empresa=empresa)
+    .filter(empresa=empresa, data_saida__isnull=True)
     .annotate(
         treinos_periodo=Count(
             'aulas',
@@ -2472,7 +2475,7 @@ def manejo_em_massa(request):
 
     cavalos_qs = (
         Cavalo.objects
-        .filter(empresa=empresa)
+        .filter(empresa=empresa, data_saida__isnull=True)
         .select_related("proprietario")
         .order_by("nome")
     )
