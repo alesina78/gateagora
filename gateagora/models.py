@@ -330,6 +330,17 @@ class Cavalo(models.Model):
     complemento_nutricional = models.TextField(blank=True)
 
     mensalidade_baia = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('1000.00'))
+    
+    # SAÍDA DO HARAS (o cavalo sai das listas ativas, mas o histórico fica)
+    MOTIVO_SAIDA_CHOICES = [
+        ('FALECIMENTO', 'Falecimento'),
+        ('VENDA', 'Venda'),
+        ('TROCA', 'Troca de proprietário'),
+        ('SAIU_HARAS', 'Saiu do haras'),
+    ]
+    data_saida = models.DateField(null=True, blank=True, verbose_name="Data de saída")
+    motivo_saida = models.CharField(max_length=20, choices=MOTIVO_SAIDA_CHOICES, blank=True, verbose_name="Motivo da saída")
+    observacao_saida = models.CharField(max_length=200, blank=True, verbose_name="Observação da saída")
    
     class Meta:
         ordering = ['nome']

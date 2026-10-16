@@ -769,7 +769,7 @@ class CavaloAdmin(PermissaoPorCargoMixin, BaseEmpresaAdmin):
         }),
         ("Saúde", {"fields": ("status_saude", "usa_ferradura", "ultima_vacina", "ultimo_vermifugo", "ultimo_ferrageamento", "ultimo_casqueamento", "ultima_troca_cama")}),
         ("Plano Alimentar", {"fields": ("racao_tipo", "racao_qtd_manha", "racao_qtd_noite", "feno_tipo", "feno_qtd", "complemento_nutricional")}),
-        ("Financeiro", {"fields": ("mensalidade_baia",)}),
+        ("Saída do haras", {"fields": ("data_saida", "motivo_saida", "observacao_saida")}),
     )
 
     def get_fieldsets(self, request, obj=None):
