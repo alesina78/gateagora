@@ -2232,7 +2232,15 @@ def encilhamento_whatsapp(request):
     if not tel.startswith('55'):
         tel = f"55{tel}"
 
-    return redirect(f"https://wa.me/{tel}?text={quote(texto)}")
+    from django.utils.html import escape
+    wa_url = f"https://wa.me/{tel}?text={quote(texto)}"
+    return HttpResponse(
+        f'<!DOCTYPE html><html><body style="font-family:sans-serif;padding:24px">'
+        f'<p>Abrindo o WhatsApp...</p>'
+        f'<p><a href="{escape(wa_url)}">Se não abrir, clique aqui</a></p>'
+        f'<script>window.location.href={json.dumps(wa_url)};</script>'
+        f'</body></html>'
+    )
 
 
 # ── PDF Encilhamento ──────────────────────────────────────────────────────────
