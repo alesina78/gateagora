@@ -2236,6 +2236,8 @@ def encilhamento_whatsapp(request):
             f"   Cabecada: {cabecada}",
             f"   {material}",
         ]
+        if not confirmada:
+            linhas.append("   ⚠️ *Aluno NÃO confirmou presença*")
         if aula.nome_instrutor:
             linhas.append(f"   Prof. {aula.nome_instrutor}")
         if aula.relatorio_treino:
