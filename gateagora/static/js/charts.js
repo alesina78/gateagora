@@ -197,7 +197,7 @@ function buildCharts() {
   const elTr = document.getElementById('chartTreinosCavalos');
   const cont = document.getElementById('containerGraficoCavalos');
   if (elTr && cont) {
-    const alturaTotal = Math.max(160, lblT.length * 32);
+    const alturaTotal = Math.max(200, lblT.length * 44);
     cont.style.height = alturaTotal + 'px';
     cont.style.position = 'relative';
     elTr.style.display = 'block';
@@ -208,20 +208,11 @@ function buildCharts() {
       data: {
         labels: lblT.map((nome, i) => {
           const n = ((window.ranking_cavalos_pend || [])[i] || []).length;
-          return n ? `${nome}  ⚠ ${n}` : nome;
+          const d = (dadT[i] || 0) - ((window.ranking_cavalos_anterior || [])[i] || 0);
+          const seta = d > 0 ? `  ▲${d}` : d < 0 ? `  ▼${-d}` : '  =';
+          return `${nome}${n ? `  ⚠ ${n}` : ''}${seta}`;
         }),
         datasets: [
-          {
-            label: 'Período anterior',
-            data: window.ranking_cavalos_anterior || [],
-            backgroundColor: 'transparent',
-            borderColor: 'rgba(148,163,184,0.7)',
-            borderWidth: 1.5,
-            borderDash: [4, 3],
-            borderRadius: 5,
-            barPercentage: 0.5,
-            categoryPercentage: 1.8
-          },
           {
             label: 'Aulas',
             data: dadT,
@@ -269,8 +260,11 @@ function buildCharts() {
             callbacks: {
               afterLabel: ctx => {
                 if (ctx.dataset.type === 'line' || ctx.dataset.label === 'Período anterior') return '';
+                const ant = (window.ranking_cavalos_anterior || [])[ctx.dataIndex] || 0;
                 const pend = (window.ranking_cavalos_pend || [])[ctx.dataIndex] || [];
-                return pend.length ? `⚠ ${pend.join(', ')}` : '';
+                const linhas = [`Período anterior: ${ant} aula(s)`];
+                if (pend.length) linhas.push(`⚠ ${pend.join(', ')}`);
+                return linhas;
               },
               label: ctx => ctx.dataset.label === 'Período anterior'
                 ? ` ${ctx.raw} aula(s) no período anterior`
@@ -290,7 +284,7 @@ function buildCharts() {
             ticks: { color: strong, font: { size: 11, weight: '600' } }
           },
           x: {
-            max: Math.max(...dadT, ...(window.ranking_cavalos_anterior || []), 1) * 1.15,
+            max: Math.ceil(Math.max(...dadT, ...(window.ranking_cavalos_anterior || []), 1) * 1.15),
             grid: { color: grid + '40' },
             ticks: { color: muted }
           }
@@ -299,3 +293,23 @@ function buildCharts() {
     });
   }
 }
+/* Traço do período anterior sobre a barra de aulas (só no Treinos) */
+const tickAnterior = {
+  id: 'tickAnterior',
+  afterDatasetsDraw(chart) {
+    if (chart.canvas.id !== 'chartTreinosCavalos') return;
+    const anteriores = window.ranking_cavalos_anterior || [];
+    const xScale = chart.scales.x;
+    const ctx = chart.ctx;
+    ctx.save();
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    chart.getDatasetMeta(0).data.forEach((bar, i) => {
+      const v = anteriores[i];
+      if (!v) return;
+      const x = xScale.getPixelForValue(v);
+      ctx.fillRect(x - 1.5, bar.y - bar.height / 2, 3, bar.height);
+    });
+    ctx.restore();
+  }
+};
+Chart.register(tickAnterior);
