@@ -1667,6 +1667,26 @@ def confirmar_presenca_dashboard(request, aula_id):
 
     return redirect("dashboard")
 
+@require_POST
+def desconfirmar_presenca_dashboard(request, aula_id):
+    # Gestor ou instrutor desfaz a confirmação de presença pelo dashboard
+    try:
+        perfil = request.user.perfil
+    except Exception:
+        return redirect("login")
+
+    if perfil.cargo not in ("Gestor", "Instrutor", "Admin"):
+        return redirect("dashboard")
+
+    aula = get_object_or_404(Aula, id=aula_id, empresa=perfil.empresa)
+    apagadas, _ = ConfirmacaoPresenca.objects.filter(aula=aula, aluno=aula.aluno).delete()
+
+    if apagadas:
+        messages.success(request, f"Confirmação de {aula.aluno.nome} removida. Aula marcada como não confirmada.")
+    else:
+        messages.info(request, f"{aula.aluno.nome} não estava confirmado.")
+
+    return redirect("dashboard")
 
 # ── Confirmar Presença de Turma (Gestor) ─────────────────────────────────────
 
