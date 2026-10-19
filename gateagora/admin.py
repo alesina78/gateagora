@@ -994,7 +994,7 @@ class ItemEstoqueAdmin(PermissaoPorCargoMixin, BaseEmpresaAdmin):
     list_filter = ('empresa',)
     search_fields = ('nome',)
     readonly_fields = ('quantidade_valida', 'dias_para_vencer')
-    fields = ('empresa', 'nome', 'unidade', 'alerta_minimo', 'consumo_diario', 'lote_economico', 'fornecedor_padrao')
+    fields = ('empresa', 'nome', 'unidade', 'alerta_minimo', 'consumo_diario', 'lote_economico', 'fornecedor_padrao', 'preco_unitario', 'dias_cobertura', 'tamanho_embalagem')
 
     @admin.display(description="Estoque Válido")
     def quantidade_valida_display(self, obj):

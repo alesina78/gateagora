@@ -6,7 +6,7 @@ from django.contrib.auth.models import User
 from django.db.models.signals import pre_save, post_save, post_delete
 from django.db.models import Sum, Q
 from django.dispatch import receiver
-from django.core.validators import MinValueValidator, RegexValidator
+from django.core.validators import MinValueValidator, MaxValueValidator, RegexValidator
 from django.core.exceptions import ValidationError
 
 
@@ -21,6 +21,19 @@ class Empresa(models.Model):
         unique=True,
         help_text="Identificador único na URL (ex: haras-santa-fe)"
     )
+
+    dia_vencimento = models.PositiveSmallIntegerField(
+        default=28,
+        validators=[MinValueValidator(1), MaxValueValidator(28)],
+        verbose_name="Dia de vencimento",
+        help_text="Dia do mês em que a fatura vence (1 a 28).",
+    )
+    dias_antecedencia_emissao = models.PositiveSmallIntegerField(
+        default=5,
+        validators=[MinValueValidator(0), MaxValueValidator(28)],
+        verbose_name="Dias antes do vencimento para emitir",
+        help_text="Quantos dias antes do vencimento a fatura fixa é emitida.",
+    )    
 
     class Meta:
         indexes = [models.Index(fields=["slug"])]
@@ -621,6 +634,19 @@ class ItemEstoque(models.Model):
     # ⚠️ Campo legado — mantido para o formulário de fechamento do dia (input de ajuste manual).
     # NÃO use para cálculos de disponibilidade. A fonte da verdade são os lotes.
     quantidade_atual = models.IntegerField(default=0)
+    preco_unitario = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0,
+        verbose_name="Preço unitário",
+    )
+    dias_cobertura = models.PositiveSmallIntegerField(
+        default=30,
+        verbose_name="Dias de cobertura do pedido",
+    )
+    tamanho_embalagem = models.PositiveIntegerField(
+        default=1,
+        verbose_name="Tamanho da embalagem",
+        help_text="A quantidade do pedido é arredondada para múltiplos deste valor.",
+    )
 
     class Meta:
         indexes = [
@@ -811,6 +837,24 @@ class Fatura(models.Model):
     data_vencimento = models.DateField()
     valor = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='PENDENTE')
+    TIPO_FATURA_CHOICES = [
+        ('FIXA', 'Fixa (mensalidade, antecipada)'),
+        ('CONSUMO', 'Consumo (aulas e serviços, pós-pago)'),
+    ]
+    tipo = models.CharField(max_length=10, choices=TIPO_FATURA_CHOICES, default='CONSUMO')
+    competencia = models.DateField(
+        null=True, blank=True,
+        help_text="Primeiro dia do mês a que a cobrança se refere",
+    )    
+    TIPO_FATURA_CHOICES = [
+        ('FIXA', 'Fixa (mensalidade, antecipada)'),
+        ('CONSUMO', 'Consumo (aulas e serviços, pós-pago)'),
+    ]
+    tipo = models.CharField(max_length=10, choices=TIPO_FATURA_CHOICES, default='CONSUMO')
+    competencia = models.DateField(
+        null=True, blank=True,
+        help_text="Primeiro dia do mês a que a cobrança se refere",
+    )    
     data_pagamento = models.DateField(null=True, blank=True)
 
     class Meta:
@@ -859,6 +903,8 @@ class ItemFatura(models.Model):
         ('CASQUEIO',      'Casqueio'),
         ('FERRAGEAMENTO', 'Ferrageamento'),
         ('TROCA_CAMA',    'Troca de Cama'),
+        ('BAIA',          'Mensalidade de baia'),
+        ('BAIA',          'Mensalidade de baia'),
         ('OUTROS',        'Outros'),
     ]
 
@@ -1055,6 +1101,22 @@ class Fornecedor(models.Model):
     telefone = models.CharField(max_length=20, blank=True, help_text="WhatsApp com DDD")
     email = models.EmailField(blank=True, null=True)
     observacoes = models.TextField(blank=True)
+    frete_aproximado = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0,
+        verbose_name="Frete aproximado por pedido",
+    )
+    frete_ultima_entrega = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True,
+        verbose_name="Frete da última entrega",
+    )
+    data_ultima_entrega = models.DateField(
+        null=True, blank=True,
+        verbose_name="Data da última entrega",
+    )
+    prazo_entrega_dias = models.PositiveSmallIntegerField(
+        default=7,
+        verbose_name="Prazo de entrega (dias)",
+    )
     ativo = models.BooleanField(default=True)
     criado_em = models.DateTimeField(auto_now_add=True)
 

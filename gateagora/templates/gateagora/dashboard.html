@@ -701,6 +701,14 @@
                 <span class="w-1.5 h-1.5 rounded-full flex-shrink-0
                   {% if item.prioridade == 0 %}bg-red-500{% else %}bg-amber-400{% endif %}"></span>
                 <p class="text-[11px] font-bold" style="color:var(--text-main)">{{ item.nome }}</p>
+                <a href="/admin/gateagora/itemestoque/{{ item.id }}/change/" target="_blank" title="Abrir cadastro do item" class="text-[10px] opacity-70 hover:opacity-100" style="color:var(--indigo-text)">
+                  <i class="fa-solid fa-pen-to-square"></i>
+                </a>
+                {% if item.fornecedor_padrao and item.fornecedor_padrao.telefone %}
+                <a href="{% url 'fornecedor_whatsapp' item.id %}" title="Pedir ao fornecedor" class="text-[10px] opacity-80 hover:opacity-100" style="color:#25d366">
+                  <i class="fa-brands fa-whatsapp"></i>
+                </a>
+                {% endif %}
               </div>
               <span class="text-[10px] font-bold font-mono"
                     style="color:{% if item.prioridade == 0 %}#ef4444{% elif item.prioridade == 1 %}#f59e0b{% else %}#10b981{% endif %}">

@@ -2,6 +2,7 @@
 from datetime import date, timedelta
 from decimal import Decimal
 import json
+import math
 from logging import config
 from urllib.parse import quote
 from urllib.parse import quote as url_quote
@@ -204,61 +205,134 @@ def _iter_ultimos_meses(base: date, n: int = 6):
         out.append(date(y, m, 1))
     return sorted(out)
 
+def calcular_vencimento_consumo(empresa, data_ref):
+    """Consumo do mês de data_ref vence no mês seguinte, no dia de vencimento da empresa."""
+    ano = data_ref.year + (1 if data_ref.month == 12 else 0)
+    mes = 1 if data_ref.month == 12 else data_ref.month + 1
+    return date(ano, mes, empresa.dia_vencimento)
+
+
+def obter_fatura_pendente(empresa, aluno, tipo, competencia, vencimento):
+    """
+    Devolve a fatura PENDENTE do aluno para o tipo e a competência.
+    Cria somente se não existir, para não duplicar.
+    """
+    fatura = Fatura.objects.filter(
+        empresa=empresa, aluno=aluno, tipo=tipo,
+        competencia=competencia, status='PENDENTE',
+    ).first()
+    if fatura is None:
+        fatura = Fatura.objects.create(
+            empresa=empresa, aluno=aluno, tipo=tipo,
+            competencia=competencia, data_vencimento=vencimento,
+            valor=Decimal('0.00'), status='PENDENTE',
+        )
+    return fatura
+
+def calcular_sugestao_compra(item):
+    """
+    Sugere a quantidade do pedido ao fornecedor.
+
+    Regra:
+    - se houver lote fixo cadastrado à mão, ele é usado;
+    - senão, reposição até o nível máximo:
+        nível máximo = ponto de pedido + lote econômico (EOQ)
+        quantidade = nível máximo - estoque atual
+    - se não houver frete ou preço para calcular o EOQ, o nível máximo
+      usa a cobertura do período (dias de cobertura × consumo diário).
+    A quantidade final é arredondada para o múltiplo da embalagem.
+    """
+    CUSTO_MANUTENCAO_ANUAL = 0.20  # 20% do valor do item por ano
+
+    fornecedor = item.fornecedor_padrao
+    consumo = float(item.consumo_diario or 0)
+    estoque = float(item.estoque_disponivel or 0)
+    minimo = float(item.alerta_minimo or 0)
+    embalagem = max(item.tamanho_embalagem or 1, 1)
+    prazo = fornecedor.prazo_entrega_dias if fornecedor else 7
+
+    if fornecedor and fornecedor.frete_ultima_entrega is not None:
+        frete = float(fornecedor.frete_ultima_entrega)
+    elif fornecedor:
+        frete = float(fornecedor.frete_aproximado or 0)
+    else:
+        frete = 0.0
+
+    preco = float(item.preco_unitario or 0)
+
+    # Lote econômico (EOQ): depende de consumo, frete e preço
+    eoq = 0.0
+    if consumo > 0 and frete > 0 and preco > 0:
+        demanda_anual = consumo * 365
+        custo_manutencao = preco * CUSTO_MANUTENCAO_ANUAL
+        eoq = math.sqrt(2 * demanda_anual * frete / custo_manutencao)
+
+    # Ponto de pedido: abaixo deste nível, é hora de pedir
+    ponto_pedido = consumo * prazo + minimo
+
+    if (item.lote_economico or 0) > 0:
+        origem = "lote fixo cadastrado"
+        quantidade = float(item.lote_economico)
+        nivel_maximo = None
+    elif consumo <= 0:
+        origem = "sem consumo cadastrado"
+        quantidade = 0.0
+        nivel_maximo = None
+    else:
+        if eoq > 0:
+            nivel_maximo = ponto_pedido + eoq
+            origem = "reposição até o nível máximo (ponto de pedido + lote econômico)"
+        else:
+            nivel_maximo = ponto_pedido + consumo * (item.dias_cobertura or 30)
+            origem = "reposição até o nível máximo (cobertura do período)"
+        quantidade = max(0.0, nivel_maximo - estoque)
+
+    if quantidade > 0:
+        quantidade = math.ceil(quantidade / embalagem) * embalagem
+
+    # Quando pedir
+    dias_restantes = item.dias_restantes
+    urgente = dias_restantes is not None and dias_restantes <= prazo
+
+    return {
+        "quantidade": int(quantidade),
+        "origem": origem,
+        "eoq": round(eoq, 1),
+        "nivel_maximo": round(nivel_maximo, 1) if nivel_maximo is not None else None,
+        "ponto_pedido": round(ponto_pedido, 1),
+        "dias_restantes": dias_restantes,
+        "prazo": prazo,
+        "urgente": urgente,
+    }
+
 def _montar_msg_fornecedor(item):
     """
-    Monta o link de WhatsApp para solicitação de reposição
-    ao fornecedor padrão do item.
+    Monta o link de WhatsApp com o pedido de reposição ao fornecedor padrão.
 
-    Regras:
-    - estoque_disponivel considera somente estoque válido;
-    - lote_economico, quando configurado, define a quantidade padrão do pedido;
-    - caso não exista lote econômico, solicita o necessário para atingir o estoque mínimo;
-    - informações de estoque são apresentadas apenas na área de controle interno.
+    A mensagem tem formato de pedido (parecido com uma nota fiscal):
+    cabeçalho, pedido e pedido de confirmação. Não inclui dados internos
+    de estoque, consumo ou custos.
+
+    A quantidade é a sugestão automática (calcular_sugestao_compra),
+    a menos que haja um lote fixo cadastrado no item.
     """
 
-    # ---------------------------------------------------------
     # 1. Validação do fornecedor
-    # ---------------------------------------------------------
     if not item.fornecedor_padrao or not item.fornecedor_padrao.telefone:
         return None
 
-    # Normaliza telefone para WhatsApp
-    tel = "".join(
-        filter(str.isdigit, str(item.fornecedor_padrao.telefone))
-    )
-
+    tel = "".join(filter(str.isdigit, str(item.fornecedor_padrao.telefone)))
     if not tel.startswith("55"):
         tel = f"55{tel}"
 
-    # ---------------------------------------------------------
-    # 2. Cálculo da reposição
-    # ---------------------------------------------------------
-    estoque_atual = item.estoque_disponivel
-    estoque_minimo = item.alerta_minimo
+    # 2. Quantidade do pedido (sugestão automática)
+    sugestao = calcular_sugestao_compra(item)
+    quantidade_solicitada = sugestao["quantidade"]
     lote_economico = item.lote_economico or 0
-
-    # Quantidade necessária para voltar ao estoque mínimo
-    quantidade_necessaria = max(
-        0,
-        estoque_minimo - estoque_atual
-    )
-
-    # Se houver lote econômico cadastrado, ele é a quantidade
-    # padrão de compra.
-    #
-    # Caso contrário, usa somente a quantidade necessária
-    # para atingir o estoque mínimo.
-    if lote_economico > 0:
-        quantidade_solicitada = lote_economico
-    else:
-        quantidade_solicitada = quantidade_necessaria
-
     unidade = item.unidade
     empresa_nome = item.empresa.nome
 
-    # ---------------------------------------------------------
     # 3. Cabeçalho da solicitação
-    # ---------------------------------------------------------
     linhas = [
         "📦 *SOLICITAÇÃO DE REPOSIÇÃO*",
         "",
@@ -276,16 +350,11 @@ def _montar_msg_fornecedor(item):
         f"📦 *Quantidade solicitada:* {quantidade_solicitada} {unidade}",
     ]
 
-    # Mostra o lote econômico somente quando realmente
-    # estiver configurado no cadastro do item.
+    # Lote fixo aparece só quando foi cadastrado à mão
     if lote_economico > 0:
-        linhas.append(
-            f"Lote econômico: {lote_economico} {unidade}"
-        )
+        linhas.append(f"Lote econômico: {lote_economico} {unidade}")
 
-    # ---------------------------------------------------------
     # 4. Confirmação do fornecedor
-    # ---------------------------------------------------------
     linhas += [
         "",
         "━━━━━━━━━━━━━━━━━━",
@@ -305,51 +374,7 @@ def _montar_msg_fornecedor(item):
         "Gestão inteligente com *GATE4*",
     ]
 
-    # ---------------------------------------------------------
-    # 5. Controle interno
-    #
-    # Esta parte é enviada junto na mensagem, mas fica
-    # claramente separada do pedido.
-    # ---------------------------------------------------------
-    linhas += [
-        "",
-        "━━━━━━━━━━━━━━━━━━",
-        "🔒 *CONTROLE INTERNO — GATE4*",
-        "━━━━━━━━━━━━━━━━━━",
-        "",
-        f"📊 Estoque válido atual: *{estoque_atual} {unidade}*",
-        f"⚠️ Estoque mínimo definido: *{estoque_minimo} {unidade}*",
-    ]
-
-    if lote_economico > 0:
-        linhas.append(
-            f"📦 Lote econômico cadastrado: *{lote_economico} {unidade}*"
-        )
-
-    linhas += [
-        f"🛒 Reposição solicitada: *{quantidade_solicitada} {unidade}*",
-    ]
-
-    # Se a quantidade solicitada for suficiente para atingir
-    # o mínimo, informa isso no controle interno.
-    estoque_projetado = estoque_atual + quantidade_solicitada
-
-    if estoque_projetado >= estoque_minimo:
-        linhas += [
-            "",
-            f"➡️ Após a reposição: *{estoque_projetado} {unidade}*",
-            "✅ Estoque mínimo será atingido.",
-        ]
-    else:
-        linhas += [
-            "",
-            f"⚠️ Após a reposição: *{estoque_projetado} {unidade}*",
-            "⚠️ Estoque mínimo ainda não será atingido.",
-        ]
-
-    # ---------------------------------------------------------
-    # 6. Monta URL do WhatsApp
-    # ---------------------------------------------------------
+    # 5. Monta a URL do WhatsApp
     mensagem = "\n".join(linhas)
 
     return (
@@ -1755,18 +1780,13 @@ def concluir_aula(request, aula_id):
             messages.success(request, f"Treino interno de {aula.aluno.nome} concluído (sem cobrança).")
             return redirect("dashboard")
 
-        # Busca ou cria a fatura do mês do aluno
-        from datetime import date
+        # Aula é consumo: entra na fatura CONSUMO do mês da aula,
+        # que vence no mês seguinte, no dia de vencimento da empresa.
         hoje = timezone.localdate()
-        venc = hoje.replace(day=28)  # ou o dia padrão que vocês usam
-
-        fatura, _ = Fatura.objects.get_or_create(
-            empresa=empresa,
-            aluno=aula.aluno,
-            status='PENDENTE',
-            data_vencimento__year=hoje.year,
-            data_vencimento__month=hoje.month,
-            defaults={'data_vencimento': venc},
+        fatura = obter_fatura_pendente(
+            empresa, aula.aluno, 'CONSUMO',
+            hoje.replace(day=1),
+            calcular_vencimento_consumo(empresa, hoje),
         )
 
         # Cria o item de aula vinculado ao cavalo
@@ -2499,14 +2519,10 @@ def manejo_em_massa(request):
                     valor_proc = getattr(cfg_preco, campo_valor, Decimal('0.00'))
                     if valor_proc > 0:
                         hoje_proc = data_proc if hasattr(data_proc, 'year') else timezone.localdate()
-                        venc = hoje_proc.replace(day=28) if hasattr(hoje_proc, 'replace') else hoje_proc
-                        fatura, _ = Fatura.objects.get_or_create(
-                            empresa=empresa,
-                            aluno=cavalo.proprietario,
-                            status='PENDENTE',
-                            data_vencimento__year=hoje_proc.year,
-                            data_vencimento__month=hoje_proc.month,
-                            defaults={'data_vencimento': venc},
+                        fatura = obter_fatura_pendente(
+                            empresa, cavalo.proprietario, 'CONSUMO',
+                            hoje_proc.replace(day=1),
+                            calcular_vencimento_consumo(empresa, hoje_proc),
                         )
                         ItemFatura.objects.create(
                             fatura=fatura,
