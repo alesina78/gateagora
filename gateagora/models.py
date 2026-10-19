@@ -33,7 +33,17 @@ class Empresa(models.Model):
         validators=[MinValueValidator(0), MaxValueValidator(28)],
         verbose_name="Dias antes do vencimento para emitir",
         help_text="Quantos dias antes do vencimento a fatura fixa é emitida.",
-    )    
+    )
+    dias_cobertura_padrao = models.PositiveSmallIntegerField(
+        default=30,
+        verbose_name="Dias de cobertura padrão do estoque",
+        help_text="Usado nos produtos que não têm dias de cobertura próprios.",
+    )
+    custo_manutencao_anual_percentual = models.DecimalField(
+        max_digits=5, decimal_places=2, default=Decimal("20.00"),
+        verbose_name="Custo de manutenção do estoque (% ao ano)",
+        help_text="Usado somente no cálculo do lote econômico.",
+    )
 
     class Meta:
         indexes = [models.Index(fields=["slug"])]
@@ -621,7 +631,14 @@ class ItemEstoque(models.Model):
     lote_economico = models.IntegerField(
         default=0,
         blank=True,
-        help_text="Quantidade padrão a pedir ao fornecedor"
+        verbose_name="Lote fixo de compra",
+        help_text=(
+            "Deixe 0 para o sistema calcular a quantidade automaticamente, "
+            "com base em: consumo diário, estoque disponível (lotes não vencidos), "
+            "estoque mínimo, dias de cobertura, preço unitário, frete do fornecedor, "
+            "prazo de entrega e tamanho da embalagem. "
+            "Preencha somente se quiser fixar uma quantidade sempre igual."
+        ),
     )
 
     consumo_diario = models.DecimalField(
@@ -639,8 +656,9 @@ class ItemEstoque(models.Model):
         verbose_name="Preço unitário",
     )
     dias_cobertura = models.PositiveSmallIntegerField(
-        default=30,
-        verbose_name="Dias de cobertura do pedido",
+        null=True, blank=True,
+        verbose_name="Dias de cobertura do produto",
+        help_text="Deixe vazio para usar o padrão da empresa.",
     )
     tamanho_embalagem = models.PositiveIntegerField(
         default=1,
@@ -1116,6 +1134,25 @@ class Fornecedor(models.Model):
     prazo_entrega_dias = models.PositiveSmallIntegerField(
         default=7,
         verbose_name="Prazo de entrega (dias)",
+    )
+    pedido_minimo_valor = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True,
+        verbose_name="Pedido mínimo (valor)",
+        help_text="Valor mínimo para o fornecedor aceitar o pedido. Deixe vazio se não houver.",
+    )
+    pedido_minimo_quantidade = models.PositiveIntegerField(
+        null=True, blank=True,
+        verbose_name="Pedido mínimo (quantidade)",
+        help_text="Quantidade mínima de itens por pedido. Deixe vazio se não houver.",
+    )
+    frete_gratis_acima = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True,
+        verbose_name="Frete grátis acima de",
+        help_text="Valor a partir do qual o frete é zero. Deixe vazio se não houver.",
+    )
+    aceita_retirada = models.BooleanField(
+        default=False,
+        verbose_name="Aceita retirada própria (frete zero)",
     )
     ativo = models.BooleanField(default=True)
     criado_em = models.DateTimeField(auto_now_add=True)
