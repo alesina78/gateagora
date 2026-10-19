@@ -7,6 +7,7 @@ from django.db.models.signals import pre_save, post_save, post_delete
 from django.db.models import Sum, Q
 from django.dispatch import receiver
 from django.core.validators import MinValueValidator, MaxValueValidator, RegexValidator
+from django.utils.safestring import mark_safe
 from django.core.exceptions import ValidationError
 
 
@@ -43,6 +44,11 @@ class Empresa(models.Model):
         max_digits=5, decimal_places=2, default=Decimal("20.00"),
         verbose_name="Custo de manutenção do estoque (% ao ano)",
         help_text="Usado somente no cálculo do lote econômico.",
+    )
+    teto_compra_pedido = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True,
+        verbose_name="Teto de compra por pedido (R$)",
+        help_text="Valor máximo que o sistema sugere para um pedido. Deixe vazio para não limitar.",
     )
 
     class Meta:
@@ -620,7 +626,14 @@ class ItemEstoque(models.Model):
         verbose_name="Fornecedor Padrão"
     )
 
-    alerta_minimo = models.IntegerField(default=5)
+    alerta_minimo = models.IntegerField(
+        default=5,
+        verbose_name="Estoque mínimo (segurança)",
+        help_text=mark_safe(
+            '<span style="color:#84cc16;font-weight:700">Entra no ponto de pedido.</span> '
+            "Reserva que deve ficar sempre em estoque para imprevistos. Ex: 15 sacos de ração."
+        ),
+    )
     unidade = models.CharField(
         max_length=20,
         default="Unidade",
@@ -632,8 +645,9 @@ class ItemEstoque(models.Model):
         default=0,
         blank=True,
         verbose_name="Lote fixo de compra",
-        help_text=(
-            "Deixe 0 para o sistema calcular a quantidade automaticamente, "
+        help_text=mark_safe(
+            '<span style="color:#84cc16;font-weight:700">Deixe 0</span> '
+            "para o sistema calcular a quantidade automaticamente, "
             "com base em: consumo diário, estoque disponível (lotes não vencidos), "
             "estoque mínimo, dias de cobertura, preço unitário, frete do fornecedor, "
             "prazo de entrega e tamanho da embalagem. "
@@ -645,7 +659,12 @@ class ItemEstoque(models.Model):
         max_digits=6,
         decimal_places=2,
         default=0,
-        help_text="Consumo médio diário (para calcular dias restantes)"
+        verbose_name="Consumo diário",
+        help_text=mark_safe(
+            '<span style="color:#84cc16;font-weight:700">Base de todo o cálculo.</span> '
+            "Quanto se usa por dia, na mesma unidade do estoque. Ex: 2 sacos por dia. "
+            '<span style="color:#f59e0b;font-weight:700">Se estiver zero, o sistema não sugere pedido.</span>'
+        ),
     )
 
     # ⚠️ Campo legado — mantido para o formulário de fechamento do dia (input de ajuste manual).
@@ -654,16 +673,35 @@ class ItemEstoque(models.Model):
     preco_unitario = models.DecimalField(
         max_digits=10, decimal_places=2, default=0,
         verbose_name="Preço unitário",
+        help_text=mark_safe(
+            '<span style="color:#84cc16;font-weight:700">Deixe 0</span> '
+            "para o sistema usar só a cobertura. Preencha para calcular o lote econômico."
+        ),
     )
     dias_cobertura = models.PositiveSmallIntegerField(
         null=True, blank=True,
         verbose_name="Dias de cobertura do produto",
-        help_text="Deixe vazio para usar o padrão da empresa.",
+        help_text=mark_safe(
+            '<span style="color:#84cc16;font-weight:700">Deixe vazio</span> '
+            "para usar o padrão da empresa."
+        ),
+    )
+    dias_validade = models.PositiveSmallIntegerField(
+        null=True, blank=True,
+        verbose_name="Validade de consumo (dias)",
+        help_text=mark_safe(
+            '<span style="color:#f59e0b;font-weight:700">Limita o pedido para não vencer.</span> '
+            "Tempo máximo para consumir o produto depois de comprado. Ex: ração de 60 a 90 dias. "
+            '<span style="color:#84cc16;font-weight:700">Deixe vazio</span> se o produto não tem validade.'
+        ),
     )
     tamanho_embalagem = models.PositiveIntegerField(
         default=1,
         verbose_name="Tamanho da embalagem",
-        help_text="A quantidade do pedido é arredondada para múltiplos deste valor.",
+        help_text=mark_safe(
+            '<span style="color:#84cc16;font-weight:700">Arredonda o pedido</span> '
+            "para múltiplos deste valor. Ex: saco de 25 kg = 1."
+        ),
     )
 
     class Meta:
@@ -1122,10 +1160,19 @@ class Fornecedor(models.Model):
     frete_aproximado = models.DecimalField(
         max_digits=10, decimal_places=2, default=0,
         verbose_name="Frete aproximado por pedido",
+        help_text=mark_safe(
+            '<span style="color:#84cc16;font-weight:700">Deixe 0</span> '
+            "se o fornecedor entrega sem frete ou se você retira. "
+            "Usado quando ainda não há frete da última entrega."
+        ),
     )
     frete_ultima_entrega = models.DecimalField(
         max_digits=10, decimal_places=2, null=True, blank=True,
         verbose_name="Frete da última entrega",
+        help_text=mark_safe(
+            '<span style="color:#84cc16;font-weight:700">Deixe vazio</span> '
+            "para usar o frete aproximado."
+        ),
     )
     data_ultima_entrega = models.DateField(
         null=True, blank=True,
@@ -1134,6 +1181,10 @@ class Fornecedor(models.Model):
     prazo_entrega_dias = models.PositiveSmallIntegerField(
         default=7,
         verbose_name="Prazo de entrega (dias)",
+        help_text=mark_safe(
+            '<span style="color:#84cc16;font-weight:700">Define quando pedir.</span> '
+            "Quantos dias o fornecedor leva para entregar, desde o pedido até a chegada."
+        ),
     )
     pedido_minimo_valor = models.DecimalField(
         max_digits=10, decimal_places=2, null=True, blank=True,

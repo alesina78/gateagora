@@ -231,64 +231,99 @@ def obter_fatura_pendente(empresa, aluno, tipo, competencia, vencimento):
 
 def calcular_sugestao_compra(item):
     """
-    Sugere a quantidade do pedido ao fornecedor.
+    Sugestão de compra com lote econômico ajustado ao negócio.
 
-    Regra:
-    - se houver lote fixo cadastrado à mão, ele é usado;
-    - senão, reposição até o nível máximo:
-        nível máximo = ponto de pedido + lote econômico (EOQ)
-        quantidade = nível máximo - estoque atual
-    - se não houver frete ou preço para calcular o EOQ, o nível máximo
-      usa a cobertura do período (dias de cobertura × consumo diário).
-    A quantidade final é arredondada para o múltiplo da embalagem.
+    Ordem das regras:
+    1. lote fixo cadastrado (se > 0) substitui o cálculo;
+    2. senão, nível máximo = ponto de pedido + lote (econômico ou cobertura);
+    3. frete grátis: completa o pedido até o valor de frete grátis, se o frete for pago;
+    4. pedido mínimo do fornecedor (quantidade e valor);
+    5. arredondamento pela embalagem;
+    6. limite de validade, que tem prioridade sobre todas as regras anteriores.
     """
-    CUSTO_MANUTENCAO_ANUAL = 0.20  # 20% do valor do item por ano
-
+    empresa = item.empresa
     fornecedor = item.fornecedor_padrao
     consumo = float(item.consumo_diario or 0)
     estoque = float(item.estoque_disponivel or 0)
     minimo = float(item.alerta_minimo or 0)
+    preco = float(item.preco_unitario or 0)
     embalagem = max(item.tamanho_embalagem or 1, 1)
+    dias_cobertura = item.dias_cobertura or empresa.dias_cobertura_padrao
+    manutencao = float(empresa.custo_manutencao_anual_percentual or 20) / 100
+
     prazo = fornecedor.prazo_entrega_dias if fornecedor else 7
 
-    if fornecedor and fornecedor.frete_ultima_entrega is not None:
+    # Frete de referência
+    if fornecedor and fornecedor.aceita_retirada:
+        frete = 0.0
+    elif fornecedor and fornecedor.frete_ultima_entrega is not None:
         frete = float(fornecedor.frete_ultima_entrega)
     elif fornecedor:
         frete = float(fornecedor.frete_aproximado or 0)
     else:
         frete = 0.0
 
-    preco = float(item.preco_unitario or 0)
-
-    # Lote econômico (EOQ): depende de consumo, frete e preço
-    eoq = 0.0
-    if consumo > 0 and frete > 0 and preco > 0:
-        demanda_anual = consumo * 365
-        custo_manutencao = preco * CUSTO_MANUTENCAO_ANUAL
-        eoq = math.sqrt(2 * demanda_anual * frete / custo_manutencao)
-
-    # Ponto de pedido: abaixo deste nível, é hora de pedir
     ponto_pedido = consumo * prazo + minimo
+    eoq = 0.0
+    nivel_maximo = None
 
     if (item.lote_economico or 0) > 0:
         origem = "lote fixo cadastrado"
         quantidade = float(item.lote_economico)
-        nivel_maximo = None
     elif consumo <= 0:
         origem = "sem consumo cadastrado"
         quantidade = 0.0
-        nivel_maximo = None
     else:
+        # Lote econômico: quanto pedir para o custo total ser o menor
+        if preco > 0 and frete > 0:
+            demanda_anual = consumo * 365
+            custo_manutencao = preco * manutencao
+            eoq = math.sqrt(2 * demanda_anual * frete / custo_manutencao)
+
         if eoq > 0:
-            nivel_maximo = ponto_pedido + eoq
-            origem = "reposição até o nível máximo (ponto de pedido + lote econômico)"
+            lote = eoq
+            origem = "lote econômico"
         else:
-            nivel_maximo = ponto_pedido + consumo * (item.dias_cobertura or 30)
-            origem = "reposição até o nível máximo (cobertura do período)"
+            lote = consumo * dias_cobertura
+            origem = "cobertura do período"
+
+        nivel_maximo = ponto_pedido + lote
         quantidade = max(0.0, nivel_maximo - estoque)
 
+    # Frete grátis: se o frete é pago e o pedido chega perto do valor de frete grátis,
+    # completa até o valor mínimo para o frete zerar
+    if (fornecedor and fornecedor.frete_gratis_acima and frete > 0
+            and preco > 0 and quantidade > 0):
+        qtd_gratis = math.ceil(float(fornecedor.frete_gratis_acima) / preco)
+        if quantidade < qtd_gratis:
+            quantidade = float(qtd_gratis)
+            origem += " (completado para frete grátis)"
+
+    # Pedido mínimo do fornecedor (quantidade e valor)
+    if fornecedor and quantidade > 0:
+        if fornecedor.pedido_minimo_quantidade:
+            quantidade = max(quantidade, float(fornecedor.pedido_minimo_quantidade))
+        if fornecedor.pedido_minimo_valor and preco > 0:
+            quantidade = max(quantidade, math.ceil(float(fornecedor.pedido_minimo_valor) / preco))
+
+    # Arredonda para a embalagem
     if quantidade > 0:
         quantidade = math.ceil(quantidade / embalagem) * embalagem
+
+    # Limite de validade: o estoque após o pedido não pode passar do que
+    # o produto consegue consumir antes de vencer
+    if item.dias_validade and consumo > 0:
+        limite_validade = max(0.0, consumo * item.dias_validade - estoque)
+        if quantidade > limite_validade:
+            quantidade = math.floor(limite_validade / embalagem) * embalagem
+            origem += " (limitado pela validade)"
+
+    # Teto de compra: o pedido não pode passar do valor que a empresa pode pagar
+    if empresa.teto_compra_pedido and preco > 0 and quantidade > 0:
+        qtd_teto = math.floor(float(empresa.teto_compra_pedido) / preco / embalagem) * embalagem
+        if quantidade > qtd_teto:
+            quantidade = max(0.0, qtd_teto)
+            origem += " (limitado pelo teto de compra)"
 
     # Quando pedir
     dias_restantes = item.dias_restantes

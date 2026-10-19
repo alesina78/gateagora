@@ -233,7 +233,7 @@ function buildCharts() {
             type: 'line',
             data: Array(lblT.length).fill(lim),
             borderColor: red + '70',
-            borderWidth: 1.5,
+            borderWidth: 0.75,
             borderDash: [5, 4],
             pointRadius: 0,
             fill: false
@@ -285,7 +285,10 @@ function buildCharts() {
           },
           x: {
             max: Math.ceil(Math.max(...dadT, ...(window.ranking_cavalos_anterior || []), 1) * 1.15),
-            grid: { color: grid + '40' },
+            grid: { 
+              color: grid + '40',
+              lineWidth: 0.5
+            },
             ticks: { color: muted }
           }
         }
@@ -293,7 +296,6 @@ function buildCharts() {
     });
   }
 }
-/* Traço do período anterior sobre a barra de aulas (só no Treinos) */
 const tickAnterior = {
   id: 'tickAnterior',
   afterDatasetsDraw(chart) {
@@ -302,12 +304,14 @@ const tickAnterior = {
     const xScale = chart.scales.x;
     const ctx = chart.ctx;
     ctx.save();
-    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    ctx.fillStyle = 'rgba(112, 248, 8, 0.85)';
     chart.getDatasetMeta(0).data.forEach((bar, i) => {
       const v = anteriores[i];
       if (!v) return;
       const x = xScale.getPixelForValue(v);
-      ctx.fillRect(x - 1.5, bar.y - bar.height / 2, 3, bar.height);
+      
+      // O terceiro número (o '1.5' abaixo) controla a espessura desse traço:
+      ctx.fillRect(x - 0.75, bar.y - bar.height / 2, 1.5, bar.height); 
     });
     ctx.restore();
   }
