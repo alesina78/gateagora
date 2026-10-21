@@ -909,6 +909,17 @@ class Fatura(models.Model):
         verbose_name = "Fatura 💳"
         verbose_name_plural = "Faturas 💳"
 
+    def save(self, *args, **kwargs):
+        # Trava: fatura PAGA não volta para outro status sem estorno.
+        if self.pk:
+            anterior = Fatura.objects.filter(pk=self.pk).values_list('status', flat=True).first()
+            if anterior == 'PAGO' and self.status != 'PAGO':
+                raise ValueError(
+                    f"Fatura {self.pk} já está PAGA e não pode mudar de status. "
+                    "Para reabrir, faça o estorno da receita antes."
+                )
+        super().save(*args, **kwargs)
+
     @property
     def total(self):
         """Total calculado a partir dos itens (ItemFatura)"""
