@@ -373,7 +373,7 @@
   {% if pode_ver_dashboard_completo %}
   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
 
-    <!-- Faturamento do Mês (1º da esquerda com borda verde esmeralda) -->
+        <!-- Faturamento do Mês -->
     {% if pode_ver_financeiro %}
     <div class="kpi-card border-l-4 border-emerald-500 rounded-lg p-4 shadow-md hover:shadow-lg transition-all duration-300" style="display:flex;flex-direction:column;justify-content:space-between;min-height:120px;">
       <div>
@@ -382,19 +382,19 @@
         <p class="text-xs font-semibold mt-1" style="color:var(--emerald-text);">R$ {{ faturamento_aberto_total|floatformat:2 }} a vencer</p>
       </div>
       <p class="text-[9px] mt-2 flex items-center gap-1" style="color:var(--text-muted)">
-        <i class="fa-solid fa-chart-line" style="color:#10b981"></i>
+        <i class="fa-solid fa-chart-line text-emerald-500"></i>
         {{ relatorio|length }} fatura(s)
       </p>
     </div>
     {% endif %}
 
     <!-- Taxa de Ocupação -->
-    <div class="kpi-card border-l-4 border-blue-600 rounded-lg p-4 shadow-md hover:shadow-lg transition-all duration-300" style="display:flex;flex-direction:column;justify-content:space-between;min-height:120px;">
+    <div class="kpi-card border-l-4 border-blue-500 rounded-lg p-4 shadow-md hover:shadow-lg transition-all duration-300" style="display:flex;flex-direction:column;justify-content:space-between;min-height:120px;">
       <div>
         <p class="sec-title mb-2" style="color:var(--text-muted);font-size:0.75rem;font-weight:600;text-transform:uppercase;">Taxa de Ocupação</p>
         <p class="text-3xl font-bold" style="color:var(--text-strong);margin-top:0.5rem;">{{ stats.porcentagem_ocupacao|floatformat:0 }}%</p>
         <p class="text-xs" style="color:var(--text-muted);margin-top:0.25rem;">{{ stats.baias_ocupadas }} de {{ stats.total_baias }} Baias</p>
-        <p class="text-xs font-semibold mt-2" style="color:#10b981;">↑ +12% este mês</p>
+        <p class="text-xs font-semibold mt-2 text-emerald-500">↑ +12% este mês</p>
       </div>
     </div>
 
@@ -404,12 +404,12 @@
         <p class="sec-title mb-2" style="color:var(--text-muted);font-size:0.75rem;font-weight:600;text-transform:uppercase;">Custo Médio p/ Animal</p>
         <p class="text-3xl font-bold" style="color:var(--text-strong);margin-top:0.5rem;">R$ 2.450</p>
         <p class="text-xs" style="color:var(--text-muted);margin-top:0.25rem;">Mês atual</p>
-        <p class="text-xs font-semibold mt-2" style="color:#10b981;">↓ -5% vs Jan</p>
+        <p class="text-xs font-semibold mt-2 text-emerald-500">↓ -5% vs Jan</p>
       </div>
     </div>
 
     <!-- Pendências de saúde -->
-    <div class="kpi-card border-l-4 border-red-600 rounded-lg p-4 shadow-md hover:shadow-lg transition-all duration-300" style="display:flex;flex-direction:column;justify-content:space-between;min-height:120px;">
+    <div class="kpi-card border-l-4 border-red-500 rounded-lg p-4 shadow-md hover:shadow-lg transition-all duration-300" style="display:flex;flex-direction:column;justify-content:space-between;min-height:120px;">
       <div>
         <p class="sec-title mb-2" style="color:var(--text-muted);font-size:0.75rem;font-weight:600;text-transform:uppercase;">Pendências de saúde</p>
         <p class="text-3xl font-bold" style="color:var(--text-strong);margin-top:0.5rem;">{{ stats.cavalos_alerta }}</p>
@@ -418,14 +418,13 @@
     </div>
 
     <!-- Estoque em alerta -->
-    <div class="kpi-card border-l-4 border-indigo-600 rounded-lg p-4 shadow-md hover:shadow-lg transition-all duration-300" style="display:flex;flex-direction:column;justify-content:space-between;min-height:120px;">
+    <div class="kpi-card border-l-4 border-orange-500 rounded-lg p-4 shadow-md hover:shadow-lg transition-all duration-300" style="display:flex;flex-direction:column;justify-content:space-between;min-height:120px;">
       <div>
         <p class="sec-title mb-2" style="color:var(--text-muted);font-size:0.75rem;font-weight:600;text-transform:uppercase;">Estoque em alerta</p>
         <p class="text-3xl font-bold" style="color:var(--text-strong);margin-top:0.5rem;">{{ estoque_baixo_count }}</p>
         <p class="text-xs" style="color:var(--text-muted);margin-top:0.25rem;">itens abaixo do mínimo</p>
       </div>
     </div>
-
   </div>
 
   <!-- ── 3. Alertas Expansíveis ───────────────────────────── -->
