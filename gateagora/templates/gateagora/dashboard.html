@@ -86,10 +86,14 @@
     @keyframes pulse-amber  { 0%,100%{box-shadow:0 0 0 0 rgba(245,158,11,0)} 50%{box-shadow:0 0 0 5px rgba(245,158,11,0.15)} }
     @keyframes pulse-emerald{ 0%,100%{box-shadow:0 0 0 0 rgba(16,185,129,0)} 50%{box-shadow:0 0 0 6px rgba(16,185,129,0.18)} }
 
-    /* ── Alertas expansíveis ── */
-    .alerta-painel { max-height:0; overflow:hidden; transition:max-height 0.4s var(--ease-out); }
-    .alerta-painel.aberto { max-height:600px; overflow-y:auto; }
-
+    .card-static:has(> #painel-saude.aberto),
+    .card-static:has(> #painel-venc.aberto),
+    .card-static:has(> #painel-estq.aberto) { display:flex; flex-direction:column; }
+    #painel-saude { max-height:130px; overflow-y:auto; }
+    #painel-venc  { max-height:186px; overflow-y:auto; }
+    #painel-estq  { max-height:200px; overflow-y:auto; }
+    #painel-saude.aberto, #painel-venc.aberto, #painel-estq.aberto { max-height:none; overflow-y:auto; }
+    
     /* ── Badges veterinários ── */
     .badge-proc { font-family:var(--font-mono); font-size:0.58rem; font-weight:600;
                   padding:0.15rem 0.45rem; border-radius:0.3rem; display:inline-block; }

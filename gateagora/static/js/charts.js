@@ -197,7 +197,7 @@ function buildCharts() {
   const elTr = document.getElementById('chartTreinosCavalos');
   const cont = document.getElementById('containerGraficoCavalos');
   if (elTr && cont) {
-    const alturaTotal = Math.max(200, lblT.length * 44);
+    const alturaTotal = Math.min(340, Math.max(160, lblT.length * 22));    
     cont.style.height = alturaTotal + 'px';
     cont.style.position = 'relative';
     elTr.style.display = 'block';
