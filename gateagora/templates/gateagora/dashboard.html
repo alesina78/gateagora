@@ -86,14 +86,10 @@
     @keyframes pulse-amber  { 0%,100%{box-shadow:0 0 0 0 rgba(245,158,11,0)} 50%{box-shadow:0 0 0 5px rgba(245,158,11,0.15)} }
     @keyframes pulse-emerald{ 0%,100%{box-shadow:0 0 0 0 rgba(16,185,129,0)} 50%{box-shadow:0 0 0 6px rgba(16,185,129,0.18)} }
 
-    .card-static:has(> #painel-saude.aberto),
-    .card-static:has(> #painel-venc.aberto),
-    .card-static:has(> #painel-estq.aberto) { display:flex; flex-direction:column; }
-    #painel-saude { max-height:130px; overflow-y:auto; }
-    #painel-venc  { max-height:186px; overflow-y:auto; }
-    #painel-estq  { max-height:200px; overflow-y:auto; }
-    #painel-saude.aberto, #painel-venc.aberto, #painel-estq.aberto { max-height:none; overflow-y:auto; }
-    
+    /* ── Alertas expansíveis ── */
+    .alerta-painel { max-height:0; overflow:hidden; transition:max-height 0.4s var(--ease-out); }
+    .alerta-painel.aberto { max-height:360px; overflow-y:auto; }
+
     /* ── Badges veterinários ── */
     .badge-proc { font-family:var(--font-mono); font-size:0.58rem; font-weight:600;
                   padding:0.15rem 0.45rem; border-radius:0.3rem; display:inline-block; }
@@ -212,7 +208,6 @@
       .aula-card > div:nth-child(1) { margin-bottom:0 !important; }
       .aula-card > div:last-child { margin-top:0 !important;padding-top:0 !important;border-top:0 !important; }
     }
-    .alerta-painel { max-height:360px; overflow-y:auto; }
   </style>
 </head>
 <body>
@@ -297,33 +292,6 @@
 
 <!-- ══════════════════════════════════════════════════════ MAIN -->
 <div class="max-w-screen-xl mx-auto px-4 py-6 space-y-5">
-  <!-- Atalhos Rápidos (topo: acesso direto, pensado para celular) -->
-  <div class="card-static p-3" style="border-left:3px solid var(--indigo-text);">
-    <p class="text-[9px] font-bold uppercase tracking-widest mb-2" style="color:var(--text-muted)">
-      <i class="fa-solid fa-bolt mr-1" style="color:var(--indigo-text)"></i>Atalhos Rápidos
-    </p>
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
-      {% if pode_ver_financeiro %}
-      <a href="/admin/gateagora/movimentacaofinanceira/add/" class="atalho"
-        style="background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.25);">
-        <span>Receita / Despesa</span><i class="fa-solid fa-dollar-sign ml-2"></i>
-      </a>
-      <a href="/admin/gateagora/fatura/add/" class="atalho"
-        style="background:rgba(59,130,246,0.12);color:#3b82f6;border:1px solid rgba(59,130,246,0.25);">
-        <span>Nova Fatura</span><i class="fa-solid fa-file-invoice-dollar ml-2"></i>
-      </a>
-      {% endif %}
-      <a href="/admin/gateagora/registroocorrencia/add/" class="atalho"
-        style="background:rgba(245,158,11,0.12);color:#f59e0b;border:1px solid rgba(245,158,11,0.25);">
-        <span>Ocorrência Saúde</span><i class="fa-solid fa-notes-medical ml-2"></i>
-      </a>
-      <a href="{% url 'gerar_ficha_trato_pdf' %}" class="atalho"
-        style="background:rgba(6,182,212,0.12);color:#06b6d4;border:1px solid rgba(6,182,212,0.25);">
-        <span>PDF de Trato</span><i class="fa-solid fa-file-pdf ml-2"></i>
-      </a>
-    </div>
-  </div>
-  
   <!-- ── 1. Cabeçalho + Atalhos Rápidos ──────────────────── -->
   <!-- Atalhos movidos para cima, entre cabeçalho e KPIs     -->
   <div class="flex flex-col gap-4">
@@ -360,6 +328,34 @@
       </div>
     </div>
 
+  <!-- Atalhos Rápidos (topo: acesso direto, pensado para celular) -->
+  <div class="card-static p-3" style="border-left:3px solid var(--indigo-text);">
+    <p class="text-[9px] font-bold uppercase tracking-widest mb-2" style="color:var(--text-muted)">
+      <i class="fa-solid fa-bolt mr-1" style="color:var(--indigo-text)"></i>Atalhos Rápidos
+    </p>
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+      {% if pode_ver_financeiro %}
+      <a href="/admin/gateagora/movimentacaofinanceira/add/" class="atalho"
+        style="background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.25);">
+        <span>Receita / Despesa</span><i class="fa-solid fa-dollar-sign ml-2"></i>
+      </a>
+      <a href="/admin/gateagora/fatura/add/" class="atalho"
+        style="background:rgba(59,130,246,0.12);color:#3b82f6;border:1px solid rgba(59,130,246,0.25);">
+        <span>Nova Fatura</span><i class="fa-solid fa-file-invoice-dollar ml-2"></i>
+      </a>
+      {% endif %}
+      <a href="/admin/gateagora/registroocorrencia/add/" class="atalho"
+        style="background:rgba(245,158,11,0.12);color:#f59e0b;border:1px solid rgba(245,158,11,0.25);">
+        <span>Ocorrência Saúde</span><i class="fa-solid fa-notes-medical ml-2"></i>
+      </a>
+      <a href="{% url 'gerar_ficha_trato_pdf' %}" class="atalho"
+        style="background:rgba(6,182,212,0.12);color:#06b6d4;border:1px solid rgba(6,182,212,0.25);">
+        <span>PDF de Trato</span><i class="fa-solid fa-file-pdf ml-2"></i>
+      </a>
+    </div>
+  </div>
+  
+
   </div>
 
   {% if messages %}
@@ -373,9 +369,24 @@
   {% endfor %}
   {% endif %}
 
-    <!-- ── 2. KPIs ── -->
+  <!-- ── 2. KPIs ── -->
   {% if pode_ver_dashboard_completo %}
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+
+    <!-- Faturamento do Mês (1º da esquerda com borda verde esmeralda) -->
+    {% if pode_ver_financeiro %}
+    <div class="kpi-card border-l-4 border-emerald-500 rounded-lg p-4 shadow-md hover:shadow-lg transition-all duration-300" style="display:flex;flex-direction:column;justify-content:space-between;min-height:120px;">
+      <div>
+        <p class="sec-title mb-2" style="color:var(--text-muted);font-size:0.75rem;font-weight:600;text-transform:uppercase;">Faturamento do Mês</p>
+        <p class="text-3xl font-bold" style="color:var(--text-strong);margin-top:0.5rem;">R$ {{ receita_total_prevista|floatformat:0 }}</p>
+        <p class="text-xs font-semibold mt-1" style="color:var(--emerald-text);">R$ {{ faturamento_aberto_total|floatformat:2 }} a vencer</p>
+      </div>
+      <p class="text-[9px] mt-2 flex items-center gap-1" style="color:var(--text-muted)">
+        <i class="fa-solid fa-chart-line" style="color:#10b981"></i>
+        {{ relatorio|length }} fatura(s)
+      </p>
+    </div>
+    {% endif %}
 
     <!-- Taxa de Ocupação -->
     <div class="kpi-card border-l-4 border-blue-600 rounded-lg p-4 shadow-md hover:shadow-lg transition-all duration-300" style="display:flex;flex-direction:column;justify-content:space-between;min-height:120px;">
@@ -397,102 +408,31 @@
       </div>
     </div>
 
-    <!-- Treinamento Ativo -->
-    <div class="kpi-card border-l-4 border-green-600 rounded-lg p-4 shadow-md hover:shadow-lg transition-all duration-300" style="display:flex;flex-direction:column;justify-content:space-between;min-height:120px;">
+    <!-- Pendências de saúde -->
+    <div class="kpi-card border-l-4 border-red-600 rounded-lg p-4 shadow-md hover:shadow-lg transition-all duration-300" style="display:flex;flex-direction:column;justify-content:space-between;min-height:120px;">
       <div>
-        <p class="sec-title mb-2" style="color:var(--text-muted);font-size:0.75rem;font-weight:600;text-transform:uppercase;">Treinamento Ativo</p>
-        <p class="text-3xl font-bold" style="color:var(--text-strong);margin-top:0.5rem;">{{ aulas_confirmadas_hoje }}</p>
-        <p class="text-xs" style="color:var(--text-muted);margin-top:0.25rem;">Cavalos em pista</p>
-        <p class="text-xs font-semibold mt-2" style="color:#64748b;">— Estável</p>
+        <p class="sec-title mb-2" style="color:var(--text-muted);font-size:0.75rem;font-weight:600;text-transform:uppercase;">Pendências de saúde</p>
+        <p class="text-3xl font-bold" style="color:var(--text-strong);margin-top:0.5rem;">{{ stats.cavalos_alerta }}</p>
+        <p class="text-xs" style="color:var(--text-muted);margin-top:0.25rem;">Cavalos com manejo vencido</p>
       </div>
     </div>
 
-    <!-- Consumo de Ração -->
-    <div class="kpi-card border-l-4 border-red-600 rounded-lg p-4 shadow-md hover:shadow-lg transition-all duration-300" style="display:flex;flex-direction:column;justify-content:space-between;min-height:120px;">
+    <!-- Estoque em alerta -->
+    <div class="kpi-card border-l-4 border-indigo-600 rounded-lg p-4 shadow-md hover:shadow-lg transition-all duration-300" style="display:flex;flex-direction:column;justify-content:space-between;min-height:120px;">
       <div>
-        <p class="sec-title mb-2" style="color:var(--text-muted);font-size:0.75rem;font-weight:600;text-transform:uppercase;">Consumo de Ração</p>
-        <p class="text-3xl font-bold" style="color:var(--text-strong);margin-top:0.5rem;">+5%</p>
-        <p class="text-xs" style="color:var(--text-muted);margin-top:0.25rem;">Acima do planejado</p>
-        <div class="flex items-center gap-2 mt-2">
-          <span class="w-2 h-2 rounded-full bg-red-600"></span>
-          <p class="text-xs font-semibold" style="color:#ef4444;">Revisar</p>
-        </div>
+        <p class="sec-title mb-2" style="color:var(--text-muted);font-size:0.75rem;font-weight:600;text-transform:uppercase;">Estoque em alerta</p>
+        <p class="text-3xl font-bold" style="color:var(--text-strong);margin-top:0.5rem;">{{ estoque_baixo_count }}</p>
+        <p class="text-xs" style="color:var(--text-muted);margin-top:0.25rem;">itens abaixo do mínimo</p>
       </div>
     </div>
 
   </div>
 
   <!-- ── 3. Alertas Expansíveis ───────────────────────────── -->
-   <!-- Continuação dos alertas (mantém o que vinha depois) -->
-  <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-4">
-
-    <!-- Faturamento -->
-    {% if pode_ver_financeiro %}     
-    <div class="kpi-card" style="display:flex;flex-direction:column;justify-content:space-between;min-height:100px;">
-      <div>
-        <p class="sec-title mb-2">Faturamento do Mês</p>
-        <p class="text-2xl font-bold" style="color:var(--text-strong)">R$ {{ receita_total_prevista|floatformat:0 }}</p>
-        <p class="text-[10px] mt-1 font-bold" style="color:var(--emerald-text)">R$ {{ faturamento_aberto_total|floatformat:2 }} ainda a vencer</p>
-      </div>
-      <p class="text-[9px] mt-auto pt-3 flex items-center gap-1" style="color:var(--text-muted)">
-        <i class="fa-solid fa-chart-line" style="color:#10b981"></i>
-        {{ relatorio|length }} fatura(s) no mês
-      </p>
-    </div>
-    {% endif %}
-
-    <!-- Confirmações -->
-    <div class="kpi-card" style="display:flex;flex-direction:column;justify-content:space-between;min-height:100px;">
-      <div>
-        <p class="sec-title mb-2">Confirmações do Dia</p>
-        <div class="flex items-end gap-1.5">
-          <p class="text-2xl font-bold" style="color:var(--text-strong)">{{ aulas_confirmadas_hoje }}</p>
-          <p class="text-xs mb-0.5" style="color:var(--text-muted)">/ {{ total_aulas_hoje }} aulas</p>
-        </div>
-      </div>
-      <div class="mt-auto pt-3">
-        {% if total_aulas_hoje > 0 %}
-          <div class="mb-1" style="height:4px;background:var(--border);border-radius:99px;overflow:hidden;">
-            <div style="height:100%;border-radius:99px;transition:width .6s ease;
-                        width:{% widthratio aulas_confirmadas_hoje total_aulas_hoje 100 %}%;
-                        background:{% if aulas_confirmadas_hoje == total_aulas_hoje %}#10b981{% else %}#f59e0b{% endif %};"></div>
-          </div>
-          <p class="text-[9px] flex items-center gap-1" style="color:var(--text-muted)">
-            <i class="fa-solid fa-flag-checkered" style="color:#818cf8"></i>
-            {{ aulas_concluidas_hoje }} concluída{{ aulas_concluidas_hoje|pluralize }}
-          </p>
-        {% else %}
-          <p class="text-[9px]" style="color:var(--text-muted)">Sem aulas nesta data</p>
-        {% endif %}
-      </div>
-    </div>
-
-    <!-- Ocupação de Baias -->
-    <div class="kpi-card" style="display:flex;flex-direction:column;justify-content:space-between;min-height:100px;">
-      <div class="flex items-start justify-between">
-        <div>
-          <p class="sec-title mb-2">Ocupação de Baias</p>
-          <div class="flex items-end gap-1.5">
-            <p class="text-2xl font-bold" style="color:var(--text-strong)">{{ stats.baias_ocupadas }}</p>
-            <p class="text-xs mb-0.5" style="color:var(--text-muted)">/ {{ stats.total_baias }}</p>
-          </div>
-        </div>
-        <div class="relative flex-shrink-0" style="width:56px;height:56px;">
-          <canvas id="chartOcupacao" style="width:56px;height:56px;"></canvas>
-          <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <span class="text-[10px] font-bold" style="color:var(--text-strong)">{{ stats.porcentagem_ocupacao|floatformat:0 }}%</span>
-          </div>
-        </div>
-      </div>
-      <div class="flex gap-3 mt-auto pt-2 text-[9px]" style="color:var(--text-muted)">
-        <span><strong style="color:var(--emerald-text)">{{ stats.baias_livres }}</strong> livres</span>
-        <span><strong style="color:var(--text-main)">{{ stats.vacinados }}</strong> vacinados</span>
-      </div>
-    </div>
-
-    <!-- Ocupação das Turmas — só quando há turmas hoje -->
-    {% if capacity_utilization is not None %}
-    <div class="kpi-card" style="display:flex;flex-direction:column;justify-content:space-between;min-height:100px;">
+  {% if capacity_utilization is not None %}
+  <div class="mb-4">
+    <!-- Ocupação das Turmas — exibido quando há turmas no dia -->
+    <div class="kpi-card border-l-4 border-indigo-500 rounded-lg p-4 shadow-md hover:shadow-lg transition-all duration-300" style="display:flex;flex-direction:column;justify-content:space-between;min-height:100px;">
       <div>
         <p class="sec-title mb-2">Ocupação das Turmas</p>
         <p class="text-2xl font-bold" style="color:var(--text-strong)">{{ capacity_utilization }}%</p>
@@ -509,8 +449,10 @@
         </p>
       </div>
     </div>
-    {% endif %}
   </div>
+  {% endif %}
+
+  {% endif %}
 
   <!-- ── 3. Alertas Expansíveis ───────────────────────────── -->
   <!--
@@ -519,12 +461,6 @@
     [2] Docs Legais   → GTA, Mormo, Anemia, documentos com prazo formal — CONFORMIDADE
     [3] Estoque       → só itens em alerta + botão Fechar Dia embutido — OPERACIONAL
   -->
-  <!-- ──<div class="attention-head">
-    <div>
-      <p class="sec-title"><i class="fa-solid fa-triangle-exclamation mr-1" style="color:#f59e0b"></i>Saúde, documentos e estoque: o que precisa de ação primeiro.</p>
-     <!-- ── alg  <p class="text-[9px] mt-1" style="color:var(--text-muted)">Saúde, documentos e estoque: o que precisa de ação primeiro.</p>
-    </div>
-  </div>-->
   <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-4">
 
     <!-- ── 3a. SAÚDE & VET ──────────────────────────────────────────────────── -->
@@ -744,7 +680,7 @@
               </div>
               <span class="text-[10px] font-bold font-mono"
                     style="color:{% if item.prioridade == 0 %}#ef4444{% elif item.prioridade == 1 %}#f59e0b{% else %}#10b981{% endif %}">
-                {{ item.estoque_disponivel }} {{ item.unidade }}
+                {{ item.estoque_disponivel|floatformat:"-2" }} {{ item.unidade }}
                 {% if item.dias_para_vencer is not None %}
                   · <span>{{ item.dias_para_vencer }}d</span>
                 {% endif %}
@@ -784,7 +720,6 @@
       </div>
     </div>
     {% endif %}
-  {% endif %}
   </div><!-- /alertas -->
   
 
@@ -1104,7 +1039,7 @@
           5 cavalos × ~26px/linha = ~130px de altura para os primeiros 5.
           O restante aparece ao rolar.
         -->
-        <div id="containerGraficoCavalos" class="overflow-y-auto custom-scrollbar" style="height:130px;">
+        <div id="containerGraficoCavalos" class="overflow-y-auto custom-scrollbar" style="max-height:340px;">
           <canvas id="chartTreinosCavalos"></canvas>
         </div>
         {% if cavalos_sem_treino %}
@@ -1450,13 +1385,30 @@
 
 <!-- ══════════════════════════════════════════════════════ SCRIPTS -->
 <script>
-  /* ── Toggle alertas ─────────────────────── */
+  /* ── Toggle alertas (Sincronizado para os 3 painéis) ── */
   function toggleAlerta(id) {
-    const p = document.getElementById('painel-' + id);
-    const i = document.getElementById('icon-'   + id);
-    if (!p) return;
-    const open = p.classList.toggle('aberto');
-    if (i) i.style.transform = open ? 'rotate(180deg)' : '';
+    const paineis = ['saude', 'venc', 'estq'];
+    const painelClicado = document.getElementById('painel-' + id);
+    
+    // Verifica se o painel clicado vai abrir ou fechar
+    const deveAbrir = !painelClicado.classList.contains('aberto');
+
+    // Aplica o mesmo estado (aberto/fechado) para os 3 de uma vez
+    paineis.forEach(pId => {
+      const p = document.getElementById('painel-' + pId);
+      const i = document.getElementById('icon-' + pId);
+      
+      if (p) {
+        if (deveAbrir) {
+          p.classList.add('aberto');
+        } else {
+          p.classList.remove('aberto');
+        }
+      }
+      if (i) {
+        i.style.transform = deveAbrir ? 'rotate(180deg)' : '';
+      }
+    });
   }
 
   /* ── Navegação rápida da agenda ──────────── */

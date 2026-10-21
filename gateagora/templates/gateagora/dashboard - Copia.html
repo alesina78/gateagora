@@ -23,6 +23,7 @@
     <!-- Scripts e estilos -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="{% static 'js/charts.js' %}"></script>
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
     <link rel="stylesheet" href="{% static 'css/themes.css' %}">
@@ -87,7 +88,7 @@
 
     /* ── Alertas expansíveis ── */
     .alerta-painel { max-height:0; overflow:hidden; transition:max-height 0.4s var(--ease-out); }
-    .alerta-painel.aberto { max-height:600px; overflow-y:auto; }
+    .alerta-painel.aberto { max-height:170px; overflow-y:auto; }
 
     /* ── Badges veterinários ── */
     .badge-proc { font-family:var(--font-mono); font-size:0.58rem; font-weight:600;
@@ -197,7 +198,7 @@
     }
   
     /* Agenda operacional revisada */
-    .agenda-dia { max-height:430px; overflow-y:auto; }
+    .agenda-dia { max-height:24rem; overflow-y:auto; }
     .agenda-nav-btn { width:30px;height:30px;border-radius:.65rem;border:1px solid var(--border);background:var(--card-alt);color:var(--text-main);font-size:11px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;transition:.2s; }
     .agenda-nav-btn:hover { border-color:#6366f1;color:var(--indigo-text);transform:translateY(-1px); }
     .attention-head { display:flex;align-items:center;justify-content:space-between;gap:12px;margin:2px 2px -4px; }
@@ -207,6 +208,7 @@
       .aula-card > div:nth-child(1) { margin-bottom:0 !important; }
       .aula-card > div:last-child { margin-top:0 !important;padding-top:0 !important;border-top:0 !important; }
     }
+    .alerta-painel { max-height:360px; overflow-y:auto; }
   </style>
 </head>
 <body>
@@ -291,7 +293,6 @@
 
 <!-- ══════════════════════════════════════════════════════ MAIN -->
 <div class="max-w-screen-xl mx-auto px-4 py-6 space-y-5">
-
   <!-- ── 1. Cabeçalho + Atalhos Rápidos ──────────────────── -->
   <!-- Atalhos movidos para cima, entre cabeçalho e KPIs     -->
   <div class="flex flex-col gap-4">
@@ -306,7 +307,7 @@
         </h2>
       </div>
       <div class="flex items-center gap-2">
-        {% if pode_ver_dashboard_completo %}
+        {% if pode_ver_financeiro %}
         <a href="{% url 'relatorios' %}"
           class="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-xs uppercase tracking-wide"
           style="background:var(--card-alt);color:var(--indigo-text);border:1px solid rgba(99,102,241,.25);
@@ -328,6 +329,34 @@
       </div>
     </div>
 
+  <!-- Atalhos Rápidos (topo: acesso direto, pensado para celular) -->
+  <div class="card-static p-3" style="border-left:3px solid var(--indigo-text);">
+    <p class="text-[9px] font-bold uppercase tracking-widest mb-2" style="color:var(--text-muted)">
+      <i class="fa-solid fa-bolt mr-1" style="color:var(--indigo-text)"></i>Atalhos Rápidos
+    </p>
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+      {% if pode_ver_financeiro %}
+      <a href="/admin/gateagora/movimentacaofinanceira/add/" class="atalho"
+        style="background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.25);">
+        <span>Receita / Despesa</span><i class="fa-solid fa-dollar-sign ml-2"></i>
+      </a>
+      <a href="/admin/gateagora/fatura/add/" class="atalho"
+        style="background:rgba(59,130,246,0.12);color:#3b82f6;border:1px solid rgba(59,130,246,0.25);">
+        <span>Nova Fatura</span><i class="fa-solid fa-file-invoice-dollar ml-2"></i>
+      </a>
+      {% endif %}
+      <a href="/admin/gateagora/registroocorrencia/add/" class="atalho"
+        style="background:rgba(245,158,11,0.12);color:#f59e0b;border:1px solid rgba(245,158,11,0.25);">
+        <span>Ocorrência Saúde</span><i class="fa-solid fa-notes-medical ml-2"></i>
+      </a>
+      <a href="{% url 'gerar_ficha_trato_pdf' %}" class="atalho"
+        style="background:rgba(6,182,212,0.12);color:#06b6d4;border:1px solid rgba(6,182,212,0.25);">
+        <span>PDF de Trato</span><i class="fa-solid fa-file-pdf ml-2"></i>
+      </a>
+    </div>
+  </div>
+  
+
   </div>
 
   {% if messages %}
@@ -341,70 +370,72 @@
   {% endfor %}
   {% endif %}
 
-  <!-- ── 2. KPIs ── -->
+    <!-- ── 2. KPIs ── -->
   {% if pode_ver_dashboard_completo %}
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-{% if capacity_utilization is not None %}4{% else %}3{% endif %} gap-4">
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+
+    <!-- Taxa de Ocupação -->
+    <div class="kpi-card border-l-4 border-blue-600 rounded-lg p-4 shadow-md hover:shadow-lg transition-all duration-300" style="display:flex;flex-direction:column;justify-content:space-between;min-height:120px;">
+      <div>
+        <p class="sec-title mb-2" style="color:var(--text-muted);font-size:0.75rem;font-weight:600;text-transform:uppercase;">Taxa de Ocupação</p>
+        <p class="text-3xl font-bold" style="color:var(--text-strong);margin-top:0.5rem;">{{ stats.porcentagem_ocupacao|floatformat:0 }}%</p>
+        <p class="text-xs" style="color:var(--text-muted);margin-top:0.25rem;">{{ stats.baias_ocupadas }} de {{ stats.total_baias }} Baias</p>
+        <p class="text-xs font-semibold mt-2" style="color:#10b981;">↑ +12% este mês</p>
+      </div>
+    </div>
+
+    <!-- Custo Médio p/ Animal -->
+    <div class="kpi-card border-l-4 border-amber-500 rounded-lg p-4 shadow-md hover:shadow-lg transition-all duration-300" style="display:flex;flex-direction:column;justify-content:space-between;min-height:120px;">
+      <div>
+        <p class="sec-title mb-2" style="color:var(--text-muted);font-size:0.75rem;font-weight:600;text-transform:uppercase;">Custo Médio p/ Animal</p>
+        <p class="text-3xl font-bold" style="color:var(--text-strong);margin-top:0.5rem;">R$ 2.450</p>
+        <p class="text-xs" style="color:var(--text-muted);margin-top:0.25rem;">Mês atual</p>
+        <p class="text-xs font-semibold mt-2" style="color:#10b981;">↓ -5% vs Jan</p>
+      </div>
+    </div>
+
+    <!-- Pendências de saúde -->
+    <div class="kpi-card border-l-4 border-red-600 rounded-lg p-4 shadow-md hover:shadow-lg transition-all duration-300" style="display:flex;flex-direction:column;justify-content:space-between;min-height:100px;">
+      <div>
+        <p class="sec-title mb-2" style="color:var(--text-muted);font-size:0.75rem;font-weight:600;text-transform:uppercase;">Pendências de saúde</p>
+        <p class="text-3xl font-bold" style="color:var(--text-strong);margin-top:0.5rem;">{{ stats.cavalos_alerta }}</p>
+        <p class="text-xs" style="color:var(--text-muted);margin-top:0.25rem;">Cavalos com manejo vencido</p>
+      </div>
+    </div>
+
+    <!-- Estoque em alerta -->
+    <div class="kpi-card border-l-4 border-indigo-600 rounded-lg p-4 shadow-md hover:shadow-lg transition-all duration-300" style="display:flex;flex-direction:column;justify-content:space-between;min-height:100px;">
+      <div>
+        <p class="sec-title mb-2" style="color:var(--text-muted);font-size:0.75rem;font-weight:600;text-transform:uppercase;">Estoque em alerta</p>
+        <p class="text-3xl font-bold" style="color:var(--text-strong);margin-top:0.5rem;">{{ estoque_baixo_count }}</p>
+        <p class="text-xs" style="color:var(--text-muted);margin-top:0.25rem;">itens abaixo do mínimo</p>
+      </div>
+    </div>
+
+
+
+  </div>
+
+  <!-- ── 3. Alertas Expansíveis ───────────────────────────── -->
+   <!-- Continuação dos alertas (mantém o que vinha depois) -->
+  <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-4">
 
     <!-- Faturamento -->
-    <div class="kpi-card" style="display:flex;flex-direction:column;justify-content:space-between;min-height:100px;">
+    {% if pode_ver_financeiro %}     
+    <div class="kpi-card lg:col-span-4" style="display:flex;flex-direction:row;align-items:center;justify-content:space-between;min-height:0;padding:14px 18px;">
       <div>
         <p class="sec-title mb-2">Faturamento do Mês</p>
         <p class="text-2xl font-bold" style="color:var(--text-strong)">R$ {{ receita_total_prevista|floatformat:0 }}</p>
+        <p class="text-[10px] mt-1 font-bold" style="color:var(--emerald-text)">R$ {{ faturamento_aberto_total|floatformat:2 }} ainda a vencer</p>
       </div>
       <p class="text-[9px] mt-auto pt-3 flex items-center gap-1" style="color:var(--text-muted)">
         <i class="fa-solid fa-chart-line" style="color:#10b981"></i>
         {{ relatorio|length }} fatura(s) no mês
       </p>
     </div>
+    {% endif %}
 
-    <!-- Confirmações -->
-    <div class="kpi-card" style="display:flex;flex-direction:column;justify-content:space-between;min-height:100px;">
-      <div>
-        <p class="sec-title mb-2">Confirmações do Dia</p>
-        <div class="flex items-end gap-1.5">
-          <p class="text-2xl font-bold" style="color:var(--text-strong)">{{ aulas_confirmadas_hoje }}</p>
-          <p class="text-xs mb-0.5" style="color:var(--text-muted)">/ {{ total_aulas_hoje }} aulas</p>
-        </div>
-      </div>
-      <div class="mt-auto pt-3">
-        {% if total_aulas_hoje > 0 %}
-          <div class="mb-1" style="height:4px;background:var(--border);border-radius:99px;overflow:hidden;">
-            <div style="height:100%;border-radius:99px;transition:width .6s ease;
-                        width:{% widthratio aulas_confirmadas_hoje total_aulas_hoje 100 %}%;
-                        background:{% if aulas_confirmadas_hoje == total_aulas_hoje %}#10b981{% else %}#f59e0b{% endif %};"></div>
-          </div>
-          <p class="text-[9px] flex items-center gap-1" style="color:var(--text-muted)">
-            <i class="fa-solid fa-flag-checkered" style="color:#818cf8"></i>
-            {{ aulas_concluidas_hoje }} concluída{{ aulas_concluidas_hoje|pluralize }}
-          </p>
-        {% else %}
-          <p class="text-[9px]" style="color:var(--text-muted)">Sem aulas nesta data</p>
-        {% endif %}
-      </div>
-    </div>
 
-    <!-- Ocupação de Baias -->
-    <div class="kpi-card" style="display:flex;flex-direction:column;justify-content:space-between;min-height:100px;">
-      <div class="flex items-start justify-between">
-        <div>
-          <p class="sec-title mb-2">Ocupação de Baias</p>
-          <div class="flex items-end gap-1.5">
-            <p class="text-2xl font-bold" style="color:var(--text-strong)">{{ stats.baias_ocupadas }}</p>
-            <p class="text-xs mb-0.5" style="color:var(--text-muted)">/ {{ stats.total_baias }}</p>
-          </div>
-        </div>
-        <div class="relative flex-shrink-0" style="width:56px;height:56px;">
-          <canvas id="chartOcupacao" style="width:56px;height:56px;"></canvas>
-          <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <span class="text-[10px] font-bold" style="color:var(--text-strong)">{{ stats.porcentagem_ocupacao|floatformat:0 }}%</span>
-          </div>
-        </div>
-      </div>
-      <div class="flex gap-3 mt-auto pt-2 text-[9px]" style="color:var(--text-muted)">
-        <span><strong style="color:var(--emerald-text)">{{ stats.baias_livres }}</strong> livres</span>
-        <span><strong style="color:var(--text-main)">{{ stats.vacinados }}</strong> vacinados</span>
-      </div>
-    </div>
 
     <!-- Ocupação das Turmas — só quando há turmas hoje -->
     {% if capacity_utilization is not None %}
@@ -649,10 +680,18 @@
                 <span class="w-1.5 h-1.5 rounded-full flex-shrink-0
                   {% if item.prioridade == 0 %}bg-red-500{% else %}bg-amber-400{% endif %}"></span>
                 <p class="text-[11px] font-bold" style="color:var(--text-main)">{{ item.nome }}</p>
+                <a href="/admin/gateagora/itemestoque/{{ item.id }}/change/" target="_blank" title="Abrir cadastro do item" class="text-[10px] opacity-70 hover:opacity-100" style="color:var(--indigo-text)">
+                  <i class="fa-solid fa-pen-to-square"></i>
+                </a>
+                {% if item.fornecedor_padrao and item.fornecedor_padrao.telefone %}
+                <a href="{% url 'fornecedor_whatsapp' item.id %}" title="Pedir ao fornecedor" class="text-[10px] opacity-80 hover:opacity-100" style="color:#25d366">
+                  <i class="fa-brands fa-whatsapp"></i>
+                </a>
+                {% endif %}
               </div>
               <span class="text-[10px] font-bold font-mono"
                     style="color:{% if item.prioridade == 0 %}#ef4444{% elif item.prioridade == 1 %}#f59e0b{% else %}#10b981{% endif %}">
-                {{ item.estoque_disponivel }} {{ item.unidade }}
+                {{ item.estoque_disponivel|floatformat:"-2" }} {{ item.unidade }}
                 {% if item.dias_para_vencer is not None %}
                   · <span>{{ item.dias_para_vencer }}d</span>
                 {% endif %}
@@ -878,6 +917,15 @@
                     {% endif %}
                 {% endif %}
 
+                {% if not aula.concluida and aula.is_confirmada and request.user.perfil.cargo != 'Aluno' %}
+                  <form action="{% url 'desconfirmar_presenca_dashboard' aula.id %}" method="post" class="inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-fin" style="background:rgba(239,68,68,0.12);color:#f87171;border:1px solid rgba(239,68,68,0.25);" title="Desconfirmar Aula">
+                      <i class="fa-solid fa-circle-xmark"></i>
+                    </button>
+                  </form>
+                {% endif %}                
+
                 {# BOTÃO CONFIRMAR - Tanto pelo gestor/professor quanto aluno #}
                 {% if not aula.concluida and not aula.is_confirmada %}
                   <form action="{% url 'confirmar_presenca_dashboard' aula.id %}" method="post" class="inline">
@@ -917,6 +965,7 @@
         na função dar_baixa_fatura — registrado para corrigir na próxima etapa.
       -->
       {% if pode_ver_dashboard_completo %}
+      {% if pode_ver_financeiro %}
       <div class="card p-5">
         <div class="flex items-center justify-between mb-4">
           <h3 class="text-sm font-bold" style="color:var(--text-strong)">
@@ -927,11 +976,12 @@
             💰 Fluxo de Caixa (Entradas e Saídas Reais)
           </span>
         </div>
-        <div class="h-[260px]"><canvas id="chartFinanceiro6Meses"></canvas></div>
+        <div class="h-[260px]"><canvas id="chartFinanceiro6Meses" style="height:260px; width:100%;"></canvas></div>
       </div>
+      {% endif %}
 
       <!-- 5c. Receita por Categoria — só quando há ItemFatura -->
-      {% if receita_por_tipo_labels %}
+      {% if pode_ver_financeiro and receita_por_tipo_labels %}
       <div class="card p-5">
         <div class="flex items-center justify-between mb-4">
           <h3 class="text-sm font-bold" style="color:var(--text-strong)">
@@ -983,7 +1033,7 @@
             <h3 class="text-sm font-bold" style="color:var(--text-strong)">
               <i class="fa-solid fa-horse mr-2" style="color:var(--indigo-text)"></i>Treinos por Cavalo
             </h3>
-            <p class="text-[9px] mt-0.5" style="color:var(--text-muted)">Vermelho = sobrecarga · {{ periodo_label }}</p>
+            <p class="text-[9px] mt-0.5" style="color:var(--text-muted)">Vermelho = sobrecarga · Traço branco = aulas no período anterior · {{ periodo_label }}</p>
           </div>
           <div class="flex items-center gap-2">
             <div class="flex rounded-lg overflow-hidden text-[9px] font-bold uppercase" style="border:1px solid var(--border)">
@@ -1001,16 +1051,16 @@
           5 cavalos × ~26px/linha = ~130px de altura para os primeiros 5.
           O restante aparece ao rolar.
         -->
-        <div id="containerGraficoCavalos" class="overflow-y-auto custom-scrollbar" style="height:130px;">
+        <div id="containerGraficoCavalos" class="overflow-y-auto custom-scrollbar" style="max-height:340px;">
           <canvas id="chartTreinosCavalos"></canvas>
         </div>
         {% if cavalos_sem_treino %}
         <div class="mt-3 pt-3" style="border-top:1px solid var(--border)">
           <p class="text-[8px] font-bold uppercase mb-2" style="color:var(--text-muted)">Sem treinos no período:</p>
           <div class="flex flex-wrap gap-1.5">
-            {% for nome in cavalos_sem_treino %}
+            {% for nome, status in cavalos_sem_treino %}
             <span class="text-[8px] px-2 py-0.5 rounded-full font-bold"
-                  style="background:var(--card-alt);color:var(--text-muted);border:1px solid var(--border)">{{ nome }}</span>
+                  style="background:var(--card-alt);color:var(--text-muted);border:1px solid {% if status == 'Doente' %}#ef4444{% elif status == 'Tratamento' %}#f97316{% elif status == 'Alerta' %}#facc15{% else %}var(--border){% endif %}">{{ nome }}</span>
             {% endfor %}
           </div>
         </div>
@@ -1130,108 +1180,8 @@
       {% if pode_ver_dashboard_completo %}
       <div class="lg:col-span-4 space-y-5">
 
-      <!-- Frame de Atalhos Operacionais -->
-      <div class="card-static overflow-hidden" style="border-left:3px solid var(--indigo-text);">
-        <div class="px-4 py-3" style="border-bottom:1px solid var(--border);">
-          <p class="text-[9px] font-bold uppercase tracking-widest mb-2.5" style="color:var(--text-muted)">
-            <i class="fa-solid fa-bolt mr-1" style="color:var(--indigo-text)"></i>Atalhos Rápidos
-          </p>
-          <div class="grid grid-cols-2 gap-2">
 
-          <!-- Receita / Despesa -->
-          <a href="/admin/gateagora/movimentacaofinanceira/add/" class="atalho"
-            style="background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.25);">
-            <span>Receita / Despesa</span>
-            <i class="fa-solid fa-dollar-sign ml-2"></i>
-          </a>
-
-          <!-- Nova Fatura -->
-          <a href="/admin/gateagora/fatura/add/" class="atalho"
-            style="background:rgba(59,130,246,0.12);color:#3b82f6;border:1px solid rgba(59,130,246,0.25);">
-            <span>Nova Fatura</span>
-            <i class="fa-solid fa-file-invoice-dollar ml-2"></i>
-          </a>
-
-          <!-- Ocorrência Saúde -->
-          <a href="/admin/gateagora/registroocorrencia/add/" class="atalho"
-            style="background:rgba(245,158,11,0.12);color:#f59e0b;border:1px solid rgba(245,158,11,0.25);">
-            <span>Ocorrência Saúde</span>
-            <i class="fa-solid fa-notes-medical ml-2"></i>
-          </a>
-
-          <!-- PDF de Trato -->
-          <a href="{% url 'gerar_ficha_trato_pdf' %}" class="atalho"
-            style="background:rgba(6,182,212,0.12);color:#06b6d4;border:1px solid rgba(6,182,212,0.25);">
-            <span>PDF de Trato</span>
-            <i class="fa-solid fa-file-pdf ml-2"></i>
-          </a>
-
-        </div>
-        </div>
-      </div>
-
-      <div class="card-static overflow-hidden" style="border-left: 3px solid var(--indigo-text);">
-        <div class="px-4 py-3 flex items-center justify-between bg-[var(--card-bg)]" style="border-bottom: 1px solid var(--border);">
-          <div class="flex items-center gap-3">
-            <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style="background:rgba(99,102,241,0.1);">
-              <i class="fa-solid fa-receipt" style="color:var(--indigo-text)"></i>
-            </div>
-            
-            <div>
-              <h2 class="text-[11px] font-bold uppercase tracking-wide" style="color:var(--text-strong); margin-bottom: 0;">Faturamento do Mês</h2>
-              <p class="text-[10px] font-bold font-mono" style="color:var(--emerald-text); margin-top: -2px;">R$ {{ faturamento_aberto_total|floatformat:2 }} em aberto</p>
-            </div>
-          </div>
-          
-          <a href="/admin/gateagora/fatura/" class="text-[9px] font-bold uppercase hover:underline" style="color:var(--text-muted)">Ver Tudo</a>
-        </div>
-
-        <div class="custom-scrollbar" style="max-height: 250px; overflow-y: auto;">
-          {% if faturas_abertas_mes %}
-            <table class="w-full text-left border-collapse">
-              <tbody class="divide-y divide-[var(--border)]">
-                {% for item in faturas_abertas_mes %}
-                <tr class="hover:bg-[var(--card-alt)] transition">
-                  <td class="px-4 py-3">
-                    <!-- Nome do Aluno + Total Previsto -->
-                    <div class="flex justify-between items-center">
-                      <p class="text-[11px] font-bold" style="color:var(--text-main)">
-                        {{ item.aluno.nome }}
-                      </p>
-                      <p class="text-[10px] font-bold font-mono" style="color:var(--emerald-text)">
-                        R$ {{ item.valor|floatformat:2 }}
-                      </p>
-                    </div>
-
-                    <!-- Resumo de Aulas e Serviços -->
-                    <div class="mt-1 flex items-center gap-2 text-[9px]" style="color:var(--text-muted)">
-                      <span><i class="fa-regular fa-calendar text-[8px]"></i> vence {{ item.vencimento|date:"d/m" }}</span>
-                      {% if item.aluno.plano %}
-                        <span>· Plano: {{ item.aluno.plano }}</span>
-                      {% endif %}
-                    </div>
-                  </td>
-                  <td class="px-4 py-3 text-right">
-                    <div class="flex justify-end gap-1.5">
-                      {% if item.tem_whatsapp %}
-                      <a href="{{ item.whatsapp }}" target="_blank" class="w-7 h-7 flex items-center justify-center rounded-lg" style="background:rgba(16,185,129,0.10); color:#10b981;" title="Enviar cobrança pelo WhatsApp">
-                        <i class="fa-brands fa-whatsapp text-xs"></i>
-                      </a>
-                      {% endif %}
-                      <a href="{% url 'gerar_relatorio_pdf' item.aluno.id %}" class="w-7 h-7 flex items-center justify-center rounded-lg" style="background:rgba(99,102,241,0.1); color:var(--indigo-text);" title="Gerar PDF">
-                        <i class="fa-solid fa-file-pdf text-xs"></i>
-                      </a>
-                    </div>
-                  </td>
-                </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          {% else %}
-            <p class="text-[10px] text-center py-6 font-bold uppercase opacity-40">Nenhuma fatura em aberto a vencer</p>
-          {% endif %}
-        </div>
-      </div>
+      {% if pode_ver_financeiro %}
 
       <!-- ── Inadimplência ── -->
       <div class="card-static p-4" style="border-left:3px solid #ef4444;">
@@ -1277,6 +1227,7 @@
           </div>
         </div>
       </div>
+      {% endif %}
 
       <!-- ── 🟡 Alunos Inativos 14-29 dias ── -->
       {% if alunos_inativos %}
@@ -1368,6 +1319,7 @@
       {% endif %}
 
       <!-- ── Contas a Receber ── -->
+      {% if pode_ver_financeiro %}
       <div class="card-static overflow-hidden" style="border-left: 3px solid #ef4444;">
         <div class="px-4 py-3 flex items-center justify-between bg-[var(--card-bg)]" style="border-bottom: 1px solid var(--border);">
           <div class="flex items-center gap-3">
@@ -1428,6 +1380,7 @@
           {% endif %}
         </div>
       </div>
+      {% endif %}
       </div>
     </div><!-- /col-span-4 -->
     {% endif %}
@@ -1479,153 +1432,45 @@
   /* ── CSS var helper ─────────────────────── */
   function cv(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
 
-  /* ── Paleta de cores por categoria ─────── */
-  const CAT_CORES = ['#6366f1','#10b981','#f59e0b','#8b5cf6','#06b6d4','#f87171','#94a3b8'];
+  // buildCharts() agora está em gateagora/static/js/charts.js
+  // Declara variáveis globais para buildCharts()
+  window.pode_ver_financeiro = {% if pode_ver_financeiro %}true{% else %}false{% endif %};
+  window.labels_meses = {{ labels_meses|safe }};
+  window.dados_receita = {{ dados_receita|safe }};
+  window.dados_despesa = {{ dados_despesa|safe }};
+  window.dados_lucro = {{ dados_lucro|safe }};
+  window.baias_ocupadas = {{ stats.baias_ocupadas }};
+  window.baias_livres = {{ stats.baias_livres }};
+  window.limite_treinos_mes = {{ limite_treinos_mes|default:20 }};
+  window.ranking_cavalos_labels = {{ ranking_cavalos_labels|safe|default:"[]" }};
+  window.ranking_cavalos_dados = {{ ranking_cavalos_dados|safe|default:"[]" }};
+  window.ranking_cavalos_status = {{ ranking_cavalos_status|safe|default:"[]" }};
+  window.ranking_cavalos_ids = {{ ranking_cavalos_ids|safe|default:"[]" }};
+  window.ranking_cavalos_pend = {{ ranking_cavalos_pend|safe|default:"[]" }};
+  window.ranking_cavalos_anterior = {{ ranking_cavalos_anterior|safe|default:"[]" }};
+  window.ranking_receita = {% if pode_ver_financeiro %}{{ ranking_receita|safe|default:"[]" }}{% else %}[]{% endif %};
+  window.receita_por_tipo_labels = {{ receita_por_tipo_labels|default:"[]"|safe }};
+  window.receita_por_tipo_valores = {{ receita_por_tipo_valores|default:"[]"|safe }};
+  window.inadimplencia_labels = ['Recebido', 'A vencer', 'Vencido'];
+  window.inadimplencia_valores = [{{ v_pago_mes }}, {{ v_a_vencer_mes }}, {{ v_vencido_mes }}];
+  window.inadimplencia_cores = ['#10b981', '#ef4444', '#f59e0b'];
+  window.CAT_CORES = {{ CAT_CORES|default:"['#6366f1','#10b981','#f59e0b','#8b5cf6','#06b6d4','#f87171','#94a3b8']"|safe }};
 
-  /* ── buildCharts ────────────────────────── */
-  function buildCharts() {
-    const grid    = cv('--border')       || '#30363d';
-    const muted   = cv('--text-muted')  || '#8b949e';
-    const strong  = cv('--text-strong') || '#ffffff';
-    const emerald = cv('--emerald-text')|| '#10b981';
-    const red     = cv('--red-text')    || '#ef4444';
-
-    Chart.defaults.color       = muted;
-    Chart.defaults.font.family = "'DM Sans', sans-serif";
-
-    /* Fluxo Financeiro 6 Meses */
-    const elFin = document.getElementById('chartFinanceiro6Meses');
-    if (elFin) {
-      if (elFin._c) elFin._c.destroy();
-      elFin._c = new Chart(elFin, {
-        type: 'bar',
-        data: {
-          labels: {{ labels_meses|safe }},
-          datasets: [
-            { label:'Receitas',      data:{{ dados_receita }}, backgroundColor:'#6366f1', borderRadius:6, barThickness:14 },
-            { label:'Despesas',      data:{{ dados_despesa }}, backgroundColor:grid,      borderRadius:6, barThickness:14 },
-            { label:'Saldo Líquido', type:'line', data:{{ dados_lucro }},
-              borderColor:emerald, borderWidth:2.5, pointBackgroundColor:emerald,
-              tension:0.4, fill:false, pointRadius:3 }
-          ]
-        },
-        options: {
-          responsive:true, maintainAspectRatio:false,
-          plugins:{ legend:{ position:'top', align:'end', labels:{ boxWidth:8, font:{size:9}, color:muted } } },
-          scales:{
-            y:{ grid:{color:grid+'40'}, ticks:{color:strong, font:{size:10,weight:'600'}} },
-            x:{ grid:{display:false},  ticks:{color:muted} }
-          }
-        }
-      });
-    }
-
-    /* Ocupação Baias — mini donut no KPI */
-    const elOc = document.getElementById('chartOcupacao');
-    if (elOc) {
-      if (elOc._c) elOc._c.destroy();
-      elOc._c = new Chart(elOc, {
-        type:'doughnut',
-        data:{ labels:['Ocupadas','Livres'],
-               datasets:[{ data:[{{ stats.baias_ocupadas }},{{ stats.baias_livres }}],
-                           backgroundColor:['#6366f1', grid], borderWidth:0 }] },
-        options:{ responsive:false, maintainAspectRatio:false, cutout:'78%',
-                  plugins:{ legend:{display:false}, tooltip:{enabled:false} },
-                  animation:{ duration:600 } }
-      });
-    }
-
-    /* Treinos por Cavalo — tamanho dinâmico total, container com scroll */
-    /* Treinos por Cavalo — tamanho dinâmico total, container com scroll */
-    const lim  = {{ limite_treinos_mes|default:20 }};
-    const lblT = {{ ranking_cavalos_labels|safe|default:"[]" }};
-    const dadT = {{ ranking_cavalos_dados|safe|default:"[]" }};
-    const dadR = {{ ranking_receita|safe|default:"[]" }};
-
-    const elTr = document.getElementById('chartTreinosCavalos');
-    const cont = document.getElementById('containerGraficoCavalos');
-    if (elTr && cont) {
-      /* Altura total do canvas = todos os cavalos, mas o container tem max-height fixo */
-      const alturaTotal = Math.max(130, lblT.length * 26);
-      elTr.style.height  = alturaTotal + 'px';
-      elTr.style.width   = '100%';
-      elTr.height        = alturaTotal;
-
-      if (elTr._c) elTr._c.destroy();
-      elTr._c = new Chart(elTr, {
-        type:'bar',
-        data:{
-          labels:lblT.map((nome, i) => dadR[i] > 0 ? `${nome}  · R$ ${dadR[i].toFixed(0)}` : nome),
-          datasets:[
-            { label:'Aulas', data:dadT, backgroundColor:dadT.map(v=>v>=lim?red:'#6366f1'),
-              borderRadius:5, barPercentage:0.5, categoryPercentage:1.8 },
-            { label:`Limite (${lim})`, type:'line', data:Array(lblT.length).fill(lim),
-              borderColor:red+'70', borderWidth:1.5, borderDash:[5,4], pointRadius:0, fill:false }
-          ]
-        },
-        options:{
-          indexAxis:'y', responsive:false, maintainAspectRatio:false,
-          plugins:{
-            legend:{ display:true, position:'top', align:'end', labels:{boxWidth:8,font:{size:9},color:muted} },
-            tooltip:{ callbacks:{ label:ctx => ctx.dataset.type==='line'
-              ? ` Limite: ${lim}` : ` ${ctx.raw} aula(s)  |  R$ ${dadR[ctx.dataIndex].toFixed(2).replace('.',',')}` }}
-          },
-          scales:{
-            y:{ grid:{display:false}, offset:true, ticks:{color:strong,font:{size:11,weight:'600'}} },
-            x:{ grid:{color:grid+'40'}, ticks:{color:muted} }
-          }
-        }
-      });
-    }
-
-    /* Receita por Categoria */
-    const elCat = document.getElementById('chartReceitaTipo');
-    if (elCat) {
-      const lblC = {{ receita_por_tipo_labels|default:"[]"|safe }};
-      const dadC = {{ receita_por_tipo_valores|default:"[]"|safe }};
-      if (elCat._c) elCat._c.destroy();
-      if (lblC.length > 0) {
-        const cores = CAT_CORES.slice(0, lblC.length);
-        elCat._c = new Chart(elCat, {
-          type:'doughnut',
-          data:{ labels:lblC, datasets:[{ data:dadC, backgroundColor:cores, borderWidth:0, hoverOffset:8 }] },
-          options:{ responsive:true, maintainAspectRatio:false, cutout:'70%',
-                    plugins:{ legend:{display:false},
-                              tooltip:{callbacks:{label:ctx=>` R$ ${ctx.raw.toFixed(2).replace('.',',')}`}} } }
-        });
-        const leg = document.getElementById('legendaReceita');
-        if (leg) {
-          leg.innerHTML = lblC.map((l,i)=>`
-            <div style="display:flex;justify-content:space-between;align-items:center;font-size:10px;margin-bottom:4px;">
-              <div style="display:flex;align-items:center;gap:6px;">
-                <span style="width:10px;height:10px;border-radius:50%;background:${cores[i]};display:inline-block;flex-shrink:0"></span>
-                <span style="color:var(--text-main)">${l}</span>
-              </div>
-              <span style="font-family:var(--font-mono);font-weight:700;color:var(--text-main)">
-                R$ ${dadC[i].toFixed(2).replace('.',',')}
-              </span>
-            </div>`).join('');
-        }
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting && !entry.target.dataset.loaded) {
+        entry.target.dataset.loaded = 'true';
+        buildCharts();
+        observer.unobserve(entry.target);
       }
-    }
+    });
+  }, { rootMargin: '50px' });
 
-    /* Inadimplência */
-    const elInad = document.getElementById('chartInadimplencia');
-    if (elInad) {
-      if (elInad._c) elInad._c.destroy();
-      elInad._c = new Chart(elInad, {
-        type: 'doughnut',
-        data: {
-          labels: ['Recebido', 'A vencer', 'Vencido'],
-          datasets: [{ data: [{{ v_pago_mes|stringformat:".2f" }}, {{ v_a_vencer_mes|stringformat:".2f" }}, {{ v_vencido_mes|stringformat:".2f" }}], backgroundColor: ['#10b981','#f59e0b','#ef4444'], borderWidth: 0 }]
-        },
-        options: { responsive:false, maintainAspectRatio:false, cutout:'74%',
-                   plugins:{ legend:{display:false}, tooltip:{enabled:false} }, animation:{duration:600} }
-      });
-    }
-  }
+  document.querySelectorAll('.card').forEach(card => {
+    if (card.querySelector('canvas')) observer.observe(card);
+  });
 
-  buildCharts();
+  if (document.querySelector('.kpi-card')) buildCharts();
 
   /* ── Feedback visual imediato ao Finalizar ── */
   function marcarConcluida(aulaId, form) {
