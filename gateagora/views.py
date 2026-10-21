@@ -1382,7 +1382,7 @@ def dashboard(request):
         "receita_por_tipo_labels":  json.dumps(receita_por_tipo_labels,  ensure_ascii=False),
         "receita_por_tipo_valores": json.dumps(receita_por_tipo_valores),
         # Somente itens críticos/atenção para o painel fusionado do dashboard
-        "estoque_alerta":           [i for i in estoque_todos if i.prioridade <= 1],
+        "estoque_alerta":           estoque_todos,
         # Inadimplência
         "total_faturas":            total_faturas_mes,
         "v_pago_mes":               float(v_pago_mes),

@@ -198,7 +198,7 @@
     }
   
     /* Agenda operacional revisada */
-    .agenda-dia { max-height:430px; overflow-y:auto; }
+    .agenda-dia { max-height:24rem; overflow-y:auto; }
     .agenda-nav-btn { width:30px;height:30px;border-radius:.65rem;border:1px solid var(--border);background:var(--card-alt);color:var(--text-main);font-size:11px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;transition:.2s; }
     .agenda-nav-btn:hover { border-color:#6366f1;color:var(--indigo-text);transform:translateY(-1px); }
     .attention-head { display:flex;align-items:center;justify-content:space-between;gap:12px;margin:2px 2px -4px; }
@@ -208,6 +208,7 @@
       .aula-card > div:nth-child(1) { margin-bottom:0 !important; }
       .aula-card > div:last-child { margin-top:0 !important;padding-top:0 !important;border-top:0 !important; }
     }
+    .alerta-painel { max-height:360px; overflow-y:auto; }
   </style>
 </head>
 <body>
@@ -292,7 +293,33 @@
 
 <!-- ══════════════════════════════════════════════════════ MAIN -->
 <div class="max-w-screen-xl mx-auto px-4 py-6 space-y-5">
-
+  <!-- Atalhos Rápidos (topo: acesso direto, pensado para celular) -->
+  <div class="card-static p-3" style="border-left:3px solid var(--indigo-text);">
+    <p class="text-[9px] font-bold uppercase tracking-widest mb-2" style="color:var(--text-muted)">
+      <i class="fa-solid fa-bolt mr-1" style="color:var(--indigo-text)"></i>Atalhos Rápidos
+    </p>
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+      {% if pode_ver_financeiro %}
+      <a href="/admin/gateagora/movimentacaofinanceira/add/" class="atalho"
+        style="background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.25);">
+        <span>Receita / Despesa</span><i class="fa-solid fa-dollar-sign ml-2"></i>
+      </a>
+      <a href="/admin/gateagora/fatura/add/" class="atalho"
+        style="background:rgba(59,130,246,0.12);color:#3b82f6;border:1px solid rgba(59,130,246,0.25);">
+        <span>Nova Fatura</span><i class="fa-solid fa-file-invoice-dollar ml-2"></i>
+      </a>
+      {% endif %}
+      <a href="/admin/gateagora/registroocorrencia/add/" class="atalho"
+        style="background:rgba(245,158,11,0.12);color:#f59e0b;border:1px solid rgba(245,158,11,0.25);">
+        <span>Ocorrência Saúde</span><i class="fa-solid fa-notes-medical ml-2"></i>
+      </a>
+      <a href="{% url 'gerar_ficha_trato_pdf' %}" class="atalho"
+        style="background:rgba(6,182,212,0.12);color:#06b6d4;border:1px solid rgba(6,182,212,0.25);">
+        <span>PDF de Trato</span><i class="fa-solid fa-file-pdf ml-2"></i>
+      </a>
+    </div>
+  </div>
+  
   <!-- ── 1. Cabeçalho + Atalhos Rápidos ──────────────────── -->
   <!-- Atalhos movidos para cima, entre cabeçalho e KPIs     -->
   <div class="flex flex-col gap-4">
@@ -401,6 +428,7 @@
       <div>
         <p class="sec-title mb-2">Faturamento do Mês</p>
         <p class="text-2xl font-bold" style="color:var(--text-strong)">R$ {{ receita_total_prevista|floatformat:0 }}</p>
+        <p class="text-[10px] mt-1 font-bold" style="color:var(--emerald-text)">R$ {{ faturamento_aberto_total|floatformat:2 }} ainda a vencer</p>
       </div>
       <p class="text-[9px] mt-auto pt-3 flex items-center gap-1" style="color:var(--text-muted)">
         <i class="fa-solid fa-chart-line" style="color:#10b981"></i>
@@ -1201,111 +1229,8 @@
       {% if pode_ver_dashboard_completo %}
       <div class="lg:col-span-4 space-y-5">
 
-      <!-- Frame de Atalhos Operacionais -->
-      <div class="card-static overflow-hidden" style="border-left:3px solid var(--indigo-text);">
-        <div class="px-4 py-3" style="border-bottom:1px solid var(--border);">
-          <p class="text-[9px] font-bold uppercase tracking-widest mb-2.5" style="color:var(--text-muted)">
-            <i class="fa-solid fa-bolt mr-1" style="color:var(--indigo-text)"></i>Atalhos Rápidos
-          </p>
-          <div class="grid grid-cols-2 gap-2">
-
-          {% if pode_ver_financeiro %}
-          <!-- Receita / Despesa -->
-          <a href="/admin/gateagora/movimentacaofinanceira/add/" class="atalho"
-            style="background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.25);">
-            <span>Receita / Despesa</span>
-            <i class="fa-solid fa-dollar-sign ml-2"></i>
-          </a>
-
-          <!-- Nova Fatura -->
-          <a href="/admin/gateagora/fatura/add/" class="atalho"
-            style="background:rgba(59,130,246,0.12);color:#3b82f6;border:1px solid rgba(59,130,246,0.25);">
-            <span>Nova Fatura</span>
-            <i class="fa-solid fa-file-invoice-dollar ml-2"></i>
-          </a>
-          {% endif %}
-
-          <!-- Ocorrência Saúde -->
-          <a href="/admin/gateagora/registroocorrencia/add/" class="atalho"
-            style="background:rgba(245,158,11,0.12);color:#f59e0b;border:1px solid rgba(245,158,11,0.25);">
-            <span>Ocorrência Saúde</span>
-            <i class="fa-solid fa-notes-medical ml-2"></i>
-          </a>
-
-          <!-- PDF de Trato -->
-          <a href="{% url 'gerar_ficha_trato_pdf' %}" class="atalho"
-            style="background:rgba(6,182,212,0.12);color:#06b6d4;border:1px solid rgba(6,182,212,0.25);">
-            <span>PDF de Trato</span>
-            <i class="fa-solid fa-file-pdf ml-2"></i>
-          </a>
-
-        </div>
-        </div>
-      </div>
 
       {% if pode_ver_financeiro %}
-      <div class="card-static overflow-hidden" style="border-left: 3px solid var(--indigo-text);">
-        <div class="px-4 py-3 flex items-center justify-between bg-[var(--card-bg)]" style="border-bottom: 1px solid var(--border);">
-          <div class="flex items-center gap-3">
-            <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style="background:rgba(99,102,241,0.1);">
-              <i class="fa-solid fa-receipt" style="color:var(--indigo-text)"></i>
-            </div>
-            
-            <div>
-              <h2 class="text-[11px] font-bold uppercase tracking-wide" style="color:var(--text-strong); margin-bottom: 0;">Faturamento do Mês</h2>
-              <p class="text-[10px] font-bold font-mono" style="color:var(--emerald-text); margin-top: -2px;">R$ {{ faturamento_aberto_total|floatformat:2 }} em aberto</p>
-            </div>
-          </div>
-          
-          <a href="/admin/gateagora/fatura/" class="text-[9px] font-bold uppercase hover:underline" style="color:var(--text-muted)">Ver Tudo</a>
-        </div>
-
-        <div class="custom-scrollbar" style="max-height: 250px; overflow-y: auto;">
-          {% if faturas_abertas_mes %}
-            <table class="w-full text-left border-collapse">
-              <tbody class="divide-y divide-[var(--border)]">
-                {% for item in faturas_abertas_mes %}
-                <tr class="hover:bg-[var(--card-alt)] transition">
-                  <td class="px-4 py-3">
-                    <!-- Nome do Aluno + Total Previsto -->
-                    <div class="flex justify-between items-center">
-                      <p class="text-[11px] font-bold" style="color:var(--text-main)">
-                        {{ item.aluno.nome }}
-                      </p>
-                      <p class="text-[10px] font-bold font-mono" style="color:var(--emerald-text)">
-                        R$ {{ item.valor|floatformat:2 }}
-                      </p>
-                    </div>
-
-                    <!-- Resumo de Aulas e Serviços -->
-                    <div class="mt-1 flex items-center gap-2 text-[9px]" style="color:var(--text-muted)">
-                      <span><i class="fa-regular fa-calendar text-[8px]"></i> vence {{ item.vencimento|date:"d/m" }}</span>
-                      {% if item.aluno.plano %}
-                        <span>· Plano: {{ item.aluno.plano }}</span>
-                      {% endif %}
-                    </div>
-                  </td>
-                  <td class="px-4 py-3 text-right">
-                    <div class="flex justify-end gap-1.5">
-                      {% if item.tem_whatsapp %}
-                      <a href="{{ item.whatsapp }}" target="_blank" class="w-7 h-7 flex items-center justify-center rounded-lg" style="background:rgba(16,185,129,0.10); color:#10b981;" title="Enviar cobrança pelo WhatsApp">
-                        <i class="fa-brands fa-whatsapp text-xs"></i>
-                      </a>
-                      {% endif %}
-                      <a href="{% url 'gerar_relatorio_pdf' item.aluno.id %}" class="w-7 h-7 flex items-center justify-center rounded-lg" style="background:rgba(99,102,241,0.1); color:var(--indigo-text);" title="Gerar PDF">
-                        <i class="fa-solid fa-file-pdf text-xs"></i>
-                      </a>
-                    </div>
-                  </td>
-                </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          {% else %}
-            <p class="text-[10px] text-center py-6 font-bold uppercase opacity-40">Nenhuma fatura em aberto a vencer</p>
-          {% endif %}
-        </div>
-      </div>
 
       <!-- ── Inadimplência ── -->
       <div class="card-static p-4" style="border-left:3px solid #ef4444;">

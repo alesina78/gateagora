@@ -901,16 +901,7 @@ class Fatura(models.Model):
     competencia = models.DateField(
         null=True, blank=True,
         help_text="Primeiro dia do mês a que a cobrança se refere",
-    )    
-    TIPO_FATURA_CHOICES = [
-        ('FIXA', 'Fixa (mensalidade, antecipada)'),
-        ('CONSUMO', 'Consumo (aulas e serviços, pós-pago)'),
-    ]
-    tipo = models.CharField(max_length=10, choices=TIPO_FATURA_CHOICES, default='CONSUMO')
-    competencia = models.DateField(
-        null=True, blank=True,
-        help_text="Primeiro dia do mês a que a cobrança se refere",
-    )    
+    )      
     data_pagamento = models.DateField(null=True, blank=True)
 
     class Meta:
