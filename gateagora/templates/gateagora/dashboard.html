@@ -889,7 +889,7 @@
               <i class="fa-solid fa-horse text-[9px]"></i>
               <strong>{{ aula.cavalo.nome }}</strong>
               <span style="color:var(--text-muted)">
-                · {% if aula.cavalo.baia %}Baia {{ aula.cavalo.baia.numero }}{% elif aula.cavalo.piquete %}Piquete {{ aula.cavalo.piquete.nome|default:aula.cavalo.piquete.numero }}{% elif aula.cavalo.localizacao %}{{ aula.cavalo.localizacao }}{% else %}Piquete{% endif %}
+                · {% if aula.cavalo.baia %}Baia {{ aula.cavalo.baia.numero }}{% elif aula.cavalo.piquete %}Piquete {{ aula.cavalo.piquete.nome }}{% elif aula.cavalo.localizacao %}{{ aula.cavalo.localizacao }}{% else %}Piquete{% endif %}
               </span>
             </p>
 

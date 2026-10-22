@@ -293,9 +293,15 @@
           <div>
             <p class="text-[9px] font-black uppercase leading-none" style="color: var(--text-muted);">Localização</p>
             <p class="text-xs font-bold uppercase mt-0.5" style="color: var(--text-strong);">
-              {% if aula.cavalo.baia %}Baia {{ aula.cavalo.baia.numero }}
-              {% elif aula.cavalo.piquete %}Piquete: {{ aula.cavalo.piquete.nome }}
-              {% else %}N/D{% endif %}
+              {% if aula.cavalo.baia %}
+                Baia {{ aula.cavalo.baia.numero }}
+              {% elif aula.cavalo.piquete %}
+                Piquete {{ aula.cavalo.piquete.nome }}
+              {% elif aula.cavalo.localizacao %}
+                {{ aula.cavalo.localizacao }}
+              {% else %}
+                Piquete / Solto
+              {% endif %}
             </p>
           </div>
         </div>
