@@ -905,7 +905,7 @@
                 {% if not aula.concluida and aula.is_confirmada and request.user.perfil.cargo != 'Aluno' %}
                   <form action="{% url 'desconfirmar_presenca_dashboard' aula.id %}" method="post" class="inline">
                     {% csrf_token %}
-                    <button type="submit" class="btn-fin" style="background:rgba(239,68,68,0.12);color:#f87171;border:1px solid rgba(239,68,68,0.25);" title="Desconfirmar Aula">
+                    <button type="submit" class="btn-fin" style="background:rgba(239,68,68,0.12);color:#f87171;border:1px solid rgba(239,68,68,0.25);" title="Stand-by">
                       <i class="fa-solid fa-circle-xmark"></i>
                     </button>
                   </form>
