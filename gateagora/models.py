@@ -1364,6 +1364,15 @@ class TrocaTotalCama(models.Model):
     def __str__(self):
         return f"Troca {self.baia.numero} — {self.data.strftime('%d/%m/%Y')}"
 
+    def clean(self):
+        super().clean()
+        if self.pk:
+            anterior = Fatura.objects.filter(pk=self.pk).values_list('status', flat=True).first()
+            if anterior == 'PAGO' and self.status != 'PAGO':
+                raise ValidationError({
+                    'status': "Esta fatura já está paga. Para reabrir, faça o estorno da receita antes."
+                })
+            
     def save(self, *args, **kwargs):
         """Calcula próxima data automaticamente"""
         if not self.proxima_data:

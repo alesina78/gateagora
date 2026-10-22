@@ -827,7 +827,10 @@
             {# Turma ou Aluno Individual #}
             {% if aula.nome_turma %}
               <div class="flex items-center gap-2 mb-0.5 flex-wrap">
-                <p class="text-[13px] font-bold leading-tight" style="color:var(--text-strong)">{{ aula.nome_turma }}</p>
+                <a href="/admin/gateagora/aula/{{ aula.id }}/change/" target="_blank" class="hover:underline flex items-center gap-1.5" title="Abrir/Editar Aula #{{ aula.id }}">
+                  <p class="text-[13px] font-bold leading-tight" style="color:var(--text-strong)">{{ aula.nome_turma }}</p>
+                  <i class="fa-solid fa-arrow-up-right-from-square text-[9px]" style="color:var(--indigo-text)"></i>
+                </a>
                 {% if aula.vagas_maximas %}
                   {% with total_inscritos=aula.inscricoes.count %}
                   <span style="display:inline-flex;align-items:center;gap:3px;
@@ -864,7 +867,10 @@
                 {% endfor %}
               </div>
             {% else %}
-              <p class="text-[13px] font-bold leading-tight" style="color:var(--text-strong)">{{ aula.aluno.nome }}</p>
+              <a href="/admin/gateagora/aula/{{ aula.id }}/change/" target="_blank" class="hover:underline inline-flex items-center gap-1.5" title="Abrir/Editar Aula #{{ aula.id }}">
+                <p class="text-[13px] font-bold leading-tight" style="color:var(--text-strong)">{{ aula.aluno.nome }}</p>
+                <i class="fa-solid fa-arrow-up-right-from-square text-[9px]" style="color:var(--indigo-text)"></i>
+              </a>
             {% endif %}
             <p class="text-[10px] mt-0.5 flex items-center gap-1" style="color:var(--indigo-text)">
               <i class="fa-solid fa-horse text-[9px]"></i>
