@@ -6,3 +6,4 @@ __pycache__/
 media/
 staticfiles/
 seed_*.py
+seed_farrapos.py seed_farrapos_docs.py seed_farrapos_v2.py
