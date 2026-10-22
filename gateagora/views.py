@@ -2917,6 +2917,21 @@ def movimentar_estoque(request):
 
 # ── Fechamento do Dia (Estoque) ───────────────────────────────────────────────
 
+def ordenar_prioridade_estoque(itens):
+    """Mesma regra do dashboard: 0 = mais urgente. Ordena por prioridade e depois por nome."""
+    def prioridade(item):
+        vencido = item.status_validade == 'vencido'
+        disponivel = 0 if vencido else item.quantidade_valida
+        if vencido or disponivel <= item.alerta_minimo:
+            return 0
+        if item.status_validade == 'alerta_critico':
+            return 1
+        if item.status_validade == 'alerta':
+            return 2
+        return 3
+    return sorted(itens, key=lambda x: (prioridade(x), x.nome))
+
+
 @login_required
 def fechamento_dia(request):
     """Exibe a tela de fechamento diário de estoque."""
@@ -2988,7 +3003,7 @@ def fechamento_dia(request):
             return (1, item.dias_para_vencer_calc, item.nome)
         return (2, 9999, item.nome)
 
-    itens = sorted(itens_qs, key=_sort_key)
+    itens = ordenar_prioridade_estoque(list(itens_qs))
 
     context = {
         "brand_name": BRAND_NAME,
@@ -3935,10 +3950,11 @@ def relatorio_pdf(request):
 
 @login_required
 def relatorio_estoque_pdf(request):
-    """Gera PDF do estoque com controle de validade."""
+    """Gera PDF do estoque com controle de validade, ordenado por prioridade."""
     from reportlab.pdfgen import canvas as rl_canvas
     from reportlab.lib.pagesizes import A4
-    from datetime import date
+    from reportlab.lib import colors
+    from reportlab.lib.colors import HexColor
 
     empresa = request.empresa
     if not empresa:
@@ -3952,36 +3968,37 @@ def relatorio_estoque_pdf(request):
         .prefetch_related('lotes')
         .order_by('nome')
     )
-
-    # Força cálculo das propriedades
-    for item in itens:
-        _ = item.quantidade_valida
-        _ = item.dias_para_vencer
-        _ = item.status_validade
-
-    # ... resto do código da função continua igual
+    itens = ordenar_prioridade_estoque(itens)
 
     response = HttpResponse(content_type='application/pdf')
     response['Content-Disposition'] = (
         f'attachment; filename="estoque_validade_{hoje.strftime("%Y%m%d")}.pdf"'
     )
 
-    w, h   = A4
-    c      = rl_canvas.Canvas(response, pagesize=A4)
-    margem = 2.5 * 28.35  # 2.5cm em pontos
+    w, h = A4
+    c = rl_canvas.Canvas(response, pagesize=A4)
+    margem = 2.5 * 28.35  # 2,5 cm
 
     COR_PRIMARIA = HexColor('#4f46e5')
-    COR_VERDE    = HexColor('#10b981')
-    COR_AMBAR    = HexColor('#f59e0b')
+    COR_VERDE = HexColor('#10b981')
+    COR_AMBAR = HexColor('#f59e0b')
     COR_VERMELHO = HexColor('#ef4444')
-    COR_CINZA    = HexColor('#f8fafc')
-    COR_TEXTO    = HexColor('#1e293b')
-    COR_MUTED    = HexColor('#64748b')
+    COR_CINZA = HexColor('#f1f5f9')
+    COR_TEXTO = HexColor('#1e293b')
+    COR_MUTED = HexColor('#64748b')
+
+    # 6 colunas; soma = 453 pontos (largura útil da página)
+    LARGURAS = [150, 60, 50, 70, 65, 58]
+    CABECALHO = ['PRODUTO', 'QTDE', 'UNID', 'LOTE', 'VALIDADE', 'STATUS']
+
+    def fmt_qtd(valor):
+        if valor is None:
+            return '—'
+        return f'{float(valor):.2f}'.rstrip('0').rstrip('.')
 
     def nova_pagina(pagina):
         if pagina > 1:
             c.showPage()
-        # Cabeçalho
         c.setFillColor(COR_PRIMARIA)
         c.rect(0, h - 60, w, 60, fill=1, stroke=0)
         c.setFillColor(colors.white)
@@ -3994,39 +4011,55 @@ def relatorio_estoque_pdf(request):
             c.drawRightString(w - margem, h - 47, f'Página {pagina}')
         return h - 80
 
-    def linha_tabela(y, cols, bg=None, bold=False, cor_status=None):
-        """Desenha uma linha da tabela."""
-        altl = 20
-        if bg:
-            c.setFillColor(bg)
-            c.rect(margem, y - altl + 4, w - 2 * margem, altl, fill=1, stroke=0)
-
-        font = 'Helvetica-Bold' if bold else 'Helvetica'
-        larguras = [180, 70, 60, 80, 90]  # Nome, Qtd, Unid, Lote, Validade, Status
+    def cabecalho_tabela(y):
+        c.setFillColor(COR_PRIMARIA)
+        c.rect(margem, y - 16, w - 2 * margem, 20, fill=1, stroke=0)
+        c.setFillColor(colors.white)
+        c.setFont('Helvetica-Bold', 7.5)
         x = margem + 4
+        for txt, larg in zip(CABECALHO, LARGURAS):
+            c.drawString(x, y - 10, txt)
+            x += larg
+        return y - 20
 
-        for i, (txt, larg) in enumerate(zip(cols, larguras)):
+    def linha_tabela(y, cols, zebra=False, cor_status=None):
+        altura = 20
+        if zebra:
+            c.setFillColor(COR_CINZA)
+            c.rect(margem, y - altura + 4, w - 2 * margem, altura, fill=1, stroke=0)
+        x = margem + 4
+        for i, (txt, larg) in enumerate(zip(cols, LARGURAS)):
             if i == 5 and cor_status:
                 c.setFillColor(cor_status)
+                c.setFont('Helvetica-Bold', 8)
             else:
-                c.setFillColor(COR_TEXTO if not bold else colors.white)
-            c.setFont(font, 8 if not bold else 7.5)
-            c.drawString(x, y - 10, str(txt)[:30])
+                c.setFillColor(COR_TEXTO)
+                c.setFont('Helvetica', 8)
+            c.drawString(x, y - 10, str(txt)[:32])
             x += larg
-
-        # Linha separadora
         c.setStrokeColor(HexColor('#e2e8f0'))
         c.setLineWidth(0.3)
-        c.line(margem, y - altl + 4, w - margem, y - altl + 4)
-        return y - altl
+        c.line(margem, y - altura + 4, w - margem, y - altura + 4)
+        return y - altura
 
-    # ── Início do PDF ────────────────────────────────────────────────────────
+    def status_lote(lote):
+        if not lote.data_validade:
+            return '—', COR_MUTED
+        dias = (lote.data_validade - hoje).days
+        if dias < 0:
+            return 'VENCIDO', COR_VERMELHO
+        if dias <= 5:
+            return f'{dias}d CRÍTICO', COR_VERMELHO
+        if dias <= 30:
+            return f'{dias}d p/ vencer', COR_AMBAR
+        return f'{dias}d', COR_VERDE
+
+    # ── Resumo e tabela ─────────────────────────────────────
     pagina = 1
     y = nova_pagina(pagina)
 
-    # Resumo rápido
     vencidos = sum(1 for i in itens if i.status_validade == 'vencido')
-    alertas  = sum(1 for i in itens if i.status_validade == 'alerta')
+    alertas = sum(1 for i in itens if i.status_validade == 'alerta')
     c.setFont('Helvetica-Bold', 9)
     c.setFillColor(COR_TEXTO)
     c.drawString(margem, y, f'Total de itens: {len(itens)}')
@@ -4034,74 +4067,37 @@ def relatorio_estoque_pdf(request):
     c.drawString(margem + 130, y, f'Vencidos: {vencidos}')
     c.setFillColor(COR_AMBAR)
     c.drawString(margem + 240, y, f'A vencer em 30 dias: {alertas}')
-    y -= 20
+    y -= 22
 
-    # Cabeçalho da tabela
-    y = linha_tabela(y,
-        ['PRODUTO', 'QTDE', 'UNID', 'LOTE', 'VALIDADE', 'STATUS'],
-        bg=COR_PRIMARIA, bold=True
-    )
+    y = cabecalho_tabela(y)
+    zebra = False
 
-    # Linhas de dados — itera sobre lotes ativos de cada item
-    linha_idx = 0
     for item in itens:
-        lotes_ativos = item.lotes.filter(ativo=True).order_by('data_validade')
-        if not lotes_ativos.exists():
-            # Item sem lotes: exibe linha com dados básicos
-            if y < 60:
+        lotes = list(item.lotes.filter(ativo=True).order_by('data_validade'))
+        linhas = lotes if lotes else [None]
+
+        for lote in linhas:
+            if y < 70:
                 pagina += 1
                 y = nova_pagina(pagina)
-                y = linha_tabela(y,
-                    ['PRODUTO', 'QTDE', 'UNID', 'LOTE', 'VALIDADE', 'STATUS'],
-                    bg=COR_PRIMARIA, bold=True
-                )
-            bg_linha = COR_CINZA if linha_idx % 2 == 0 else None
-            y = linha_tabela(y,
-                [item.nome, '—', item.unidade, '—', '—', '—'],
-                bg=bg_linha, cor_status=COR_MUTED
-            )
-            linha_idx += 1
-            continue
+                y = cabecalho_tabela(y)
 
-        for lote in lotes_ativos:
-            if y < 60:
-                pagina += 1
-                y = nova_pagina(pagina)
-                y = linha_tabela(y,
-                    ['PRODUTO', 'QTDE', 'UNID', 'LOTE', 'VALIDADE', 'STATUS'],
-                    bg=COR_PRIMARIA, bold=True
-                )
-
-            val_txt = lote.data_validade.strftime('%d/%m/%Y') if lote.data_validade else '—'
-
-            if lote.data_validade:
-                dias = (lote.data_validade - hoje).days
-                if dias < 0:
-                    status_txt = 'VENCIDO'
-                    cor_s      = COR_VERMELHO
-                elif dias <= 5:
-                    status_txt = f'{dias}d — CRÍTICO'
-                    cor_s      = COR_VERMELHO
-                elif dias <= 30:
-                    status_txt = f'{dias}d p/ vencer'
-                    cor_s      = COR_AMBAR
-                else:
-                    status_txt = f'{dias}d'
-                    cor_s      = COR_VERDE
+            if lote is None:
+                cols = [item.nome, fmt_qtd(item.quantidade_atual), item.unidade, '—', '—', 'SEM LOTE']
+                cor = COR_MUTED
             else:
-                status_txt = '—'
-                cor_s      = COR_MUTED
+                texto_status, cor = status_lote(lote)
+                cols = [
+                    item.nome,
+                    fmt_qtd(lote.quantidade),
+                    item.unidade,
+                    lote.numero_lote or '—',
+                    lote.data_validade.strftime('%d/%m/%Y') if lote.data_validade else '—',
+                    texto_status,
+                ]
+            y = linha_tabela(y, cols, zebra=zebra, cor_status=cor)
+            zebra = not zebra
 
-            bg_linha = COR_CINZA if linha_idx % 2 == 0 else None
-            qtd_txt  = str(lote.quantidade) if hasattr(lote, 'quantidade') else '—'
-            y = linha_tabela(y,
-                [item.nome, qtd_txt, item.unidade,
-                 lote.numero_lote or '—', val_txt, status_txt],
-                bg=bg_linha, cor_status=cor_s
-            )
-            linha_idx += 1
-
-    # Rodapé
     c.setFillColor(COR_MUTED)
     c.setFont('Helvetica', 7)
     c.drawCentredString(w / 2, 30,

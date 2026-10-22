@@ -235,7 +235,7 @@
           <!-- INFO DO ITEM -->
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-2 flex-wrap">
-              <span class="text-sm font-black uppercase" style="color:var(--text-strong)">{{ item.nome }}</span>
+              <a href="/admin/gateagora/itemestoque/{{ item.id }}/change/" target="_blank" class="text-sm font-black uppercase hover:underline" style="color:var(--text-strong)">{{ item.nome }} <i class="fa-solid fa-arrow-up-right-from-square text-[10px]" style="color:var(--indigo-text)"></i></a>
 
               {% for lote in item.lotes.all %}
                 {% if lote.ativo %}

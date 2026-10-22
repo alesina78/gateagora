@@ -9,8 +9,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"/>
   <link rel="stylesheet" href="{% static 'css/themes.css' %}">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <!-- SortableJS para drag-drop -->
-  <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+  
   <style>
     body { font-family: 'DM Sans', sans-serif; background-color: var(--bg-main); color: var(--text-main); }
     .glass { background-color: var(--card-bg); border-bottom: 1px solid var(--border); backdrop-filter: blur(12px); }
@@ -128,7 +127,7 @@
         <span class="legenda-item"><span class="badge-proc badge-tro">Tro</span> Troca Cama</span>
       </div>
 
-      <div id="listaCavalos" data-sortable="true" class="sortable-list">
+      <div id="listaCavalos">
         {% for item in cavalos_status %}
           {% with cavalo=item.obj %}
           <div class="cavalo-row {% if item.vencido %}em-alerta alerta-row{% else %}em-dia-row{% endif %}" data-id="{{ cavalo.id }}" onclick="toggleCavalo({{ cavalo.id }})">
@@ -226,19 +225,6 @@
     </button>
   </form>
 </div>
-
-<!-- Inicializa drag-drop da lista de animais -->
-<script>
-  // SortableJS para reordenar animais
-  const listaCavalos = document.getElementById('listaCavalos');
-  if (listaCavalos) {
-    new Sortable(listaCavalos, {
-      animation: 150,
-      filter: 'input[type="checkbox"]',
-      preventOnFilter: false
-    });
-  }
-</script>
 
 <script>
   function atualizarContador(el) {
