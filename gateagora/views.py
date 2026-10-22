@@ -2368,7 +2368,15 @@ def encilhamento_pdf(request):
         hora = timezone.localtime(aula.data_hora).strftime('%H:%M')
         c    = aula.cavalo
 
-        local    = f"Baia {c.baia.numero}" if getattr(c, 'baia', None) else                    (f"Piquete: {c.piquete.nome}" if getattr(c, 'piquete', None) else "N/D")
+        if getattr(c, 'baia', None):
+            local = f"Baia {c.baia.numero}"
+        elif getattr(c, 'piquete', None):
+            nome_p = getattr(c.piquete, 'nome', None) or getattr(c.piquete, 'numero', '')
+            local = f"Piquete {nome_p}".strip()
+        elif getattr(c, 'localizacao', None):
+            local = str(c.localizacao)
+        else:
+            local = "Piquete / Solto"
         sela      = str(aula.sela) if aula.sela else "Padrão escola"
         cabecada  = str(aula.cabecada) if aula.cabecada else "Padrão escola"
         tem_obs   = bool(getattr(aula, 'relatorio_treino', None))

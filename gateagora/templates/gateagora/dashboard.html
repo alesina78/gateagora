@@ -781,6 +781,19 @@
               · {{ total_aulas_hoje }} total
             </p>
           </div>
+
+          <!-- Legenda de Status -->
+          <div class="flex items-center gap-3 text-[10px] font-medium" style="color: var(--text-muted);">
+            <span class="inline-flex items-center gap-1">
+              <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span> Confirmadas
+            </span>
+            <span class="inline-flex items-center gap-1">
+              <span class="w-2 h-2 rounded-full bg-amber-500 inline-block"></span> Pendentes
+            </span>
+            <span class="inline-flex items-center gap-1">
+              <span class="w-2 h-2 rounded-full bg-indigo-400 inline-block"></span> Concluídas
+            </span>
+          </div>
         </div>
 
         <!-- Lista de Aulas -->
@@ -875,7 +888,9 @@
             <p class="text-[10px] mt-0.5 flex items-center gap-1" style="color:var(--indigo-text)">
               <i class="fa-solid fa-horse text-[9px]"></i>
               <strong>{{ aula.cavalo.nome }}</strong>
-              {% if aula.cavalo.baia %}<span style="color:var(--text-muted)">· Baia {{ aula.cavalo.baia.numero }}</span>{% endif %}
+              <span style="color:var(--text-muted)">
+                · {% if aula.cavalo.baia %}Baia {{ aula.cavalo.baia.numero }}{% elif aula.cavalo.piquete %}Piquete {{ aula.cavalo.piquete.nome|default:aula.cavalo.piquete.numero }}{% elif aula.cavalo.localizacao %}{{ aula.cavalo.localizacao }}{% else %}Piquete{% endif %}
+              </span>
             </p>
 
             {# Linha equipamento + ações #}
