@@ -109,6 +109,7 @@ def criar_perfil_usuario(sender, instance, created, **kwargs):
 # --- 2. GESTÃO OPERACIONAL ---
 
 class Sela(models.Model):
+    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, null=True, blank=True, related_name='selas')
     nome = models.CharField(max_length=100)
     descricao = models.TextField(blank=True, null=True)
 
@@ -117,6 +118,7 @@ class Sela(models.Model):
 
 
 class Cabecada(models.Model):
+    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, null=True, blank=True, related_name='cabecadas')
     nome = models.CharField(max_length=100)
     descricao = models.TextField(blank=True, null=True)
 
@@ -231,12 +233,16 @@ class Piquete(models.Model):
         return f"{self.nome} ({self.empresa.nome})"
 
 class RacaCavalo(models.Model):
-    nome = models.CharField(max_length=100, unique=True)
+    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, null=True, blank=True, related_name='racas')
+    nome = models.CharField(max_length=100)
 
     class Meta:
         ordering = ['nome']
         verbose_name = "Raça de Cavalo 🐴"
         verbose_name_plural = "Raças de Cavalos 🐴"
+        constraints = [
+            models.UniqueConstraint(fields=['empresa', 'nome'], name='raca_unica_por_empresa'),
+        ]
 
     def __str__(self):
         return self.nome
