@@ -31,6 +31,7 @@
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,600;0,700;1,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 
     <style>
+      
     /* ── Design Tokens ── */
     :root {
       --font-main:  'DM Sans', sans-serif;
@@ -321,8 +322,8 @@
         </a>
         {% endif %}
         <a href="{% url 'encilhamento' %}"
-          class="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-xs uppercase tracking-wide"
-          style="background:linear-gradient(135deg,#059669,#10b981);color:#fff;
+          class="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-xs uppercase tracking-wide text-white"
+          style="background:linear-gradient(135deg,#059669,#10b981);color:#ffffff !important;
                  box-shadow:0 4px 14px -4px rgba(16,185,129,0.5);
                  transition:all 0.2s var(--ease-out);"
           onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 10px 20px -6px rgba(16,185,129,0.55)'"
@@ -478,12 +479,16 @@
           </div>
         </div>
         <div class="flex items-center gap-2">
-          <a href="{% url 'manejo_em_massa' %}" onclick="event.stopPropagation();"
-             class="text-[8px] font-bold uppercase px-2 py-1 rounded-lg"
-             style="background:rgba(16,185,129,0.12);color:var(--emerald-text);">
-            <i class="fa-solid fa-syringe mr-0.5"></i>Manejo
-          </a>
-          <i id="icon-saude" class="fa-solid fa-chevron-down text-[10px] transition-transform duration-300" style="color:var(--text-muted)"></i>
+          <div class="flex items-center gap-3">
+            <a href="{% url 'manejo_em_massa' %}" onclick="event.stopPropagation();"
+               class="text-[9px] font-bold uppercase px-2.5 py-1.5 rounded-lg mr-1"
+               style="background:rgba(16,185,129,0.12);color:var(--emerald-text);border:1px solid rgba(16,185,129,0.25);">
+              <i class="fa-solid fa-syringe mr-1"></i>Manejo
+            </a>
+            <div class="p-1.5 flex items-center justify-center">
+              <i id="icon-saude" class="fa-solid fa-chevron-down text-xs transition-transform duration-300" style="color:var(--text-muted)"></i>
+            </div>
+          </div>
         </div>
       </button>
       <div id="painel-saude" class="alerta-painel custom-scrollbar">
@@ -550,7 +555,8 @@
             <p class="text-[11px] font-bold uppercase tracking-wide" style="color:var(--amber-text)">Documentos Legais</p>
             <p class="text-[10px]" style="color:var(--text-main)">
               {% if docs_vencendo %}
-                <span style="color:var(--amber-text)">{{ docs_vencendo|length }} doc(s) no prazo</span>
+                <span style="color:var(--amber-text)">{{ docs_vencendo|length }} doc(s) requerem atenção</span>
+              
               {% else %}
                 <span style="color:var(--emerald-text)">Tudo regular ✓</span>
               {% endif %}
@@ -558,12 +564,16 @@
           </div>
         </div>
         <div class="flex items-center gap-2">
-          <a href="/admin/gateagora/documentocavalo/add/" onclick="event.stopPropagation();"
-             class="text-[8px] font-bold uppercase px-2 py-1 rounded-lg"
-             style="background:rgba(245,158,11,0.12);color:var(--amber-text);">
-            <i class="fa-solid fa-file-circle-plus mr-0.5"></i>Novo Doc
-          </a>
-          <i id="icon-venc" class="fa-solid fa-chevron-down text-[10px] transition-transform duration-300" style="color:var(--text-muted)"></i>
+          <div class="flex items-center gap-3">
+            <a href="/admin/gateagora/documentocavalo/add/" onclick="event.stopPropagation();"
+               class="text-[9px] font-bold uppercase px-2.5 py-1.5 rounded-lg mr-1"
+               style="background:rgba(245,158,11,0.12);color:var(--amber-text);border:1px solid rgba(245,158,11,0.25);">
+              <i class="fa-solid fa-file-circle-plus mr-1"></i>Novo Doc
+            </a>
+            <div class="p-1.5 flex items-center justify-center">
+              <i id="icon-venc" class="fa-solid fa-chevron-down text-xs transition-transform duration-300" style="color:var(--text-muted)"></i>
+            </div>
+          </div>
         </div>
       </button>
       <div id="painel-venc" class="alerta-painel custom-scrollbar">
@@ -633,17 +643,21 @@
           </div>
         </div>
         <div class="flex items-center gap-2">
-          <a href="{% url 'relatorio_estoque_pdf' %}" onclick="event.stopPropagation();"
-             class="text-[8px] font-bold uppercase px-2 py-1 rounded-lg"
-             style="background:rgba(239,68,68,0.1);color:#ef4444;">
-            <i class="fa-solid fa-file-pdf mr-0.5"></i>PDF
-          </a>
-          <a href="{% url 'fechamento_dia' %}" onclick="event.stopPropagation();"
-             class="text-[8px] font-bold uppercase px-2 py-1 rounded-lg"
-             style="background:rgba(16,185,129,0.12);color:var(--emerald-text);">
-            <i class="fa-solid fa-calendar-check mr-0.5"></i>Fechar Dia
-          </a>
-          <i id="icon-estq" class="fa-solid fa-chevron-down text-[10px] transition-transform duration-300" style="color:var(--text-muted)"></i>
+          <div class="flex items-center gap-2">
+            <a href="{% url 'relatorio_estoque_pdf' %}" onclick="event.stopPropagation();"
+               class="text-[9px] font-bold uppercase px-2 py-1.5 rounded-lg"
+               style="background:rgba(239,68,68,0.1);color:#ef4444;border:1px solid rgba(239,68,68,0.25);">
+              <i class="fa-solid fa-file-pdf mr-0.5"></i>PDF
+            </a>
+            <a href="{% url 'fechamento_dia' %}" onclick="event.stopPropagation();"
+               class="text-[9px] font-bold uppercase px-2.5 py-1.5 rounded-lg mr-1"
+               style="background:rgba(16,185,129,0.12);color:var(--emerald-text);border:1px solid rgba(16,185,129,0.25);">
+              <i class="fa-solid fa-calendar-check mr-1"></i>Fechar Dia
+            </a>
+            <div class="p-1.5 flex items-center justify-center">
+              <i id="icon-estq" class="fa-solid fa-chevron-down text-xs transition-transform duration-300" style="color:var(--text-muted)"></i>
+            </div>
+          </div>
         </div>
       </button>
 
