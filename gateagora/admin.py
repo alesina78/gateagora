@@ -226,7 +226,8 @@ class BaseEmpresaAdmin(ModelAdmin):
                 kwargs["widget"] = forms.HiddenInput()
             return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
-        campos_para_filtrar = ["aluno", "cavalo", "baia", "piquete", "proprietario", "instrutor", "plano"]
+        campos_para_filtrar = ["aluno", "cavalo", "baia", "piquete", "proprietario", "instrutor", "plano",
+                               "sela_padrao", "cabecada_padrao", "raca", "sela", "cabecada"]
         if db_field.name in campos_para_filtrar:
             if not request.user.is_superuser and hasattr(request, 'empresa') and request.empresa:
                 model = db_field.related_model
@@ -744,7 +745,8 @@ class PiqueteAdmin(PermissaoPorCargoMixin, BaseEmpresaAdmin):
     actions = [duplicar_registro]
 
 @admin.register(RacaCavalo)
-class RacaCavaloAdmin(ModelAdmin):
+class RacaCavaloAdmin(PermissaoPorCargoMixin, BaseEmpresaAdmin):
+    cargos_acesso_total = {'Gestor'}
     list_display = ["nome"]
     search_fields = ["nome"]
 
