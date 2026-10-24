@@ -153,3 +153,22 @@ footer {
     opacity: 0.2 !important;
     filter: grayscale(100%) brightness(0.5) !important;
 }
+
+/* Admin no tema claro: campos e selects legíveis */
+[data-theme="tordilho"] select,
+[data-theme="tordilho"] input[type="text"],
+[data-theme="tordilho"] input[type="number"],
+[data-theme="tordilho"] input[type="date"],
+[data-theme="tordilho"] input[type="email"],
+[data-theme="tordilho"] input[type="tel"],
+[data-theme="tordilho"] textarea {
+  background-color: #ffffff !important;
+  color: #111111 !important;
+  border: 1px solid #b8b1a3 !important;
+}
+[data-theme="tordilho"] label {
+  color: #111111 !important;
+}
+[data-theme="tordilho"] h2.rounded-default {
+  color: #111111 !important;
+}

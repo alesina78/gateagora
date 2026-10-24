@@ -3,3 +3,22 @@ h2.rounded-default {
   border-left: 4px solid #818cf8 !important;
   padding-left: 0.75rem !important;
 }
+
+/* ── Força links e nomes das tabelas do Admin em verde Gate 4 ── */
+#result_list a,
+.results a,
+table a,
+td.field-__str__ a,
+td a,
+th a {
+  color: #10b981 !important;
+  font-weight: 600 !important;
+}
+
+#result_list a:hover,
+.results a:hover,
+table a:hover,
+td a:hover {
+  color: #34d399 !important;
+  text-decoration: underline !important;
+}
